@@ -17,6 +17,7 @@ type Asset = components['schemas']['MetadataEntryDto'] & {
   mime_type: string;
   size: number;
   created_at: string;
+  color_palette?: string[] | null;
 };
 
 const getIcon = (mime: string) => {
@@ -37,10 +38,15 @@ const AssetCard = ({
   isSelected: boolean 
 }) => {
   const [imgError, setImgError] = useState(false);
-  const Icon = getIcon(asset.mime_type);
+  const mimeType = asset.mime_type || 'application/octet-stream';
+  const Icon = getIcon(mimeType);
+
+  const assetId = asset.id || (asset as any).asset_id || (asset as any)._id;
+  const originalName = asset.original_name || (asset as any).original_filename || 'Unknown';
+  const size = asset.size !== undefined ? asset.size : (asset as any).file_size || 0;
 
   const formatSize = (bytes: number) => {
-    if (bytes === 0) return '0 B';
+    if (bytes === 0 || isNaN(bytes)) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -49,7 +55,7 @@ const AssetCard = ({
 
   return (
     <div 
-      onClick={() => onSelect?.(asset.id)}
+      onClick={() => onSelect?.(assetId)}
       className={`group relative bg-white dark:bg-gray-800 rounded-xl border-2 transition-all cursor-pointer overflow-hidden ${
         isSelected 
           ? 'border-blue-500 shadow-md ring-2 ring-blue-500/20' 
@@ -57,10 +63,10 @@ const AssetCard = ({
       }`}
     >
       <div className="aspect-square bg-gray-50 dark:bg-gray-900 flex items-center justify-center relative">
-        {asset.mime_type.startsWith('image/') && !imgError ? (
+        {mimeType.startsWith('image/') && !imgError ? (
           <img 
-            src={`http://localhost:3000/api/v1/assets/${asset.id}/view`} 
-            alt={asset.original_name}
+            src={`http://localhost:3000/api/v1/assets/${assetId}/view`} 
+            alt={originalName}
             className="w-full h-full object-cover"
             onError={() => setImgError(true)}
           />
@@ -68,26 +74,41 @@ const AssetCard = ({
           <Icon className="h-12 w-12 text-gray-400" />
         )}
         
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Trash Action */}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              onDelete(asset.id);
+              onDelete(assetId);
             }}
-            className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm"
+            className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm transition-colors"
           >
             <TrashIcon className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Color Palette Strip */}
+        {asset.color_palette && asset.color_palette.length > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 flex h-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {asset.color_palette.slice(0, 5).map((color, i) => (
+              <div 
+                key={i} 
+                className="flex-1" 
+                style={{ backgroundColor: color }}
+                title={color}
+              />
+            ))}
+          </div>
+        )}
       </div>
       
       <div className="p-3">
-        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={asset.original_name}>
-          {asset.original_name}
+        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={originalName}>
+          {originalName}
         </p>
         <div className="flex items-center justify-between mt-1">
-          <p className="text-xs text-gray-500">{formatSize(asset.size)}</p>
-          <p className="text-xs text-gray-400">{new Date(asset.created_at).toLocaleDateString()}</p>
+          <p className="text-xs text-gray-500 truncate mr-2">{formatSize(size)}</p>
+          <p className="text-xs text-gray-400 shrink-0">{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A'}</p>
         </div>
       </div>
     </div>
