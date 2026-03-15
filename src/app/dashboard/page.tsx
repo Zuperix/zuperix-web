@@ -10,7 +10,7 @@ import { PlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
   const { activeWorkspace } = useWorkspace();
-  const [assets, setAssets] = useState([]);
+  const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
@@ -57,22 +57,22 @@ export default function DashboardPage() {
         <div className="space-y-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold dark:text-white">Assets</h1>
-              <p className="text-gray-500 dark:text-gray-400">Manage all your digital assets in {activeWorkspace.name}</p>
+              <h1 className="text-2xl font-bold text-white">Assets</h1>
+              <p className="text-gray-400 text-sm mt-0.5">Manage your digital assets in <span className="text-gray-300 font-medium">{activeWorkspace.name}</span></p>
             </div>
             <div className="flex space-x-3">
               <button 
                 onClick={fetchAssets}
-                className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                className="p-2 text-gray-500 hover:text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
               <button 
                 onClick={() => setIsUploadOpen(true)}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-500 transition-colors shadow-sm"
               >
-                <PlusIcon className="h-5 w-5 mr-2" />
-                Upload Asset
+                <PlusIcon className="h-4 w-4 mr-1.5" />
+                Upload
               </button>
             </div>
           </div>

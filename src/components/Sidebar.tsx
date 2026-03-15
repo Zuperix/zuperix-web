@@ -4,120 +4,174 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { 
-  FolderIcon, 
-  MagnifyingGlassIcon, 
-  TrashIcon, 
+import { useLayout } from '@/context/LayoutContext';
+import {
+  FolderIcon,
+  MagnifyingGlassIcon,
+  TrashIcon,
   ArrowLeftOnRectangleIcon,
   Cog6ToothIcon,
+  ChevronUpDownIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
-import { useLayout } from '@/context/LayoutContext';
+const NAV = [
+  { name: 'Assets', href: '/dashboard', icon: FolderIcon },
+  { name: 'Search', href: '/dashboard/search', icon: MagnifyingGlassIcon },
+  { name: 'Trash', href: '/dashboard/trash', icon: TrashIcon },
+  { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
+];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const { sidebarCollapsed } = useLayout();
+  const [wsOpen, setWsOpen] = useState(false);
 
-  const navigation = [
-    { name: 'Assets', href: '/dashboard', icon: FolderIcon },
-    { name: 'Search', href: '/dashboard/search', icon: MagnifyingGlassIcon },
-    { name: 'Trash', href: '/dashboard/trash', icon: TrashIcon },
-    { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
-  ];
+  const collapsed = sidebarCollapsed;
 
   return (
-    <div className={`flex flex-col h-screen bg-white dark:bg-gray-900 border-r dark:border-gray-800 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
-      <div className="flex items-center justify-center h-16 border-b dark:border-gray-800">
-        {!sidebarCollapsed ? (
-          <span className="text-xl font-bold text-blue-600 transition-opacity">Open DAM</span>
-        ) : (
-          <span className="text-xl font-bold text-blue-600">OD</span>
-        )}
-      </div>
-
-      <div className={`p-4 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
-        {!sidebarCollapsed && (
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Workspace
-          </label>
-        )}
-        <div className="relative group">
-          <select 
-            className={`bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 text-sm rounded-lg p-2.5 outline-none appearance-none cursor-pointer transition-all ${sidebarCollapsed ? 'w-10 h-10 p-0 text-center' : 'w-full'}`}
-            value={activeWorkspace?.id || ''}
-            onChange={(e) => {
-              const selected = workspaces.find(w => w.id === e.target.value);
-              if (selected) setActiveWorkspace(selected);
-            }}
-          >
-            {workspaces.map((w) => (
-              <option key={w.id} value={w.id}>
-                {sidebarCollapsed ? w.name.charAt(0).toUpperCase() : w.name}
-              </option>
-            ))}
-          </select>
-          {!sidebarCollapsed && (
-            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </div>
-          )}
+    <aside
+      className={`relative flex flex-col h-screen bg-gray-950 border-r border-gray-800/60 transition-all duration-300 ease-in-out z-20 ${
+        collapsed ? 'w-[60px]' : 'w-60'
+      }`}
+    >
+      {/* Logo */}
+      <div className={`flex items-center h-14 border-b border-gray-800/60 flex-shrink-0 ${collapsed ? 'justify-center' : 'px-4 gap-2.5'}`}>
+        <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+          <svg viewBox="0 0 16 16" fill="white" className="h-4 w-4">
+            <rect x="1" y="1" width="6" height="6" rx="1.5" />
+            <rect x="9" y="1" width="6" height="6" rx="1.5" />
+            <rect x="1" y="9" width="6" height="6" rx="1.5" />
+            <rect x="9" y="9" width="6" height="6" rx="1.5" />
+          </svg>
         </div>
+        {!collapsed && (
+          <span className="text-sm font-semibold text-white tracking-wide">Open DAM</span>
+        )}
       </div>
 
-      <nav className="flex-1 px-4 space-y-2 mt-4">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              title={sidebarCollapsed ? item.name : ''}
-              className={`flex items-center rounded-lg transition-all duration-200 group ${
-                sidebarCollapsed ? 'justify-center p-2' : 'px-4 py-2.5'
-              } ${
-                isActive 
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm' 
-                  : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
-              }`}
+      <div className="flex-1 flex flex-col overflow-hidden py-3 gap-1">
+        {/* Workspace switcher */}
+        {!collapsed && (
+          <div className="px-3 mb-1 relative">
+            <button
+              onClick={() => setWsOpen((o) => !o)}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800/60 hover:bg-gray-800 border border-gray-700/40 text-left transition-colors group"
             >
-              <item.icon className={`h-5 w-5 flex-shrink-0 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'} ${!sidebarCollapsed ? 'mr-3' : ''}`} />
-              {!sidebarCollapsed && (
-                <span className="font-medium text-sm transition-opacity duration-200 overflow-hidden whitespace-nowrap">
-                  {item.name}
+              <div className="h-5 w-5 rounded-md bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center flex-shrink-0">
+                <span className="text-[10px] font-bold text-indigo-300">
+                  {activeWorkspace?.name?.charAt(0)?.toUpperCase() || '?'}
                 </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
+              </div>
+              <span className="flex-1 text-xs font-medium text-gray-200 truncate">
+                {activeWorkspace?.name || 'No workspace'}
+              </span>
+              <ChevronUpDownIcon className="h-3.5 w-3.5 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0" />
+            </button>
 
-      <div className={`p-4 border-t dark:border-gray-800 ${sidebarCollapsed ? 'flex flex-col items-center space-y-4' : ''}`}>
-        <div className={`flex items-center ${sidebarCollapsed ? '' : 'mb-4'}`}>
-          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm ring-2 ring-white dark:ring-gray-800 flex-shrink-0 shadow-sm">
-            {user?.name?.charAt(0) || 'U'}
+            {wsOpen && workspaces.length > 0 && (
+              <div className="absolute left-3 right-3 top-full mt-1 z-50 bg-gray-900 border border-gray-700/60 rounded-xl shadow-2xl overflow-hidden">
+                <p className="px-3 py-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-800">
+                  Workspaces
+                </p>
+                {workspaces.map((w) => (
+                  <button
+                    key={w.id}
+                    onClick={() => { setActiveWorkspace(w); setWsOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-left hover:bg-gray-800 transition-colors"
+                  >
+                    <div className="h-5 w-5 rounded-md bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center flex-shrink-0">
+                      <span className="text-[10px] font-bold text-indigo-300">{w.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <span className="flex-1 text-gray-300 truncate font-medium">{w.name}</span>
+                    {activeWorkspace?.id === w.id && (
+                      <CheckIcon className="h-3.5 w-3.5 text-blue-400 flex-shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          {!sidebarCollapsed && (
-            <div className="ml-3 overflow-hidden">
-              <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate w-32">{user?.name}</p>
-              <p className="text-[10px] text-gray-500 truncate">{user?.email}</p>
-            </div>
-          )}
-        </div>
-        <button
-          onClick={logout}
-          title={sidebarCollapsed ? 'Logout' : ''}
-          className={`flex items-center text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 transition-all group ${
-            sidebarCollapsed ? 'justify-center p-2' : 'w-full px-4 py-2'
-          }`}
-        >
-          <ArrowLeftOnRectangleIcon className={`h-5 w-5 flex-shrink-0 transition-transform group-hover:-translate-x-1 ${!sidebarCollapsed ? 'mr-3' : ''}`} />
-          {!sidebarCollapsed && <span>Logout</span>}
-        </button>
+        )}
+
+        {/* nav label */}
+        {!collapsed && (
+          <p className="px-6 py-1 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">
+            Navigation
+          </p>
+        )}
+
+        {/* Navigation links */}
+        <nav className={`flex flex-col gap-0.5 ${collapsed ? 'items-center px-2' : 'px-3'}`}>
+          {NAV.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                title={collapsed ? item.name : undefined}
+                className={`flex items-center rounded-lg transition-all duration-150 group ${
+                  collapsed ? 'justify-center w-10 h-10' : 'gap-3 px-3 py-2'
+                } ${
+                  active
+                    ? 'bg-blue-600/15 text-blue-400'
+                    : 'text-gray-500 hover:text-gray-200 hover:bg-gray-800/70'
+                }`}
+              >
+                <item.icon
+                  className={`flex-shrink-0 transition-colors ${collapsed ? 'h-5 w-5' : 'h-4 w-4'} ${
+                    active ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'
+                  }`}
+                />
+                {!collapsed && (
+                  <span className="text-sm font-medium">{item.name}</span>
+                )}
+                {active && !collapsed && (
+                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-400" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-    </div>
+
+      {/* Footer / user */}
+      <div className={`border-t border-gray-800/60 flex-shrink-0 ${collapsed ? 'py-3 flex flex-col items-center gap-2' : 'p-3'}`}>
+        {!collapsed ? (
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-800/60 transition-colors group">
+            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gray-200 truncate">{user?.name}</p>
+              <p className="text-[10px] text-gray-600 truncate">{user?.email}</p>
+            </div>
+            <button
+              onClick={logout}
+              title="Sign out"
+              className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+            >
+              <ArrowLeftOnRectangleIcon className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold cursor-pointer">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <button
+              onClick={logout}
+              title="Sign out"
+              className="p-2 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            >
+              <ArrowLeftOnRectangleIcon className="h-4 w-4" />
+            </button>
+          </>
+        )}
+      </div>
+    </aside>
   );
 }

@@ -1,110 +1,389 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { apiFetch } from '@/lib/api';
-import { XMarkIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
+import { useState, useRef, useCallback, DragEvent } from 'react';
+import {
+  XMarkIcon,
+  CloudArrowUpIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  ArrowPathIcon,
+  DocumentIcon,
+  PhotoIcon,
+  VideoCameraIcon,
+} from '@heroicons/react/24/outline';
 
-export default function UploadModal({ 
-  workspaceId, 
-  onClose, 
-  onSuccess 
-}: { 
-  workspaceId: string; 
+const CONCURRENCY = 5;
+const MAX_FILES = 500;
+const MAX_FILE_SIZE_MB = 500;
+
+type FileStatus = 'pending' | 'uploading' | 'done' | 'error' | 'duplicate';
+
+interface FileEntry {
+  id: string;
+  file: File;
+  status: FileStatus;
+  progress: number;
+  error?: string;
+}
+
+function fileIcon(file: File) {
+  if (file.type.startsWith('image/')) return PhotoIcon;
+  if (file.type.startsWith('video/')) return VideoCameraIcon;
+  return DocumentIcon;
+}
+
+function formatSize(bytes: number) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function uploadFileXHR(
+  file: File,
+  workspaceId: string,
+  token: string | null,
+  onProgress: (pct: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('workspace_id', workspaceId);
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    });
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(100);
+        resolve();
+      } else {
+        let msg = `Upload failed (${xhr.status})`;
+        try {
+          const body = JSON.parse(xhr.responseText);
+          if (xhr.status === 409) {
+            reject(new DuplicateError(body.message || 'Duplicate detected'));
+            return;
+          }
+          msg = body.message || msg;
+        } catch {}
+        reject(new Error(msg));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.ontimeout = () => reject(new Error('Request timed out'));
+    xhr.timeout = 120_000;
+
+    xhr.open('POST', 'http://localhost:3000/api/v1/assets/upload');
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.send(formData);
+  });
+}
+
+class DuplicateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DuplicateError';
+  }
+}
+
+export default function UploadModal({
+  workspaceId,
+  onClose,
+  onSuccess,
+}: {
+  workspaceId: string;
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [progress, setProgress] = useState(0);
+  const [entries, setEntries] = useState<FileEntry[]>([]);
+  const [running, setRunning] = useState(false);
+  const [done, setDone] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef(false);
 
-  const handleUpload = async () => {
-    if (!file) return;
-    setLoading(true);
-    setError('');
+  const addFiles = useCallback((files: FileList | File[]) => {
+    const arr = Array.from(files).slice(0, MAX_FILES - entries.length);
+    const valid = arr.filter((f) => {
+      if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false;
+      return true;
+    });
+    const newEntries: FileEntry[] = valid.map((f) => ({
+      id: `${f.name}-${f.size}-${f.lastModified}-${Math.random()}`,
+      file: f,
+      status: 'pending',
+      progress: 0,
+    }));
+    setEntries((prev) => [...prev, ...newEntries]);
+  }, [entries.length]);
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('workspace_id', workspaceId);
-
-      // Using Fetch directly for multipart/form-data with progress is tricky without XHR,
-      // but for simplicity we'll use a basic fetch here.
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:3000/api/v1/assets/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Upload failed');
-      }
-
-      onSuccess();
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Upload failed');
-    } finally {
-      setLoading(false);
-    }
+  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
   };
 
+  const updateEntry = (id: string, patch: Partial<FileEntry>) => {
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+  };
+
+  const uploadAll = async () => {
+    const token = localStorage.getItem('auth_token');
+    abortRef.current = false;
+    setRunning(true);
+    setDone(false);
+
+    const pending = entries.filter((e) => e.status === 'pending' || e.status === 'error');
+    let i = 0;
+
+    const next = async (): Promise<void> => {
+      if (abortRef.current) return;
+      const entry = pending[i++];
+      if (!entry) return;
+
+      updateEntry(entry.id, { status: 'uploading', progress: 0, error: undefined });
+
+      try {
+        await uploadFileXHR(entry.file, workspaceId, token, (pct) => {
+          updateEntry(entry.id, { progress: pct });
+        });
+        updateEntry(entry.id, { status: 'done', progress: 100 });
+      } catch (err: any) {
+        if (err instanceof DuplicateError) {
+          updateEntry(entry.id, { status: 'duplicate', progress: 0, error: err.message });
+        } else {
+          updateEntry(entry.id, { status: 'error', progress: 0, error: err.message });
+        }
+      }
+
+      return next();
+    };
+
+    const workers = Array.from({ length: Math.min(CONCURRENCY, pending.length) }, () => next());
+    await Promise.all(workers);
+
+    setRunning(false);
+    setDone(true);
+    onSuccess();
+  };
+
+  const retryFailed = () => {
+    setEntries((prev) =>
+      prev.map((e) => (e.status === 'error' ? { ...e, status: 'pending', progress: 0, error: undefined } : e)),
+    );
+    setDone(false);
+  };
+
+  const removeEntry = (id: string) => {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const counts = {
+    total: entries.length,
+    done: entries.filter((e) => e.status === 'done').length,
+    duplicate: entries.filter((e) => e.status === 'duplicate').length,
+    error: entries.filter((e) => e.status === 'error').length,
+    uploading: entries.filter((e) => e.status === 'uploading').length,
+    pending: entries.filter((e) => e.status === 'pending').length,
+  };
+
+  const overallProgress =
+    counts.total === 0
+      ? 0
+      : Math.round(
+          entries.reduce((acc, e) => acc + (e.status === 'done' || e.status === 'duplicate' ? 100 : e.progress), 0) /
+            counts.total,
+        );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-6 border-b dark:border-gray-700">
-          <h2 className="text-xl font-bold dark:text-white">Upload Asset</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-            <XMarkIcon className="h-6 w-6 text-gray-500" />
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b dark:border-gray-800 flex-shrink-0">
+          <div>
+            <h2 className="text-xl font-bold dark:text-white">Bulk Upload</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Up to {MAX_FILES} files · {MAX_FILE_SIZE_MB} MB each</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+            <XMarkIcon className="h-5 w-5 text-gray-500" />
           </button>
         </div>
 
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 p-3 text-sm text-red-600 bg-red-100 rounded-lg dark:bg-red-900/30 dark:text-red-400">
-              {error}
+        {/* Summary bar */}
+        {counts.total > 0 && (
+          <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-800 flex-shrink-0">
+            <div className="flex items-center justify-between text-xs font-medium mb-2">
+              <span className="text-gray-600 dark:text-gray-400">
+                {counts.done + counts.duplicate} / {counts.total} complete
+                {counts.error > 0 && (
+                  <span className="text-red-500 ml-2">· {counts.error} failed</span>
+                )}
+                {counts.duplicate > 0 && (
+                  <span className="text-amber-500 ml-2">· {counts.duplicate} duplicate</span>
+                )}
+              </span>
+              <span className="text-gray-500">{overallProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-500"
+                style={{ width: `${overallProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Drop zone or File list */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+          {/* Drop zone — always visible if not at max files */}
+          {entries.length < MAX_FILES && (
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={onDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex flex-col items-center justify-center py-10 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
+                dragging
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 scale-[1.01]'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+              }`}
+            >
+              <CloudArrowUpIcon className={`h-12 w-12 mb-3 transition-colors ${dragging ? 'text-blue-500' : 'text-gray-400'}`} />
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {dragging ? 'Drop files here' : 'Click or drag & drop files'}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {entries.length > 0 ? `${entries.length} selected · Add more` : `Images, Videos, PDFs up to ${MAX_FILE_SIZE_MB} MB each`}
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.svg"
+                className="hidden"
+                onChange={(e) => e.target.files && addFiles(e.target.files)}
+              />
             </div>
           )}
 
-          <div 
-            onClick={() => fileInputRef.current?.click()}
-            className={`flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-              file 
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                : 'border-gray-300 hover:border-blue-400 dark:border-gray-600'
-            }`}
-          >
-            <CloudArrowUpIcon className="h-12 w-12 text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
-              {file ? file.name : 'Click to select or drag and drop'}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">Images, Videos, PDFs up to 50MB</p>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
-          </div>
+          {/* File list */}
+          {entries.length > 0 && (
+            <div className="space-y-2">
+              {entries.map((entry) => {
+                const Icon = fileIcon(entry.file);
+                const isActive = entry.status === 'uploading';
+                return (
+                  <div
+                    key={entry.id}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${
+                      entry.status === 'done'
+                        ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/30'
+                        : entry.status === 'error'
+                        ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30'
+                        : entry.status === 'duplicate'
+                        ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/30'
+                        : 'bg-white dark:bg-gray-800/50 border-gray-100 dark:border-gray-800'
+                    }`}
+                  >
+                    <div className="flex-shrink-0">
+                      <Icon className="h-6 w-6 text-gray-400" />
+                    </div>
 
-          <div className="mt-8 flex justify-end space-x-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium dark:text-white truncate">{entry.file.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-gray-400">{formatSize(entry.file.size)}</p>
+                        {entry.error && (
+                          <p className="text-xs text-red-500 truncate">{entry.error}</p>
+                        )}
+                        {entry.status === 'duplicate' && !entry.error && (
+                          <p className="text-xs text-amber-500">Duplicate</p>
+                        )}
+                      </div>
+
+                      {isActive && (
+                        <div className="mt-1.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1 overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 rounded-full transition-all duration-200"
+                            style={{ width: `${entry.progress}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-shrink-0 flex items-center gap-1">
+                      {entry.status === 'done' && (
+                        <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                      )}
+                      {entry.status === 'error' && (
+                        <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+                      )}
+                      {entry.status === 'duplicate' && (
+                        <span className="text-[10px] font-bold text-amber-500 border border-amber-400 rounded px-1">DUP</span>
+                      )}
+                      {entry.status === 'uploading' && (
+                        <ArrowPathIcon className="h-5 w-5 text-blue-400 animate-spin" />
+                      )}
+                      {(entry.status === 'pending' || entry.status === 'error') && !running && (
+                        <button
+                          onClick={() => removeEntry(entry.id)}
+                          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-400 transition-colors"
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t dark:border-gray-800 flex items-center justify-between gap-3 flex-shrink-0 bg-white dark:bg-gray-900">
+          <div className="text-xs text-gray-500">
+            {counts.total === 0
+              ? 'No files selected'
+              : `${counts.pending} pending · ${counts.uploading} uploading · ${counts.done} done`}
+          </div>
+          <div className="flex items-center gap-3">
+            {done && counts.error > 0 && (
+              <button
+                onClick={retryFailed}
+                className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-orange-600 border border-orange-300 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+              >
+                <ArrowPathIcon className="h-4 w-4" />
+                Retry Failed ({counts.error})
+              </button>
+            )}
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
             >
-              Cancel
+              {done ? 'Close' : 'Cancel'}
             </button>
             <button
-              onClick={handleUpload}
-              disabled={!file || loading}
-              className="px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              onClick={uploadAll}
+              disabled={running || counts.pending === 0}
+              className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
-              {loading ? 'Uploading...' : 'Start Upload'}
+              {running ? (
+                <>
+                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <CloudArrowUpIcon className="h-4 w-4" />
+                  Upload {counts.pending > 0 ? `${counts.pending} file${counts.pending !== 1 ? 's' : ''}` : 'All'}
+                </>
+              )}
             </button>
           </div>
         </div>

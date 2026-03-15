@@ -2,12 +2,13 @@
 
 import { MagnifyingGlassIcon, Bars3Icon, BellIcon } from '@heroicons/react/24/outline';
 import { useLayout } from '@/context/LayoutContext';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Header() {
   const { sidebarCollapsed, setSidebarCollapsed, searchQuery, setSearchQuery } = useLayout();
+  const { user } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,34 +18,44 @@ export default function Header() {
   };
 
   return (
-    <header className="h-16 bg-white dark:bg-gray-900 border-b dark:border-gray-800 flex items-center justify-between px-6 sticky top-0 z-30">
-      <div className="flex items-center space-x-4">
-        <button 
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 transition-colors"
-        >
-          <Bars3Icon className="h-6 w-6" />
-        </button>
-      </div>
+    <header className="h-14 bg-gray-950 border-b border-gray-800/60 flex items-center gap-4 px-4 sticky top-0 z-30">
+      {/* Hamburger */}
+      <button
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all"
+        aria-label="Toggle sidebar"
+      >
+        <Bars3Icon className="h-5 w-5" />
+      </button>
 
-      <div className="flex-1 max-w-2xl px-8">
-        <form onSubmit={handleSearch} className="relative group">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+      {/* Search */}
+      <form onSubmit={handleSearch} className="flex-1 max-w-xl">
+        <div className="relative flex items-center group">
+          <MagnifyingGlassIcon className="absolute left-3 h-4 w-4 text-gray-500 group-focus-within:text-blue-400 transition-colors pointer-events-none" />
           <input
             type="text"
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all shadow-sm"
-            placeholder="Search across all assets..."
+            className="w-full pl-9 pr-4 py-1.5 bg-gray-800/70 border border-gray-700/50 text-sm text-gray-100 placeholder-gray-500 rounded-lg outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30 transition-all"
+            placeholder="Search assets…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </form>
-      </div>
+          <kbd className="absolute right-3 text-[10px] text-gray-600 hidden sm:flex items-center gap-1 pointer-events-none">
+            <span className="font-sans">⌘K</span>
+          </kbd>
+        </div>
+      </form>
 
-      <div className="flex items-center space-x-2">
-        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500 relative">
-          <BellIcon className="h-6 w-6" />
-          <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-900"></span>
+      {/* Right actions */}
+      <div className="flex items-center gap-2 ml-auto">
+        <button className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
+          <BellIcon className="h-5 w-5" />
+          <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 bg-blue-400 rounded-full" />
         </button>
+
+        {/* Avatar */}
+        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold ring-2 ring-gray-800 cursor-pointer hover:ring-blue-500 transition-all">
+          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+        </div>
       </div>
     </header>
   );
