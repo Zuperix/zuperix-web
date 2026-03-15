@@ -1,0 +1,38 @@
+import { paths } from '@/types/api';
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+
+type GetPaths = keyof paths;
+
+export async function apiFetch<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
+  const headers = new Headers(options.headers);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+  }
+
+  const result = await response.json();
+  // Unwrap the standard envelope if it exists
+  return (result.data !== undefined ? result.data : result) as T;
+}
+
+// Helper to handle snake_case to camelCase conversion if needed, 
+// but for now we'll stick to the backend's snake_case in the types 
+// as they are generated that way.
