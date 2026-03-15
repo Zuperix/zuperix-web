@@ -4,6 +4,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 interface FilterBucket {
   value: string | number;
   count?: number;
+  hexes?: string[];
 }
 
 interface FilterSidebarProps {
@@ -18,6 +19,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange }
     orientation: 'Orientation',
     tags: 'Tags',
     file_extension: 'Extension',
+    color_palette: 'Colors',
   };
 
   const getFriendlyName = (key: string) => {
@@ -142,28 +144,69 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange }
               </button>
 
               {isExpanded && (
-                <div className="mt-4 space-y-2.5">
-                  {buckets.map((bucket) => {
-                    const isActive = (activeFilters[key] || []).includes(bucket.value);
-                    return (
-                      <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
-                        <div className="flex items-center overflow-hidden pr-2">
-                          <input
-                            type="checkbox"
-                            checked={isActive}
-                            onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
-                            className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
-                          />
-                          <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
-                            {bucket.value}
-                          </span>
-                        </div>
-                        <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
-                          {bucket.count}
-                        </span>
-                      </label>
-                    );
-                  })}
+                <div className="mt-4">
+                  {key === 'color_palette' ? (
+                    <div className="grid grid-cols-5 gap-2.5">
+                      {buckets.map((bucket) => {
+                        const hex = String(bucket.value);
+                        const clusterHexes = bucket.hexes || [hex];
+                        const activeHexes = activeFilters[key] || [];
+                        const isActive = clusterHexes.some(h => activeHexes.includes(h));
+                        
+                        return (
+                          <button
+                            key={hex}
+                            onClick={() => {
+                              const nextActive = isActive 
+                                ? activeHexes.filter((h: string) => !clusterHexes.includes(h))
+                                : Array.from(new Set([...activeHexes, ...clusterHexes]));
+                              onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
+                            }}
+                            className={`w-full aspect-square rounded-lg border-2 transition-all relative group/swatch ${
+                              isActive 
+                                ? 'border-blue-500 scale-110 shadow-lg z-10' 
+                                : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'
+                            }`}
+                            style={{ backgroundColor: hex }}
+                            title={hex}
+                          >
+                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover/swatch:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                              {hex}
+                            </span>
+                            {isActive && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {buckets.map((bucket) => {
+                        const isActive = (activeFilters[key] || []).includes(bucket.value);
+                        return (
+                          <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                            <div className="flex items-center overflow-hidden pr-2">
+                              <input
+                                type="checkbox"
+                                checked={isActive}
+                                onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
+                                className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                              />
+                              <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
+                                {bucket.value}
+                              </span>
+                            </div>
+                            <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+                              {bucket.count}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
