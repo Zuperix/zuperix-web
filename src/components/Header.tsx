@@ -13,16 +13,24 @@ export default function Header() {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   useEffect(() => {
-    // Check initial state or local storage
-    if (typeof document !== 'undefined') {
-      const isDark = document.documentElement.classList.contains('dark');
-      setTheme(isDark ? 'dark' : 'light');
+    // Check initial state from local storage or system preference
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+      const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      
+      setTheme(initialTheme);
+      if (initialTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
   }, []);
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -38,29 +46,29 @@ export default function Header() {
   };
 
   return (
-    <header className="h-14 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800/60 flex items-center gap-4 px-4 sticky top-0 z-30 transition-colors">
+    <header className="h-16 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800/60 flex items-center gap-4 px-6 sticky top-0 z-30 transition-all">
       {/* Hamburger */}
       <button
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+        className="p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all"
         aria-label="Toggle sidebar"
       >
         <Bars3Icon className="h-5 w-5" />
       </button>
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex-1 max-w-xl">
+      <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
         <div className="relative flex items-center group">
-          <MagnifyingGlassIcon className="absolute left-3 h-4 w-4 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+          <MagnifyingGlassIcon className="absolute left-4 h-4 w-4 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
           <input
             type="text"
-            className="w-full pl-9 pr-4 py-1.5 bg-gray-50 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700/50 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-lg outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/30 transition-all"
-            placeholder="Search assets…"
+            className="w-full pl-11 pr-4 py-2 bg-gray-100/50 dark:bg-gray-900/50 border-transparent dark:border-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl outline-none focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all"
+            placeholder="Search assets, tags, or metadata…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <kbd className="absolute right-3 text-[10px] text-gray-400 dark:text-gray-600 hidden sm:flex items-center gap-1 pointer-events-none">
-            <span className="font-sans">⌘K</span>
+          <kbd className="absolute right-4 px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[10px] text-gray-400 dark:text-gray-500 rounded-md hidden sm:flex items-center gap-1 shadow-sm pointer-events-none font-medium">
+            <span className="font-sans">⌘</span>K
           </kbd>
         </div>
       </form>

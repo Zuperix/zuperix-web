@@ -56,44 +56,62 @@ const AssetCard = ({
   return (
     <div 
       onClick={() => onSelect?.(assetId)}
-      className={`group relative bg-white dark:bg-gray-800 rounded-xl border-2 transition-all cursor-pointer overflow-hidden ${
+      className={`group relative bg-white dark:bg-gray-900/40 rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden ${
         isSelected 
-          ? 'border-blue-500 shadow-md ring-2 ring-blue-500/20' 
-          : 'border-transparent dark:border-gray-700 hover:border-blue-300 dark:hover:border-gray-600 hover:shadow-sm'
+          ? 'border-blue-500 shadow-xl shadow-blue-500/10 ring-1 ring-blue-500/20' 
+          : 'border-gray-200 dark:border-gray-800 hover:border-blue-400 dark:hover:border-blue-500/50 hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-blue-900/10'
       }`}
     >
-      <div className="aspect-square bg-gray-50 dark:bg-gray-900 flex items-center justify-center relative">
+      <div className="aspect-square bg-gray-50 dark:bg-gray-950 flex items-center justify-center relative overflow-hidden">
         {mimeType.startsWith('image/') && !imgError ? (
           <img 
             src={`http://localhost:3000/api/v1/assets/${assetId}/view`} 
             alt={originalName}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
             onError={() => setImgError(true)}
           />
         ) : (
-          <Icon className="h-12 w-12 text-gray-400" />
+          <div className="flex flex-col items-center gap-2">
+            <Icon className="h-14 w-14 text-gray-300 dark:text-gray-700 group-hover:text-blue-500/50 transition-colors" />
+            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest">{mimeType.split('/')[1] || 'FILE'}</span>
+          </div>
         )}
         
-        {/* Trash Action */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(assetId);
-            }}
-            className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 shadow-sm transition-colors"
-          >
-            <TrashIcon className="h-4 w-4" />
-          </button>
+        {/* Overlay on hover */}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 z-10">
+          <div className="flex justify-end">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(assetId);
+              }}
+              className="p-2 bg-white/10 hover:bg-red-500/20 text-white rounded-xl backdrop-blur-md border border-white/20 transition-all"
+              title="Delete asset"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
+          </div>
+          
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Metadata</p>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-[10px] bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-md text-white border border-white/10 uppercase font-medium">
+                {mimeType.split('/')[1] || 'BIN'}
+              </span>
+              <span className="text-[10px] bg-white/10 backdrop-blur-md px-2 py-0.5 rounded-md text-white border border-white/10 uppercase font-medium">
+                {formatSize(size)}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Color Palette Strip */}
+        {/* Color Palette Strip - Floating style */}
         {asset.color_palette && asset.color_palette.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 flex h-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            {asset.color_palette.slice(0, 5).map((color, i) => (
+          <div className="absolute bottom-3 left-3 right-3 flex h-1.5 gap-1 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0 z-20">
+            {asset.color_palette.slice(0, 6).map((color, i) => (
               <div 
                 key={i} 
-                className="flex-1" 
+                className="flex-1 rounded-full shadow-sm ring-1 ring-black/10" 
                 style={{ backgroundColor: color }}
                 title={color}
               />
@@ -102,13 +120,13 @@ const AssetCard = ({
         )}
       </div>
       
-      <div className="p-3">
-        <p className="text-sm font-medium text-gray-900 dark:text-white truncate" title={originalName}>
+      <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/50">
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate" title={originalName}>
           {originalName}
         </p>
-        <div className="flex items-center justify-between mt-1">
-          <p className="text-xs text-gray-500 truncate mr-2">{formatSize(size)}</p>
-          <p className="text-xs text-gray-400 shrink-0">{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A'}</p>
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-[11px] font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide">{mimeType.split('/')[1] || 'File'}</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-600 font-medium">{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A'}</p>
         </div>
       </div>
     </div>

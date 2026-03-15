@@ -14,16 +14,19 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root.dark {
+  --background: #0f111a;
+  --foreground: #f8fafc;
+  --border: #1e293b;
 }
 
-:root.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+@custom-variant dark (&:is(.dark *));
+
+/* Global Smooth Transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
 body {

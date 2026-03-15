@@ -24,6 +24,7 @@ interface FileEntry {
   status: FileStatus;
   progress: number;
   error?: string;
+  force?: boolean;
 }
 
 function fileIcon(file: File) {
@@ -45,6 +46,7 @@ function uploadFileXHR(
   workspaceId: string,
   token: string | null,
   onProgress: (pct: number) => void,
+  force: boolean = false
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -78,7 +80,7 @@ function uploadFileXHR(
     xhr.ontimeout = () => reject(new Error('Request timed out'));
     xhr.timeout = 120_000;
 
-    xhr.open('POST', 'http://localhost:3000/api/v1/assets/upload');
+    xhr.open('POST', `http://localhost:3000/api/v1/assets/upload${force ? '?force=true' : ''}`);
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.send(formData);
   });
@@ -138,7 +140,7 @@ export default function UploadModal({
     setRunning(true);
     setDone(false);
 
-    const pending = entries.filter((e) => e.status === 'pending' || e.status === 'error');
+    const pending = entries.filter((e) => e.status === 'pending' || e.status === 'error' || (e.status === 'duplicate' && e.force));
     let i = 0;
 
     const next = async (): Promise<void> => {
@@ -151,7 +153,7 @@ export default function UploadModal({
       try {
         await uploadFileXHR(entry.file, workspaceId, token, (pct) => {
           updateEntry(entry.id, { progress: pct });
-        });
+        }, entry.force);
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: any) {
         if (err instanceof DuplicateError) {
@@ -177,6 +179,14 @@ export default function UploadModal({
       prev.map((e) => (e.status === 'error' ? { ...e, status: 'pending', progress: 0, error: undefined } : e)),
     );
     setDone(false);
+  };
+
+  const forceAllDuplicates = () => {
+    setEntries((prev) =>
+      prev.map((e) => (e.status === 'duplicate' ? { ...e, force: true } : e)),
+    );
+    // After marking them, we need to trigger uploadAll
+    setTimeout(() => uploadAll(), 0);
   };
 
   const removeEntry = (id: string) => {
@@ -324,7 +334,20 @@ export default function UploadModal({
                         <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
                       )}
                       {entry.status === 'duplicate' && (
-                        <span className="text-[10px] font-bold text-amber-500 border border-amber-400 rounded px-1">DUP</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-[10px] font-bold text-amber-500 border border-amber-400 rounded px-1 uppercase tracking-tight">Duplicate</span>
+                          {!running && (
+                            <button
+                              onClick={() => {
+                                updateEntry(entry.id, { force: true });
+                                setTimeout(() => uploadAll(), 0);
+                              }}
+                              className="text-[10px] font-bold text-blue-600 hover:text-blue-700 underline uppercase tracking-tight"
+                            >
+                              Force
+                            </button>
+                          )}
+                        </div>
                       )}
                       {entry.status === 'uploading' && (
                         <ArrowPathIcon className="h-5 w-5 text-blue-400 animate-spin" />
@@ -350,7 +373,7 @@ export default function UploadModal({
           <div className="text-xs text-gray-500">
             {counts.total === 0
               ? 'No files selected'
-              : `${counts.pending} pending · ${counts.uploading} uploading · ${counts.done} done`}
+              : `${counts.pending + counts.uploading} active · ${counts.done} done · ${counts.duplicate} skipped`}
           </div>
           <div className="flex items-center gap-3">
             {done && counts.error > 0 && (
@@ -360,6 +383,15 @@ export default function UploadModal({
               >
                 <ArrowPathIcon className="h-4 w-4" />
                 Retry Failed ({counts.error})
+              </button>
+            )}
+            {done && counts.duplicate > 0 && (
+              <button
+                onClick={forceAllDuplicates}
+                className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-amber-600 border border-amber-300 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+              >
+                <CloudArrowUpIcon className="h-4 w-4" />
+                Force All Duplicates ({counts.duplicate})
               </button>
             )}
             <button

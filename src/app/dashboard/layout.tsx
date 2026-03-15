@@ -9,14 +9,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <ProtectedRoute>
       <LayoutProvider>
         <WorkspaceProvider>
-          <div className="flex h-screen bg-gray-900 overflow-hidden">
+          <div className="flex h-screen bg-gray-50 dark:bg-[#0f111a] overflow-hidden">
             <Sidebar />
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
               <Header />
-              <main className="flex-1 overflow-y-auto overflow-x-hidden">
-                <div className="p-8">
-                  {children}
-                </div>
+              <main className="flex-1 overflow-hidden">
+                {children}
               </main>
             </div>
           </div>
