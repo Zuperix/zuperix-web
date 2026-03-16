@@ -30,6 +30,8 @@ type AssetDetails = {
   created_at: string;
 };
 
+import AssetOrganizationDialog from './AssetOrganizationDialog';
+
 export default function MetadataPanel({ 
   assetId, 
   workspaceId, 
@@ -46,6 +48,7 @@ export default function MetadataPanel({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isOrganizeOpen, setIsOrganizeOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -143,6 +146,16 @@ export default function MetadataPanel({
             </div>
           </div>
           <p className="mt-3 text-[10px] text-gray-500 font-mono break-all text-center">{assetId}</p>
+          
+          <div className="mt-4">
+            <button 
+              onClick={() => setIsOrganizeOpen(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700/60 rounded-2xl text-xs font-bold text-white uppercase tracking-widest transition-all group"
+            >
+              <TagIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
+              Organize
+            </button>
+          </div>
         </div>
 
         {/* Form Section */}
@@ -254,6 +267,12 @@ export default function MetadataPanel({
           {saving ? 'Saving...' : success ? 'Updated' : 'Save Changes'}
         </button>
       </div>
+
+      <AssetOrganizationDialog 
+        assetId={assetId} 
+        isOpen={isOrganizeOpen} 
+        onClose={() => setIsOrganizeOpen(false)} 
+      />
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {

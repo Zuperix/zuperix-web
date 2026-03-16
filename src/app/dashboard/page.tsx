@@ -13,13 +13,25 @@ import SortDropdown, { SortOption } from '@/components/SortDropdown';
 import Pagination from '@/components/Pagination';
 import { useLayout } from '@/context/LayoutContext';
 
-function FilterChips({ activeFilters, onRemove, onClearAll }: { activeFilters: Record<string, any>, onRemove: (key: string, value?: any) => void, onClearAll: () => void }) {
+function FilterChips({ 
+  activeFilters, 
+  filters,
+  onRemove, 
+  onClearAll 
+}: { 
+  activeFilters: Record<string, any>, 
+  filters: any,
+  onRemove: (key: string, value?: any) => void, 
+  onClearAll: () => void 
+}) {
   const filterLabels: Record<string, string> = {
     mime_type: 'File Type',
     orientation: 'Orientation',
     tags: 'Tag',
     file_extension: 'Extension',
     color_palette: 'Color',
+    category_uuids: 'Category',
+    collection_uuids: 'Collection',
     q: 'Search',
     created_at: 'Uploaded',
     release_date: 'Released',
@@ -31,18 +43,27 @@ function FilterChips({ activeFilters, onRemove, onClearAll }: { activeFilters: R
   Object.entries(activeFilters).forEach(([key, value]) => {
     if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) return;
     
-    // Skip internal keys if any
     if (key.startsWith('ws') || key === 'page' || key === 'limit') return;
 
     const label = filterLabels[key] || (key.startsWith('metadata.') ? key.split('.')[1].replace(/_/g, ' ') : key);
     
     if (Array.isArray(value)) {
       value.forEach(v => {
+        // Try to find label in facets
+        let displayValue = String(v);
+        const facetBuckets = filters[key];
+        if (Array.isArray(facetBuckets)) {
+          const bucket = facetBuckets.find(b => b.value === v);
+          if (bucket?.label) {
+            displayValue = bucket.label;
+          }
+        }
+
         chips.push({ 
           key, 
           label, 
           value: v, 
-          displayValue: String(v).charAt(0) === '#' ? '' : String(v) 
+          displayValue: key === 'color_palette' ? '' : displayValue
         });
       });
     } else if (key.endsWith('[gte]') || key.endsWith('[lte]')) {
@@ -51,7 +72,16 @@ function FilterChips({ activeFilters, onRemove, onClearAll }: { activeFilters: R
       const baseLabel = filterLabels[baseKey] || baseKey;
       chips.push({ key, label: `${baseLabel} (${type})`, value, displayValue: String(value) });
     } else {
-      chips.push({ key, label, value, displayValue: String(value) });
+      // Try to find label in facets for non-array values
+      let displayValue = String(value);
+      const facetBuckets = filters[key];
+      if (Array.isArray(facetBuckets)) {
+        const bucket = facetBuckets.find(b => b.value === value);
+        if (bucket?.label) {
+          displayValue = bucket.label;
+        }
+      }
+      chips.push({ key, label, value, displayValue });
     }
   });
 
@@ -126,8 +156,9 @@ function DashboardContent() {
     });
     
     const normalized: Record<string, any> = {};
+    const arrayKeys = ['mime_type', 'file_extension', 'tags', 'orientation', 'color_palette', 'category_uuids', 'collection_uuids'];
     Object.entries(params).forEach(([k, v]) => {
-      if (['mime_type', 'file_extension', 'tags', 'orientation', 'color_palette'].includes(k) && !Array.isArray(v)) {
+      if (arrayKeys.includes(k) && !Array.isArray(v)) {
         normalized[k] = [v];
       } else {
         normalized[k] = v;
@@ -251,7 +282,7 @@ function DashboardContent() {
         onClearAll={handleClearAll}
       />
 
-      <div className={`flex-1 p-4 sm:p-8 transition-all overflow-y-auto ${selectedAssetId ? 'pr-2' : ''}`}>
+      <div className={`flex-1 p-4 sm:p-8 transition-all overflow-y-auto`}>
         <div className="space-y-6">
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
@@ -311,7 +342,12 @@ function DashboardContent() {
               </div>
             </div>
 
-            <FilterChips activeFilters={activeFilters} onRemove={removeFilter} onClearAll={handleClearAll} />
+            <FilterChips 
+              activeFilters={activeFilters} 
+              filters={filters}
+              onRemove={removeFilter} 
+              onClearAll={handleClearAll} 
+            />
           </div>
 
           {loading && assets.length === 0 ? (
@@ -325,16 +361,11 @@ function DashboardContent() {
               <p className="text-gray-500">No assets found for these filters.</p>
             </div>
           ) : (
-            <div 
-              onClick={(e) => {
-                if (e.target === e.currentTarget) setSelectedAssetId(null);
-              }}
-            >
+            <div>
               <AssetGrid 
                 assets={assets} 
                 onDelete={handleDelete} 
-                onSelect={(id) => setSelectedAssetId(id === selectedAssetId ? null : id)}
-                selectedId={selectedAssetId || undefined}
+                onSelect={(id) => router.push(`/dashboard/assets/${id}`)}
               />
               
               <Pagination 
@@ -346,14 +377,6 @@ function DashboardContent() {
           )}
         </div>
       </div>
-
-      {selectedAssetId && (
-        <MetadataPanel 
-          assetId={selectedAssetId} 
-          workspaceId={activeWorkspace.id} 
-          onClose={() => setSelectedAssetId(null)}
-        />
-      )}
 
       {isUploadOpen && (
         <UploadModal 

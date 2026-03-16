@@ -7,8 +7,11 @@ import {
   PhotoIcon, 
   VideoCameraIcon,
   TrashIcon,
-  FolderIcon
+  FolderIcon,
+  ArrowDownTrayIcon,
+  ShareIcon
 } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 
 type Asset = components['schemas']['MetadataEntryDto'] & { 
   id: string;
@@ -79,7 +82,28 @@ const AssetCard = ({
         
         {/* Overlay on hover */}
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4 z-10">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                const shareUrl = `${window.location.origin}/dashboard/assets/${assetId}`;
+                navigator.clipboard.writeText(shareUrl);
+                alert('Detail link copied to clipboard!');
+              }}
+              className="p-2 bg-white/10 hover:bg-blue-500/20 text-white rounded-xl backdrop-blur-md border border-white/20 transition-all"
+              title="Share asset"
+            >
+              <ShareIcon className="h-4 w-4" />
+            </button>
+            <a 
+              href={`http://localhost:3000/api/v1/assets/${assetId}/view`}
+              download={originalName}
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 bg-white/10 hover:bg-green-500/20 text-white rounded-xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center"
+              title="Download asset"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+            </a>
             <button 
               onClick={(e) => {
                 e.stopPropagation();

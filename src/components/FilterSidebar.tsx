@@ -15,11 +15,14 @@ import {
   ClockIcon,
   Square3Stack3DIcon,
   MagnifyingGlassIcon,
-  XMarkIcon
+  XMarkIcon,
+  FolderIcon,
+  RectangleGroupIcon
 } from '@heroicons/react/24/outline';
 
 interface FilterBucket {
   value: string | number;
+  label?: string;
   count?: number;
   hexes?: string[];
 }
@@ -204,6 +207,9 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     created_at: { label: 'Upload Date', icon: CalendarIcon },
     release_date: { label: 'Release Date', icon: CalendarIcon },
     expiration_date: { label: 'Expiration', icon: ClockIcon },
+    category_uuids: { label: 'Categories', icon: TagIcon },
+    category_paths: { label: 'Category Paths', icon: TagIcon },
+    collection_uuids: { label: 'Collections', icon: FolderIcon },
   };
 
   const getGroupConfig = (key: string) => {
@@ -249,6 +255,9 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
   if (!filters || Object.keys(filters).length === 0) return null;
 
   const filteredFilterEntries = Object.entries(filters).filter(([key, data]) => {
+    // Hide empty array filters
+    if (Array.isArray(data) && data.length === 0) return false;
+
     // Hide date filters if they are empty/01-01-1970
     if (!Array.isArray(data)) {
       if (data.min === 0 && data.max === 0) return false;
@@ -262,7 +271,10 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     
     // Check inside buckets
     if (Array.isArray(data)) {
-      return data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
+      return data.some(b => 
+        String(b.value).toLowerCase().includes(filterSearch.toLowerCase()) || 
+        String(b.label || '').toLowerCase().includes(filterSearch.toLowerCase())
+      );
     }
     return false;
   });
@@ -418,7 +430,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                                       className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
                                     />
                                     <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
-                                      {bucket.value}
+                                      {bucket.label || bucket.value}
                                     </span>
                                   </div>
                                   <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
