@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLayout } from '@/context/LayoutContext';
 import { 
   ChevronDownIcon, 
   ChevronUpIcon, 
@@ -30,20 +31,93 @@ interface FilterSidebarProps {
   onClearAll: () => void;
 }
 
+function DateRangePicker({ 
+  currentMin, 
+  currentMax, 
+  onChange 
+}: { 
+  min: number; 
+  max: number; 
+  currentMin: string | undefined; 
+  currentMax: string | undefined; 
+  onChange: (min: string | undefined, max: string | undefined) => void;
+}) {
+  const [from, setFrom] = useState(currentMin || '');
+  const [to, setTo] = useState(currentMax || '');
+
+  useEffect(() => {
+    setFrom(currentMin || '');
+    setTo(currentMax || '');
+  }, [currentMin, currentMax]);
+
+  const handleCommit = (newFrom: string, newTo: string) => {
+    onChange(newFrom || undefined, newTo || undefined);
+  };
+
+  return (
+    <div className="space-y-4 px-1 pt-1">
+      <div className="flex flex-col gap-3">
+        <div className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all">
+          <CalendarIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
+          <div className="flex-1 flex flex-col min-w-0">
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">From</span>
+            <input 
+              type="date"
+              value={from}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                handleCommit(e.target.value, to);
+              }}
+              className="w-full bg-transparent text-xs text-gray-900 dark:text-gray-100 outline-none appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            />
+          </div>
+        </div>
+
+        <div className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all">
+          <ClockIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
+          <div className="flex-1 flex flex-col min-w-0">
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">To</span>
+            <input 
+              type="date"
+              value={to}
+              onChange={(e) => {
+                setTo(e.target.value);
+                handleCommit(from, e.target.value);
+              }}
+              className="w-full bg-transparent text-xs text-gray-900 dark:text-gray-100 outline-none appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+      
+      {(from || to) && (
+        <button 
+          onClick={() => {
+            setFrom('');
+            setTo('');
+            onChange(undefined, undefined);
+          }}
+          className="w-full py-2 text-[10px] font-bold text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 uppercase tracking-widest bg-gray-100/50 dark:bg-gray-800/30 rounded-lg transition-all hover:scale-[0.98] active:scale-95"
+        >
+          Clear Dates
+        </button>
+      )}
+    </div>
+  );
+}
+
 function RangeSlider({ 
   min, 
   max, 
   currentMin, 
   currentMax, 
-  onChange,
-  isDate = false
+  onChange
 }: { 
   min: number; 
   max: number; 
   currentMin: number | undefined; 
   currentMax: number | undefined; 
   onChange: (min: number | undefined, max: number | undefined) => void;
-  isDate?: boolean;
 }) {
   const [localMin, setLocalMin] = useState(currentMin ?? min);
   const [localMax, setLocalMax] = useState(currentMax ?? max);
@@ -106,11 +180,11 @@ function RangeSlider({
       <div className="flex justify-between mt-4">
         <div className="flex flex-col">
           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Min</span>
-          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{isDate ? new Date(localMin).toLocaleDateString() : localMin.toFixed(2)}</span>
+          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{localMin.toFixed(2)}</span>
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Max</span>
-          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{isDate ? new Date(localMax).toLocaleDateString() : localMax.toFixed(2)}</span>
+          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{localMax.toFixed(2)}</span>
         </div>
       </div>
     </div>
@@ -118,6 +192,8 @@ function RangeSlider({
 }
 
 export default function FilterSidebar({ filters, activeFilters, onFilterChange, onClearAll }: FilterSidebarProps) {
+  const { isFilterOpen, setIsFilterOpen } = useLayout();
+  // ... rest of component
   const filterConfig: Record<string, { label: string; icon: any }> = {
     mime_type: { label: 'File Type', icon: Square3Stack3DIcon },
     orientation: { label: 'Orientation', icon: ArrowsPointingOutIcon },
@@ -173,6 +249,13 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
   if (!filters || Object.keys(filters).length === 0) return null;
 
   const filteredFilterEntries = Object.entries(filters).filter(([key, data]) => {
+    // Hide date filters if they are empty/01-01-1970
+    if (!Array.isArray(data)) {
+      if (data.min === 0 && data.max === 0) return false;
+      // If it's a date and the range is basically empty (1970)
+      if ((key.endsWith('_date') || key.endsWith('_at')) && data.max < 20000) return false; 
+    }
+
     if (!filterSearch) return true;
     const { label } = getGroupConfig(key);
     if (label.toLowerCase().includes(filterSearch.toLowerCase())) return true;
@@ -185,209 +268,175 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
   });
 
   return (
-    <div className="w-72 bg-[#f9fafb] dark:bg-[#0f111a] border-r border-gray-200 dark:border-gray-800 h-full overflow-y-auto px-5 py-6 flex flex-col space-y-6 shrink-0">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800/60">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Filters</h2>
-          {hasActiveFilters && (
-            <button 
-              onClick={clearAll}
-              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-            >
-              Clear all
-            </button>
-          )}
-        </div>
+    <>
+      {/* Mobile Backdrop */}
+      {isFilterOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsFilterOpen(false)}
+        />
+      )}
 
-        {/* Filter Search */}
-        <div className="relative group">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-          <input
-            type="text"
-            placeholder="Find filter..."
-            value={filterSearch}
-            onChange={(e) => setFilterSearch(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-xs bg-gray-100/50 dark:bg-gray-800/40 border-transparent dark:border-transparent rounded-xl focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/40 transition-all outline-none"
-          />
-          {filterSearch && (
-            <button 
-              onClick={() => setFilterSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-            >
-              <XMarkIcon className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-      </div>
-      
-      <div className="flex-1 space-y-6">
-        {filteredFilterEntries.map(([key, data]) => {
-          const isSearchMatchValue = filterSearch && Array.isArray(data) && data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
-          const isExpanded = expanded[key] !== false || !!isSearchMatchValue; // auto-expand on search match
-
-          // Handle numeric/date ranges (stats aggregation)
-          if (!Array.isArray(data)) {
-            if (data.min === undefined || data.max === undefined) return null;
-            
-            const isDate = data.min_as_string !== undefined || key.endsWith('_date') || key.endsWith('_at');
-            
-            const { label, icon: Icon } = getGroupConfig(key);
-            
-            return (
-              <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-6">
-                <button
-                  onClick={() => toggleExpand(key)}
-                  className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
+      <div className={`
+        fixed inset-y-0 right-0 z-50 w-80 max-w-[90%] bg-white dark:bg-[#0f111a] border-l border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out
+        lg:relative lg:translate-x-0 lg:w-72 lg:border-r lg:border-l-0 lg:z-0 lg:flex
+        ${isFilterOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        flex flex-col h-full overflow-hidden shrink-0 shadow-2xl lg:shadow-none
+      `}>
+        <div className="flex flex-col h-full overflow-y-auto px-5 py-6 space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800/60">
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsFilterOpen(false)}
+                  className="lg:hidden p-1.5 -ml-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                    <span>{label}</span>
-                  </div>
-                  {isExpanded ? (
-                    <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" />
-                  ) : (
-                    <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />
-                  )}
+                  <XMarkIcon className="h-5 w-5" />
                 </button>
-
-                {isExpanded && (
-                  <div className="mt-4 px-1">
-                    {isDate ? (
-                      <div className="space-y-4">
-                        <div className="relative group/input">
-                          <label className="absolute -top-2 left-2 px-1 bg-[#f9fafb] dark:bg-[#0f111a] text-[10px] font-bold text-gray-400 group-focus-within/input:text-blue-500 transition-colors z-10">FROM</label>
-                          <input
-                            type="date"
-                            value={activeFilters[`${key}[gte]`] || ''}
-                            onChange={(e) => onFilterChange(`${key}[gte]`, e.target.value)}
-                            className="w-full text-xs px-3 py-2.5 bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none appearance-none"
-                          />
-                        </div>
-                        <div className="relative group/input">
-                          <label className="absolute -top-2 left-2 px-1 bg-[#f9fafb] dark:bg-[#0f111a] text-[10px] font-bold text-gray-400 group-focus-within/input:text-blue-500 transition-colors z-10">TO</label>
-                          <input
-                            type="date"
-                            value={activeFilters[`${key}[lte]`] || ''}
-                            onChange={(e) => onFilterChange(`${key}[lte]`, e.target.value)}
-                            className="w-full text-xs px-3 py-2.5 bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all outline-none appearance-none"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <RangeSlider
-                        min={data.min}
-                        max={data.max}
-                        currentMin={activeFilters[`${key}[gte]`] ? Number(activeFilters[`${key}[gte]`]) : undefined}
-                        currentMax={activeFilters[`${key}[lte]`] ? Number(activeFilters[`${key}[lte]`]) : undefined}
-                        onChange={(min, max) => {
-                          onFilterChange(`${key}[gte]`, min);
-                          onFilterChange(`${key}[lte]`, max);
-                        }}
-                      />
-                    )}
-                  </div>
-                )}
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Filters</h2>
               </div>
-            );
-          }
-
-          const buckets = data as FilterBucket[];
-          if (buckets.length === 0) return null;
-
-          const { label, icon: Icon } = getGroupConfig(key);
-          if (buckets.length === 0) return null;
-
-          return (
-            <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-6">
-              <button
-                onClick={() => toggleExpand(key)}
-                className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                  <span>{label}</span>
-                </div>
-                {isExpanded ? (
-                  <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" />
-                ) : (
-                  <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />
-                )}
-              </button>
-
-              {isExpanded && (
-                <div className="mt-4">
-                  {key === 'color_palette' ? (
-                    <div className="grid grid-cols-5 gap-2.5">
-                      {buckets
-                        .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
-                        .map((bucket) => {
-                        const hex = String(bucket.value);
-                        const clusterHexes = bucket.hexes || [hex];
-                        const activeHexes = activeFilters[key] || [];
-                        const isActive = clusterHexes.some(h => activeHexes.includes(h));
-                        
-                        return (
-                          <button
-                            key={hex}
-                            onClick={() => {
-                              const nextActive = isActive 
-                                ? activeHexes.filter((h: string) => !clusterHexes.includes(h))
-                                : Array.from(new Set([...activeHexes, ...clusterHexes]));
-                              onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
-                            }}
-                            className={`w-full aspect-square rounded-full border-2 transition-all relative group/swatch ${
-                              isActive 
-                                ? 'border-blue-500 scale-110 shadow-md z-10' 
-                                : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'
-                            }`}
-                            style={{ backgroundColor: hex }}
-                            title={hex}
-                          >
-                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover/swatch:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
-                              {hex}
-                            </span>
-                            {isActive && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {buckets
-                        .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
-                        .map((bucket) => {
-                        const isActive = (activeFilters[key] || []).includes(bucket.value);
-                        return (
-                          <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
-                            <div className="flex items-center overflow-hidden pr-2">
-                              <input
-                                type="checkbox"
-                                checked={isActive}
-                                onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
-                                className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
-                              />
-                              <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
-                                {bucket.value}
-                              </span>
-                            </div>
-                            <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
-                              {bucket.count}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+              {hasActiveFilters && (
+                <button 
+                  onClick={clearAll}
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                >
+                  Clear all
+                </button>
               )}
             </div>
-          );
-        })}
+
+            {/* Filter Search */}
+            <div className="relative group">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              <input
+                type="text"
+                placeholder="Find filter..."
+                value={filterSearch}
+                onChange={(e) => setFilterSearch(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 text-xs bg-gray-100/50 dark:bg-gray-800/40 border-transparent dark:border-transparent rounded-xl focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/40 transition-all outline-none text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+              />
+              {filterSearch && (
+                <button 
+                  onClick={() => setFilterSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                >
+                  <XMarkIcon className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex-1 space-y-6">
+            {filteredFilterEntries.map(([key, data]) => {
+              const isSearchMatchValue = filterSearch && Array.isArray(data) && data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
+              const isExpanded = expanded[key] !== false || !!isSearchMatchValue;
+
+              const { label, icon: Icon } = getGroupConfig(key);
+
+              return (
+                <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-6 text-gray-900 dark:text-gray-100">
+                  <button
+                    onClick={() => toggleExpand(key)}
+                    className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                      <span>{label}</span>
+                    </div>
+                    {isExpanded ? <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />}
+                  </button>
+                  {isExpanded && (
+                    <div className="pt-4 px-1">
+                      {!Array.isArray(data) ? (
+                        <div className="px-2">
+                          {key.endsWith('_date') || key.endsWith('_at') ? (
+                            <DateRangePicker 
+                              min={data.min} 
+                              max={data.max} 
+                              currentMin={activeFilters[`${key}[gte]`]} 
+                              currentMax={activeFilters[`${key}[lte]`]} 
+                              onChange={(minVal, maxVal) => {
+                                onFilterChange(`${key}[gte]`, minVal);
+                                onFilterChange(`${key}[lte]`, maxVal);
+                              }}
+                            />
+                          ) : (
+                            <RangeSlider 
+                              min={data.min} 
+                              max={data.max} 
+                              currentMin={activeFilters[`${key}[gte]`]} 
+                              currentMax={activeFilters[`${key}[lte]`]} 
+                              onChange={(minVal, maxVal) => {
+                                onFilterChange(`${key}[gte]`, minVal);
+                                onFilterChange(`${key}[lte]`, maxVal);
+                              }}
+                            />
+                          )}
+                        </div>
+                      ) : key === 'color_palette' ? (
+                        <div className="grid grid-cols-5 gap-3">
+                          {data.map((bucket) => {
+                            const hex = String(bucket.value);
+                            const clusterHexes = bucket.hexes || [hex];
+                            const activeHexes = activeFilters[key] || [];
+                            const isActive = clusterHexes.some(h => activeHexes.includes(h));
+                            return (
+                              <button
+                                key={hex}
+                                onClick={() => {
+                                  const nextActive = isActive 
+                                    ? activeHexes.filter((h: string) => !clusterHexes.includes(h))
+                                    : Array.from(new Set([...activeHexes, ...clusterHexes]));
+                                  onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
+                                }}
+                                className={`w-full aspect-square rounded-full border-2 transition-all relative group/swatch ${isActive ? 'border-blue-500 scale-110 shadow-md z-10' : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'}`}
+                                style={{ backgroundColor: hex }}
+                                title={hex}
+                              >
+                                {isActive && (
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {data
+                            .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
+                            .map((bucket) => {
+                              const isActive = (activeFilters[key] || []).includes(bucket.value);
+                              return (
+                                <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                                  <div className="flex items-center overflow-hidden pr-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={isActive}
+                                      onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
+                                      className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                                    />
+                                    <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
+                                      {bucket.value}
+                                    </span>
+                                  </div>
+                                  <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+                                    {bucket.count}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

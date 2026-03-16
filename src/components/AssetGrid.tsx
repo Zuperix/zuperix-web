@@ -120,13 +120,13 @@ const AssetCard = ({
         )}
       </div>
       
-      <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/50">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate" title={originalName}>
+      <div className="p-3 sm:p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/50">
+        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100 truncate" title={originalName}>
           {originalName}
         </p>
-        <div className="flex items-center justify-between mt-1.5">
-          <p className="text-[11px] font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide">{mimeType.split('/')[1] || 'File'}</p>
-          <p className="text-[11px] text-gray-400 dark:text-gray-600 font-medium">{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A'}</p>
+        <div className="flex items-center justify-between mt-1 sm:mt-1.5">
+          <p className="text-[10px] sm:text-[11px] font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide">{mimeType.split('/')[1] || 'File'}</p>
+          <p className="text-[10px] sm:text-[11px] text-gray-400 dark:text-gray-600 font-medium">{asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A'}</p>
         </div>
       </div>
     </div>
@@ -156,7 +156,7 @@ export default function AssetGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
       {assetList.map((asset) => (
         <AssetCard 
           key={asset.id} 

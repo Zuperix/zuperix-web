@@ -27,17 +27,28 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
-  const { sidebarCollapsed } = useLayout();
+  const { sidebarCollapsed, setSidebarCollapsed } = useLayout();
   const [wsOpen, setWsOpen] = useState(false);
 
   const collapsed = sidebarCollapsed;
 
+  const handleCloseSidebar = () => setSidebarCollapsed(true);
+
   return (
-    <aside
-      className={`relative flex flex-col h-screen bg-gray-950 border-r border-gray-800/60 transition-all duration-300 ease-in-out z-20 ${
-        collapsed ? 'w-[60px]' : 'w-60'
-      }`}
-    >
+    <>
+      {/* Mobile Backdrop */}
+      {!collapsed && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 lg:relative lg:flex flex-col h-screen bg-gray-950 border-r border-gray-800/60 transition-all duration-300 ease-in-out ${
+          collapsed ? '-translate-x-full lg:translate-x-0 lg:w-[60px]' : 'translate-x-0 w-64 lg:w-60'
+        }`}
+      >
       {/* Logo */}
       <div className={`flex items-center h-14 border-b border-gray-800/60 flex-shrink-0 ${collapsed ? 'justify-center' : 'px-4 gap-2.5'}`}>
         <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg">
@@ -173,5 +184,6 @@ export default function Sidebar() {
         )}
       </div>
     </aside>
+    </>
   );
 }

@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch } from '@/lib/api';
 import AssetGrid from '@/components/AssetGrid';
 import UploadModal from '@/components/UploadModal';
 import MetadataPanel from '@/components/MetadataPanel';
 import FilterSidebar from '@/components/FilterSidebar';
-import { PlusIcon, ArrowPathIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowPathIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
+import Pagination from '@/components/Pagination';
+import { useLayout } from '@/context/LayoutContext';
 
 function FilterChips({ activeFilters, onRemove, onClearAll }: { activeFilters: Record<string, any>, onRemove: (key: string, value?: any) => void, onClearAll: () => void }) {
   const filterLabels: Record<string, string> = {
@@ -86,93 +88,13 @@ function FilterChips({ activeFilters, onRemove, onClearAll }: { activeFilters: R
   );
 }
 
-function Pagination({ 
-  currentPage, 
-  totalPages, 
-  onPageChange 
-}: { 
-  currentPage: number; 
-  totalPages: number; 
-  onPageChange: (page: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-
-  const pages = [];
-  const maxVisible = 5;
-  let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-  let end = Math.min(totalPages, start + maxVisible - 1);
-
-  if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1);
-  }
-
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-
-  return (
-    <div className="flex items-center justify-center space-x-2 py-8">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-      >
-        <ChevronLeftIcon className="h-4 w-4" />
-      </button>
-      
-      {start > 1 && (
-        <>
-          <button
-            onClick={() => onPageChange(1)}
-            className="px-3.5 py-1.5 rounded-lg border border-transparent text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-          >
-            1
-          </button>
-          {start > 2 && <span className="text-gray-400">...</span>}
-        </>
-      )}
-
-      {pages.map(p => (
-        <button
-          key={p}
-          onClick={() => onPageChange(p)}
-          className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-            p === currentPage
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'border border-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-          }`}
-        >
-          {p}
-        </button>
-      ))}
-
-      {end < totalPages && (
-        <>
-          {end < totalPages - 1 && <span className="text-gray-400">...</span>}
-          <button
-            onClick={() => onPageChange(totalPages)}
-            className="px-3.5 py-1.5 rounded-lg border border-transparent text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-          >
-            {totalPages}
-          </button>
-        </>
-      )}
-
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-      >
-        <ChevronRightIcon className="h-4 w-4" />
-      </button>
-    </div>
-  );
-}
 
 function DashboardContent() {
   const { activeWorkspace } = useWorkspace();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const limit = Number(searchParams.get('limit')) || 20;
   
   const [assets, setAssets] = useState<any[]>([]);
   const [totalMatching, setTotalMatching] = useState(0);
@@ -186,6 +108,7 @@ function DashboardContent() {
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const { sidebarCollapsed, setSidebarCollapsed, isFilterOpen, setIsFilterOpen } = useLayout();
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -328,35 +251,63 @@ function DashboardContent() {
         onClearAll={handleClearAll}
       />
 
-      <div className={`flex-1 p-8 transition-all overflow-y-auto ${selectedAssetId ? 'pr-2' : ''}`}>
+      <div className={`flex-1 p-4 sm:p-8 transition-all overflow-y-auto ${selectedAssetId ? 'pr-2' : ''}`}>
         <div className="space-y-6">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Assets</h1>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
-                  Showing <span className="text-gray-900 dark:text-gray-100 font-semibold">{totalMatching}</span> assets out of <span className="text-gray-900 dark:text-gray-100 font-semibold">{totalInWorkspace}</span> in <span className="text-gray-800 dark:text-gray-300 font-medium">{activeWorkspace.name}</span>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Assets</h1>
+                <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
+                  Showing <span className="text-gray-900 dark:text-gray-100 font-semibold">{assets.length}</span> out of <span className="text-gray-900 dark:text-gray-100 font-semibold">{totalMatching}</span> assets
                 </p>
               </div>
-              <div className="flex space-x-3">
-                <button 
-                  onClick={fetchAssets}
-                  className="p-2.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-xl transition-all"
-                >
-                  <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
-                </button>
-                <SortDropdown 
-                  currentSortBy={currentSort.by}
-                  currentSortOrder={currentSort.order}
-                  onSortChange={handleSortChange}
-                />
-                <button 
-                  onClick={() => setIsUploadOpen(true)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
-                >
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Upload
-                </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <select 
+                    value={limit}
+                    onChange={(e) => {
+                      const newLimit = Number(e.target.value);
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.set('limit', newLimit.toString());
+                      params.set('page', '1');
+                      router.push(`${pathname}?${params.toString()}`);
+                    }}
+                    className="appearance-none px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer transition-all"
+                  >
+                    {[20, 50, 100, 500].map(size => (
+                      <option key={size} value={size}>{size} per page</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                  <button 
+                    onClick={() => setIsFilterOpen(true)}
+                    className="lg:hidden flex-1 flex items-center justify-center px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shrink-0"
+                  >
+                    <FunnelIcon className="h-3.5 w-3.5 mr-1.5" />
+                    Filters
+                  </button>
+                  <button 
+                    onClick={fetchAssets}
+                    className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 border border-gray-200 dark:border-gray-700 sm:border-transparent rounded-xl transition-all shrink-0"
+                  >
+                    <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                  <SortDropdown 
+                    currentSortBy={currentSort.by}
+                    currentSortOrder={currentSort.order}
+                    onSortChange={handleSortChange}
+                  />
+                  <button 
+                    onClick={() => setIsUploadOpen(true)}
+                    className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95 shrink-0"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1.5" />
+                    Upload
+                  </button>
+                </div>
               </div>
             </div>
 
