@@ -5,8 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import CommentsSection from '@/components/CommentsSection';
-import { 
-  ArrowLeftIcon, 
+import AssetHistory from '@/components/AssetHistory';
+import {
+  ArrowLeftIcon,
   ArrowPathIcon,
   XMarkIcon,
   CheckIcon,
@@ -48,7 +49,7 @@ interface MetadataValue {
   value: any;
 }
 
-type Tab = 'details' | 'file-info' | 'attachments' | 'versions' | 'comments';
+type Tab = 'file-info' | 'attachments' | 'versions' | 'comments' | 'history';
 
 export default function AssetDetailPage() {
   const params = useParams();
@@ -63,9 +64,8 @@ export default function AssetDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('details');
+  const [activeTab, setActiveTab] = useState<Tab>('file-info');
   const [showEmptyFields, setShowEmptyFields] = useState(false);
-  const [isDetailsExpanded, setIsDetailsExpanded] = useState(true);
 
   // Organization state
   const { categories, refresh: refreshCategories } = useCategories();
@@ -82,6 +82,11 @@ export default function AssetDetailPage() {
   const [isManagingCollections, setIsManagingCollections] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [filteredSuggestions, setFilteredSuggestions] = useState<any[]>([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Versioning state
   const [isUploadingVersion, setIsUploadingVersion] = useState(false);
@@ -94,7 +99,7 @@ export default function AssetDetailPage() {
     try {
       setLoading(true);
       setError('');
-      
+
       const assetData = await apiFetch<any>(`/assets/${assetId}`);
       setAsset(assetData);
       setSelectedCategoryIds(assetData.categories?.map((c: any) => c.id) || []);
@@ -123,6 +128,50 @@ export default function AssetDetailPage() {
     fetchData();
   }, [fetchData]);
 
+  // Fetch all workspace tags for autocomplete
+  useEffect(() => {
+    const fetchWorkspaceTags = async () => {
+      if (!activeWorkspace) return;
+      try {
+        const tags = await apiFetch<any[]>(`/workspaces/${activeWorkspace.id}/tags`);
+        setAvailableTags(tags);
+      } catch (err) {
+        console.error('Failed to fetch workspace tags', err);
+      }
+    };
+    fetchWorkspaceTags();
+  }, [activeWorkspace]);
+
+  // Filter suggestions as user types
+  useEffect(() => {
+    if (!tagInput.trim()) {
+      setFilteredSuggestions([]);
+      setShowTagSuggestions(false);
+      return;
+    }
+
+    const currentTagNames = (asset?.tags || []).map((t: any) => t.name.toLowerCase());
+    const filtered = availableTags.filter(tag => 
+      tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
+      !currentTagNames.includes(tag.name.toLowerCase())
+    );
+
+    setFilteredSuggestions(filtered);
+    setShowTagSuggestions(filtered.length > 0);
+  }, [tagInput, availableTags, asset?.tags]);
+
+  // Handle clicking outside suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) &&
+          tagInputRef.current && !tagInputRef.current.contains(event.target as Node)) {
+        setShowTagSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSaveMetadata = async () => {
     setSaving(true);
     setError('');
@@ -147,7 +196,7 @@ export default function AssetDetailPage() {
           collection_ids: selectedCollectionIds
         })
       });
-      
+
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       fetchData(); // Refresh to get updated organization labels
@@ -199,17 +248,17 @@ export default function AssetDetailPage() {
   };
 
   const handleToggleCategory = (id: string) => {
-    setSelectedCategoryIds(prev => 
+    setSelectedCategoryIds(prev =>
       prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
     );
   };
 
   const handleToggleCollection = (id: string) => {
-    setSelectedCollectionIds(prev => 
+    setSelectedCollectionIds(prev =>
       prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
     );
   };
-  
+
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
@@ -250,13 +299,13 @@ export default function AssetDetailPage() {
     }
   };
 
-  const handleAddTag = async (e?: React.FormEvent) => {
+  const handleAddTag = async (e?: React.FormEvent, nameOverride?: string) => {
     if (e) e.preventDefault();
-    if (!tagInput.trim() || !activeWorkspace) return;
-    
+    const tagName = (nameOverride || tagInput).trim();
+    if (!tagName || !activeWorkspace) return;
+
     setIsAddingTag(true);
     try {
-      const tagName = tagInput.trim();
       await apiFetch(`/workspaces/${activeWorkspace.id}/assets/${assetId}/tags`, {
         method: 'POST',
         body: JSON.stringify({ tags: [tagName] })
@@ -322,7 +371,7 @@ export default function AssetDetailPage() {
 
   const handleRevert = async (versionId: string) => {
     if (!confirm('Are you sure you want to revert to this version? A new version will be created reflecting this state.')) return;
-    
+
     setSaving(true);
     setError('');
     try {
@@ -354,7 +403,7 @@ export default function AssetDetailPage() {
     <div className="flex flex-col h-screen bg-white dark:bg-[#0f111a] overflow-hidden text-gray-900 dark:text-gray-100">
       {/* Search Header Bar */}
       <div className="flex items-center px-6 h-12 bg-gray-50 dark:bg-[#1a1c26] border-b border-gray-200 dark:border-gray-800/60 transition-all">
-        <button 
+        <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-all group"
         >
@@ -364,12 +413,12 @@ export default function AssetDetailPage() {
       </div>
 
       <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-[#0f111a] border-b border-gray-200 dark:border-gray-800/60 sticky top-0 z-20">
-          <div>
-            <h1 className="text-xl font-bold truncate max-w-[600px] leading-tight text-blue-900 dark:text-gray-100">{asset?.original_name || 'Asset Details'}</h1>
-          </div>
+        <div>
+          <h1 className="text-xl font-bold truncate max-w-[600px] leading-tight text-blue-900 dark:text-gray-100">{asset?.original_name || 'Asset Details'}</h1>
+        </div>
 
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={handleShare}
             className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
             title="Share"
@@ -385,7 +434,7 @@ export default function AssetDetailPage() {
             <ArrowDownTrayIcon className="h-5 w-5" />
           </a>
           <PermissionGate action={Action.Delete} subject="Asset" workspaceId={activeWorkspace?.id}>
-            <button 
+            <button
               onClick={handleDelete}
               className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
               title="Delete"
@@ -397,11 +446,10 @@ export default function AssetDetailPage() {
             <button
               onClick={handleSaveMetadata}
               disabled={saving}
-              className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${
-                success 
-                  ? 'bg-green-500 text-white shadow-green-500/20' 
+              className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${success
+                  ? 'bg-green-500 text-white shadow-green-500/20'
                   : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20'
-              } disabled:opacity-50`}
+                } disabled:opacity-50`}
             >
               {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : success ? <CheckIcon className="h-4 w-4" /> : null}
               {saving ? 'Saving...' : success ? 'Saved' : 'Save Changes'}
@@ -416,8 +464,8 @@ export default function AssetDetailPage() {
           <div className="p-8 flex flex-col items-center">
             <div className="relative group w-full max-w-4xl bg-white dark:bg-[#151720] rounded-2xl shadow-xl overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 flex items-center justify-center min-h-[400px]">
               {asset?.mime_type?.startsWith('image/') ? (
-                <img 
-                  src={`${BASE_URL}/assets/${assetId}/view`} 
+                <img
+                  src={`${BASE_URL}/assets/${assetId}/view`}
                   alt={asset?.original_name}
                   className="max-w-full max-h-[70vh] object-contain"
                 />
@@ -462,15 +510,322 @@ export default function AssetDetailPage() {
               </div>
             </div>
 
-            {/* Versions Section Placeholder */}
-            <div className="w-full max-w-4xl mt-12 mb-20 space-y-4">
-               <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest flex items-center gap-2">
-                 <ClockIcon className="h-5 w-5 text-gray-400" />
-                 Recent activity
-               </h3>
-               <div className="bg-white dark:bg-[#151720] border border-gray-200 dark:border-gray-800 rounded-2xl p-8 text-center">
-                  <p className="text-xs text-gray-500">History will be displayed here in future updates.</p>
-               </div>
+            <div className="w-full max-w-4xl mt-12 mb-20 space-y-12">
+              {/* Categories & Collections Group */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section className="space-y-4 bg-white dark:bg-[#151720] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                        <Square3Stack3DIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Categories</label>
+                    </div>
+                    <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                      <button
+                        onClick={() => setIsManagingCategories(!isManagingCategories)}
+                        className={`text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all ${isManagingCategories ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+                      >
+                        {isManagingCategories ? 'Close' : 'Manage'}
+                      </button>
+                    </PermissionGate>
+                  </div>
+
+                  {!isManagingCategories && (
+                    <div className="flex flex-wrap gap-2">
+                      {flattenedCategories.filter(c => selectedCategoryIds.includes(c.id)).length === 0 ? (
+                        <span className="text-xs text-gray-400 italic">No categories assigned</span>
+                      ) : (
+                        flattenedCategories.filter(c => selectedCategoryIds.includes(c.id)).map(cat => (
+                          <span key={cat.id} className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[11px] font-bold shadow-sm flex items-center gap-1.5">
+                            {cat.name}
+                            <button onClick={() => handleToggleCategory(cat.id)} className="hover:text-blue-200">
+                              <XMarkIcon className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {isManagingCategories && (
+                    <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
+                      {showCategoryInput ? (
+                        <form onSubmit={handleCreateCategory} className="flex gap-2">
+                          <input
+                            autoFocus
+                            className="flex-1 bg-gray-50 dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2 text-xs outline-none focus:border-blue-500/50"
+                            placeholder="Category name..."
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                          />
+                          <button
+                            type="submit"
+                            disabled={creatingCategory || !newCategoryName.trim()}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold disabled:opacity-50 hover:bg-blue-700"
+                          >
+                            Add
+                          </button>
+                        </form>
+                      ) : (
+                        <button
+                          onClick={() => setShowCategoryInput(true)}
+                          className="w-full py-2 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl text-[10px] font-bold text-gray-400 hover:text-blue-500 hover:border-blue-500/50 transition-all"
+                        >
+                          + Create New Category
+                        </button>
+                      )}
+
+                      <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
+                        {flattenedCategories.map(cat => {
+                          const isSelected = selectedCategoryIds.includes(cat.id);
+                          return (
+                            <div
+                              key={cat.id}
+                              onClick={() => handleToggleCategory(cat.id)}
+                              className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                }`}
+                            >
+                              <span className="text-[11px] font-medium">{cat.name}</span>
+                              {isSelected && <CheckIcon className="h-3.5 w-3.5" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                <section className="space-y-4 bg-white dark:bg-[#151720] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
+                        <InboxIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Collections</label>
+                    </div>
+                    <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                      <button
+                        onClick={() => setIsManagingCollections(!isManagingCollections)}
+                        className={`text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all ${isManagingCollections ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
+                      >
+                        {isManagingCollections ? 'Close' : 'Manage'}
+                      </button>
+                    </PermissionGate>
+                  </div>
+
+                  {!isManagingCollections && (
+                    <div className="flex flex-wrap gap-2">
+                      {collections.filter(c => selectedCollectionIds.includes(c.id)).length === 0 ? (
+                        <span className="text-xs text-gray-400 italic">No collections assigned</span>
+                      ) : (
+                        collections.filter(c => selectedCollectionIds.includes(c.id)).map(col => (
+                          <span key={col.id} className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-[11px] font-bold shadow-sm flex items-center gap-1.5">
+                            {col.name}
+                            <button onClick={() => handleToggleCollection(col.id)} className="hover:text-indigo-200">
+                              <XMarkIcon className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {isManagingCollections && (
+                    <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
+                      {showCollectionInput ? (
+                        <form onSubmit={handleCreateCollection} className="flex gap-2">
+                          <input
+                            autoFocus
+                            className="flex-1 bg-gray-50 dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-2 text-xs outline-none focus:border-indigo-500/50"
+                            placeholder="Collection name..."
+                            value={newCollectionName}
+                            onChange={(e) => setNewCollectionName(e.target.value)}
+                          />
+                          <button
+                            type="submit"
+                            disabled={creatingCollection || !newCollectionName.trim()}
+                            className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold disabled:opacity-50 hover:bg-indigo-700"
+                          >
+                            Add
+                          </button>
+                        </form>
+                      ) : (
+                        <button
+                          onClick={() => setShowCollectionInput(true)}
+                          className="w-full py-2 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl text-[10px] font-bold text-gray-400 hover:text-indigo-500 hover:border-indigo-500/50 transition-all"
+                        >
+                          + Create New Collection
+                        </button>
+                      )}
+
+                      <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
+                        {collections.map(col => {
+                          const isSelected = selectedCollectionIds.includes(col.id);
+                          return (
+                            <div
+                              key={col.id}
+                              onClick={() => handleToggleCollection(col.id)}
+                              className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all ${isSelected ? 'bg-indigo-600 text-white' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                                }`}
+                            >
+                              <span className="text-[11px] font-medium">{col.name}</span>
+                              {isSelected && <CheckIcon className="h-3.5 w-3.5" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              {/* Tags & Dates Group */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section className="space-y-4 bg-white dark:bg-[#151720] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center">
+                      <TagIcon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    </div>
+                    <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Tags</label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(asset?.tags || []).map((tag: any, i: number) => (
+                      <span key={i} className="group flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-[11px] font-semibold border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                        {tag.name}
+                        <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                          <button onClick={() => handleRemoveTag(tag.name)} className="text-gray-400 hover:text-red-500">
+                            <XMarkIcon className="h-3 w-3" />
+                          </button>
+                        </PermissionGate>
+                      </span>
+                    ))}
+                    <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                      <div className="relative w-full mt-2">
+                        <form onSubmit={handleAddTag}>
+                          <input
+                            ref={tagInputRef}
+                            type="text"
+                            placeholder="Add tag and press enter..."
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onFocus={() => {
+                              if (filteredSuggestions.length > 0) setShowTagSuggestions(true);
+                            }}
+                            disabled={isAddingTag}
+                            className="w-full px-4 py-2 bg-gray-50 dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl text-[11px] outline-none focus:border-teal-500/50"
+                          />
+                        </form>
+
+                        {showTagSuggestions && (
+                          <div 
+                            ref={suggestionsRef}
+                            className="absolute z-50 w-full mt-2 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+                          >
+                            <div className="p-2 max-h-60 overflow-y-auto custom-scrollbar">
+                              <div className="px-3 py-1.5 mb-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                Suggestions
+                              </div>
+                              {filteredSuggestions.map((tag) => (
+                                <button
+                                  key={tag.id}
+                                  onClick={() => {
+                                    handleAddTag(undefined, tag.name);
+                                    setShowTagSuggestions(false);
+                                  }}
+                                  className="w-full text-left px-3 py-2 rounded-xl text-xs hover:bg-teal-50 dark:hover:bg-teal-900/20 text-gray-700 dark:text-gray-300 flex items-center gap-2 group transition-all"
+                                >
+                                  <TagIcon className="h-3.5 w-3.5 text-gray-400 group-hover:text-teal-500" />
+                                  <span>{tag.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </PermissionGate>
+                  </div>
+                </section>
+
+                <section className="space-y-4 bg-white dark:bg-[#151720] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-8 w-8 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                      <ClockIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Ownership & Dates</label>
+                  </div>
+                  <div className="space-y-4">
+                    {[
+                      { id: 'release_date', label: 'Release date', value: asset?.release_date },
+                      { id: 'expiration_date', label: 'Expiration date', value: asset?.expiration_date },
+                    ].map((item) => (
+                      <div key={item.id} className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{item.label}</span>
+                        <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                          <div className="relative group">
+                            <input
+                              type="date"
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                              value={item.value ? new Date(item.value).toISOString().split('T')[0] : ''}
+                              onChange={(e) => handleUpdateAsset({ [item.id]: e.target.value || null })}
+                            />
+                            <div className="flex items-center gap-3 px-3 py-1.5 bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800 rounded-xl text-[11px] font-semibold">
+                              {item.value ? new Date(item.value).toLocaleDateString() : 'Set date'}
+                              <ClockIcon className="h-3.5 w-3.5 text-gray-400" />
+                            </div>
+                          </div>
+                        </PermissionGate>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              {/* Metadata Section */}
+              <section className="space-y-6 bg-white dark:bg-[#151720] p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                      <InformationCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Custom Metadata</label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Show empty</span>
+                    <button
+                      onClick={() => setShowEmptyFields(!showEmptyFields)}
+                      className={`w-8 h-4 rounded-full transition-all relative ${showEmptyFields ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'}`}
+                    >
+                      <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${showEmptyFields ? 'left-[17px]' : 'left-[3px]'}`} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                  {fields
+                    .filter(f => showEmptyFields || values[f.id])
+                    .map(field => (
+                      <div key={field.id} className="space-y-2 group">
+                        <label className="flex items-center gap-2 text-[10px] font-bold text-gray-400 group-focus-within:text-blue-500 uppercase tracking-widest transition-colors">
+                          {field.label}
+                          {field.isRequired && <span className="text-red-500">*</span>}
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl focus:border-blue-500/50 outline-none text-sm"
+                          value={values[field.id] || ''}
+                          onChange={(e) => updateValue(field.id, e.target.value)}
+                        />
+                      </div>
+                    ))}
+
+                  {fields.filter(f => showEmptyFields || values[f.id]).length === 0 && (
+                    <div className="col-span-full py-12 text-center border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-3xl">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No metadata fields populated</p>
+                    </div>
+                  )}
+                </div>
+              </section>
             </div>
           </div>
         </div>
@@ -480,8 +835,8 @@ export default function AssetDetailPage() {
           {/* Tabs */}
           <div className="flex border-b border-gray-200 dark:border-gray-800 h-14 shrink-0 overflow-x-auto custom-scrollbar">
             {[
-              { id: 'details', label: 'Details', icon: InformationCircleIcon },
               { id: 'file-info', label: 'File info', icon: InboxIcon },
+              { id: 'history', label: 'History', icon: ClockIcon },
               { id: 'attachments', label: 'Attachments', icon: Square3Stack3DIcon },
               { id: 'versions', label: 'Versions', icon: ClockIcon },
               { id: 'comments', label: 'Comments', icon: ChatBubbleLeftIcon },
@@ -489,11 +844,10 @@ export default function AssetDetailPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as Tab)}
-                className={`flex-1 flex items-center justify-center gap-2 px-2 h-full text-[10px] font-bold uppercase tracking-wider transition-all relative border-r border-gray-100 dark:border-gray-800/50 ${
-                  activeTab === tab.id 
-                    ? 'text-blue-600 dark:text-blue-400 bg-gray-50/50 dark:bg-gray-800/20' 
+                className={`flex-1 flex items-center justify-center gap-2 px-2 h-full text-[10px] font-bold uppercase tracking-wider transition-all relative border-r border-gray-100 dark:border-gray-800/50 ${activeTab === tab.id
+                    ? 'text-blue-600 dark:text-blue-400 bg-gray-50/50 dark:bg-gray-800/20'
                     : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50/30 dark:hover:bg-gray-800/10'
-                }`}
+                  }`}
               >
                 <tab.icon className={`h-4 w-4 shrink-0 ${activeTab === tab.id ? 'text-blue-500' : 'text-gray-400'}`} />
                 <span className="truncate">{tab.label}</span>
@@ -503,391 +857,6 @@ export default function AssetDetailPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-            {activeTab === 'details' && (
-              <div className="animate-in fade-in slide-in-from-right-2 duration-300">
-                <div className="flex items-center justify-between mb-8 group cursor-pointer" onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}>
-                  <div className="flex items-center gap-3">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
-                      <InboxIcon className="h-5 w-5 text-blue-500" />
-                    </div>
-                    <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Asset info</h2>
-                  </div>
-                  {isDetailsExpanded ? <ChevronUpIcon className="h-4 w-4 text-gray-400" /> : <ChevronDownIcon className="h-4 w-4 text-gray-400" />}
-                </div>
-
-                {isDetailsExpanded && (
-                  <div className="space-y-10 animate-in slide-in-from-top-2 duration-200">
-                    {/* Categories Integration */}
-                    <section className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                           <div className="h-6 w-6 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                              <Square3Stack3DIcon className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                           </div>
-                           <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Categories</label>
-                        </div>
-                        <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
-                          <button 
-                            onClick={() => setIsManagingCategories(!isManagingCategories)}
-                            className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all ${isManagingCategories ? 'bg-blue-600 text-white' : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
-                          >
-                            {isManagingCategories ? 'Close' : 'Manage'}
-                          </button>
-                        </PermissionGate>
-                      </div>
-
-                      {/* Selected Categories Display */}
-                      {!isManagingCategories && (
-                        <div className="flex flex-wrap gap-2">
-                           {flattenedCategories.filter(c => selectedCategoryIds.includes(c.id)).length === 0 ? (
-                             <span className="text-[10px] text-gray-400 italic">No categories assigned</span>
-                           ) : (
-                             flattenedCategories.filter(c => selectedCategoryIds.includes(c.id)).map(cat => (
-                               <span key={cat.id} className="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[11px] font-bold shadow-sm flex items-center gap-1.5">
-                                 {cat.name}
-                                 <button onClick={() => handleToggleCategory(cat.id)} className="hover:text-blue-200">
-                                   <XMarkIcon className="h-3 w-3" />
-                                 </button>
-                               </span>
-                             ))
-                           )}
-                        </div>
-                      )}
-
-                      {isManagingCategories && (
-                        <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
-                          <div className="flex items-center justify-between px-1">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase">Assign Categories</span>
-                            <div className="flex gap-2">
-                              <PermissionGate action={Action.Create} subject="Category" workspaceId={activeWorkspace?.id}>
-                                <button 
-                                  onClick={() => setShowCategoryInput(!showCategoryInput)}
-                                  className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                                >
-                                  <PlusIcon className="h-3 w-3" />
-                                  New
-                                </button>
-                              </PermissionGate>
-                              <button 
-                                onClick={() => refreshCategories()}
-                                className="text-[10px] font-bold text-gray-400 hover:text-gray-600"
-                              >
-                                Refresh
-                              </button>
-                            </div>
-                          </div>
-
-                          {showCategoryInput && (
-                            <form onSubmit={handleCreateCategory} className="flex gap-2 p-1">
-                              <input 
-                                autoFocus
-                                className="flex-1 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-blue-500/50"
-                                placeholder="Category name..."
-                                value={newCategoryName}
-                                onChange={(e) => setNewCategoryName(e.target.value)}
-                              />
-                              <button 
-                                type="submit"
-                                disabled={creatingCategory || !newCategoryName.trim()}
-                                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50 hover:bg-blue-700"
-                              >
-                                {creatingCategory ? '...' : 'Add'}
-                              </button>
-                            </form>
-                          )}
-
-                          <div className="max-h-64 overflow-y-auto custom-scrollbar border border-gray-200 dark:border-gray-800 rounded-2xl p-2 bg-gray-50/50 dark:bg-gray-900/40 space-y-1">
-                            {flattenedCategories.map(cat => {
-                              const isSelected = selectedCategoryIds.includes(cat.id);
-                              return (
-                                <div 
-                                  key={cat.id}
-                                  onClick={() => handleToggleCategory(cat.id)}
-                                  className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                                    isSelected
-                                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                                      : 'hover:bg-white dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 border border-transparent hover:border-gray-200 dark:hover:border-gray-700'
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2 truncate">
-                                    {cat.depth > 0 && (
-                                      <span className={`text-[10px] font-bold ${isSelected ? 'text-blue-200' : 'text-gray-300 dark:text-gray-600'}`} style={{ paddingLeft: `${(cat.depth - 1) * 8}px` }}>
-                                        └
-                                      </span>
-                                    )}
-                                    <span className={`text-[11px] font-semibold truncate ${isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                                      {cat.name}
-                                    </span>
-                                  </div>
-                                  {isSelected && <CheckIcon className="h-3.5 w-3.5 text-white animate-in zoom-in-50 duration-200" />}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </section>
-                    {/* Collections Integration */}
-                    <section className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                           <div className="h-6 w-6 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
-                              <InboxIcon className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-                           </div>
-                           <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Collections</label>
-                        </div>
-                        <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
-                          <button 
-                            onClick={() => setIsManagingCollections(!isManagingCollections)}
-                            className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all ${isManagingCollections ? 'bg-indigo-600 text-white' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
-                          >
-                            {isManagingCollections ? 'Close' : 'Manage'}
-                          </button>
-                        </PermissionGate>
-                      </div>
-
-                      {/* Selected Collections Display */}
-                      {!isManagingCollections && (
-                        <div className="flex flex-wrap gap-2">
-                           {collections.filter(c => selectedCollectionIds.includes(c.id)).length === 0 ? (
-                             <span className="text-[10px] text-gray-400 italic">No collections assigned</span>
-                           ) : (
-                             collections.filter(c => selectedCollectionIds.includes(c.id)).map(col => (
-                               <span key={col.id} className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-[11px] font-bold shadow-sm flex items-center gap-1.5">
-                                 {col.name}
-                                 <button onClick={() => handleToggleCollection(col.id)} className="hover:text-indigo-200">
-                                   <XMarkIcon className="h-3 w-3" />
-                                 </button>
-                               </span>
-                             ))
-                           )}
-                        </div>
-                      )}
-
-                      {isManagingCollections && (
-                        <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
-                           <div className="flex items-center justify-between px-1">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase">Assign Collections</span>
-                            <div className="flex gap-2">
-                              <PermissionGate action={Action.Create} subject="Collection" workspaceId={activeWorkspace?.id}>
-                                <button 
-                                  onClick={() => setShowCollectionInput(!showCollectionInput)}
-                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-                                >
-                                  <PlusIcon className="h-3 w-3" />
-                                  New
-                                </button>
-                              </PermissionGate>
-                              <button 
-                                onClick={() => refreshCollections()}
-                                className="text-[10px] font-bold text-gray-400 hover:text-gray-600"
-                              >
-                                Refresh
-                              </button>
-                            </div>
-                          </div>
-
-                          {showCollectionInput && (
-                            <form onSubmit={handleCreateCollection} className="flex gap-2 p-1">
-                              <input 
-                                autoFocus
-                                className="flex-1 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-500/50"
-                                placeholder="Collection name..."
-                                value={newCollectionName}
-                                onChange={(e) => setNewCollectionName(e.target.value)}
-                              />
-                              <button 
-                                type="submit"
-                                disabled={creatingCollection || !newCollectionName.trim()}
-                                className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50 hover:bg-indigo-700"
-                              >
-                                {creatingCollection ? '...' : 'Create'}
-                              </button>
-                            </form>
-                          )}
-
-                          <div className="max-h-64 overflow-y-auto custom-scrollbar border border-gray-200 dark:border-gray-800 rounded-2xl p-2 bg-gray-50/50 dark:bg-gray-900/40 space-y-1">
-                            {collections.length === 0 ? (
-                              <div className="py-8 flex flex-col items-center justify-center opacity-50">
-                                <InboxIcon className="h-8 w-8 text-gray-400 mb-2" />
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">No collections</p>
-                              </div>
-                            ) : (
-                              collections.map(col => {
-                                const isSelected = selectedCollectionIds.includes(col.id);
-                                return (
-                                  <div 
-                                    key={col.id}
-                                    onClick={() => handleToggleCollection(col.id)}
-                                    className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                                      isSelected
-                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                                        : 'hover:bg-white dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 border border-transparent hover:border-gray-200 dark:hover:border-gray-700'
-                                    }`}
-                                  >
-                                    <span className={`text-[11px] font-semibold truncate ${isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                                      {col.name}
-                                    </span>
-                                    {isSelected && <CheckIcon className="h-3.5 w-3.5 text-white animate-in zoom-in-50 duration-200" />}
-                                  </div>
-                                );
-                              })
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </section>                    <section className="pt-6 border-t border-gray-100 dark:border-gray-800">
-                      <div className="space-y-2">
-                        {[
-                          { id: 'release_date', label: 'Release date', value: asset?.release_date },
-                          { id: 'expiration_date', label: 'Expiration date', value: asset?.expiration_date },
-                        ].map((item) => (
-                          <div key={item.id} className="flex items-center justify-between py-2 px-1">
-                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{item.label}</span>
-                            <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
-                              <div className="relative group">
-                                <input 
-                                  type="date"
-                                  id={`input-${item.id}`}
-                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                                  value={item.value ? new Date(item.value).toISOString().split('T')[0] : ''}
-                                  onChange={(e) => handleUpdateAsset({ [item.id]: e.target.value || null })}
-                                />
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl group-hover:border-blue-400/50 transition-all min-w-[140px] justify-between">
-                                  <span className={`text-[11px] font-semibold ${item.value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 italic'}`}>
-                                    {item.value ? new Date(item.value).toLocaleDateString() : 'Set date'}
-                                  </span>
-                                  <ClockIcon className="h-3.5 w-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                                </div>
-                              </div>
-                            </PermissionGate>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-
-                    {/* Tags Section */}
-                    <section className="space-y-4">
-                       <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
-                             <TagIcon className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
-                          </div>
-                          <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Tags</label>
-                       </div>
-                       <div className="flex flex-wrap gap-2">
-                          {(asset?.tags || []).map((tag: any, i: number) => (
-                             <span key={i} className="group flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-[11px] font-semibold border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
-                               {tag.name}
-                               <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
-                                 <button 
-                                   onClick={() => handleRemoveTag(tag.name)}
-                                   className="text-gray-400 hover:text-red-500 transition-colors"
-                                 >
-                                   <XMarkIcon className="h-3 w-3" />
-                                 </button>
-                               </PermissionGate>
-                             </span>
-                          ))}
-                          
-                          <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
-                            <form onSubmit={handleAddTag} className="flex-1 min-w-[120px]">
-                              <input 
-                                type="text"
-                                placeholder="Add tag..."
-                                value={tagInput}
-                                onChange={(e) => setTagInput(e.target.value)}
-                                disabled={isAddingTag}
-                                className="w-full px-4 py-2 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl text-[11px] outline-none focus:border-teal-500/50 transition-all shadow-sm"
-                              />
-                            </form>
-                          </PermissionGate>
-                       </div>
-                    </section>
-
-                    {/* Color Palette Section */}
-                    <section className="space-y-4">
-                       <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                             <PhotoIcon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Color Palette</label>
-                       </div>
-                       <div className="flex flex-wrap gap-3">
-                          {(asset?.color_palette || []).map((color: string, i: number) => (
-                             <div 
-                               key={i} 
-                               className="group relative"
-                             >
-                               <div 
-                                 className="h-8 w-8 rounded-full border border-gray-200 dark:border-gray-800 shadow-md cursor-help transition-transform hover:scale-125 duration-200"
-                                 style={{ backgroundColor: color }}
-                               />
-                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-[9px] font-bold rounded opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap z-30 pointer-events-none shadow-xl border border-gray-800">
-                                 {color.toUpperCase()}
-                               </div>
-                             </div>
-                          ))}
-                          {(!asset?.color_palette || asset.color_palette.length === 0) && (
-                            <p className="text-[10px] text-gray-400 italic">No color data available</p>
-                          )}
-                       </div>
-                    </section>
-
-                    {/* Metadata Section */}
-                    <section className="space-y-6">
-                      <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Metadata</label>
-                        <div className="flex items-center gap-3">
-                           <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Show empty</span>
-                           <button 
-                             onClick={() => setShowEmptyFields(!showEmptyFields)}
-                             className={`w-8 h-4 rounded-full transition-all relative ${showEmptyFields ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'}`}
-                           >
-                              <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${showEmptyFields ? 'left-[17px]' : 'left-[3px]'}`} />
-                           </button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-6">
-                        {fields
-                          .filter(f => showEmptyFields || values[f.id])
-                          .map(field => (
-                            <div key={field.id} className="space-y-2 group">
-                              <label className="flex items-center gap-2 text-[10px] font-bold text-gray-400 group-focus-within:text-blue-500 uppercase tracking-widest transition-colors">
-                                {field.label}
-                                {field.isRequired && <span className="text-red-500">*</span>}
-                              </label>
-                              
-                              {field.fieldType === 'text' ? (
-                                <textarea
-                                  rows={4}
-                                  className="w-full px-4 py-3 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm text-gray-900 dark:text-gray-200 outline-none resize-none placeholder-gray-400"
-                                  value={values[field.id] || ''}
-                                  onChange={(e) => updateValue(field.id, e.target.value)}
-                                />
-                              ) : (
-                                <input
-                                  type="text"
-                                  className="w-full px-4 py-2.5 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all text-sm text-gray-900 dark:text-gray-200 outline-none placeholder-gray-400"
-                                  value={values[field.id] || ''}
-                                  onChange={(e) => updateValue(field.id, e.target.value)}
-                                />
-                              )}
-                            </div>
-                          ))}
-                        
-                        {fields.filter(f => showEmptyFields || values[f.id]).length === 0 && (
-                           <div className="py-12 bg-gray-50/50 dark:bg-gray-900/20 border border-dashed border-gray-200 dark:border-gray-800 rounded-3xl text-center">
-                              <DocumentDuplicateIcon className="h-10 w-10 text-gray-200 dark:text-gray-800 mx-auto mb-3" />
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-relaxed">No metadata fields populated.<br/>Enable "Show empty" to add info.</p>
-                           </div>
-                        )}
-                      </div>
-                    </section>
-                  </div>
-                )}
-              </div>
-            )}
 
             {activeTab === 'file-info' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
@@ -904,8 +873,8 @@ export default function AssetDetailPage() {
                     { label: 'File size', value: asset?.size ? `${(asset.size / 1024 / 1024).toFixed(2)} MB` : '0 MB' },
                     { label: 'Mime type', value: asset?.mime_type },
                     { label: 'Date uploaded', value: asset?.created_at ? new Date(asset.created_at).toLocaleString() : 'N/A' },
-                    { label: 'Workspace ID', value: asset?.workspace_id },
-                    { label: 'Asset UUID', value: assetId },
+                    // { label: 'Workspace ID', value: asset?.workspace_id },
+                    // { label: 'Asset UUID', value: assetId },
                   ].map((item, i) => (
                     <div key={i} className="flex flex-col gap-1 pb-4 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0">
                       <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{item.label}</span>
@@ -935,7 +904,7 @@ export default function AssetDetailPage() {
                     </div>
                     <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Version history</h2>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setShowVersionUpload(!showVersionUpload)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-500/20"
                   >
@@ -947,9 +916,9 @@ export default function AssetDetailPage() {
                 {showVersionUpload && (
                   <div className="bg-gray-50 dark:bg-gray-900/40 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 space-y-4 animate-in slide-in-from-top-2 duration-300 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-2">
-                       <button onClick={() => setShowVersionUpload(false)} className="text-gray-400 hover:text-gray-600">
-                          <XMarkIcon className="h-4 w-4" />
-                       </button>
+                      <button onClick={() => setShowVersionUpload(false)} className="text-gray-400 hover:text-gray-600">
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Version notes</label>
@@ -961,10 +930,10 @@ export default function AssetDetailPage() {
                         onChange={(e) => setVersionNotes(e.target.value)}
                       />
                     </div>
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       ref={versionFileInputRef}
-                      className="hidden" 
+                      className="hidden"
                       onChange={handleUploadNewVersion}
                     />
                     <button
@@ -988,13 +957,12 @@ export default function AssetDetailPage() {
                   {(asset?.versions || []).map((version: any, index: number) => {
                     const isLatest = index === 0;
                     return (
-                      <div 
-                        key={version.id} 
-                        className={`group relative bg-white dark:bg-[#151720] border rounded-2xl p-4 transition-all hover:shadow-xl ${
-                          isLatest 
-                            ? 'border-blue-500 dark:border-blue-500/50 shadow-blue-500/5' 
+                      <div
+                        key={version.id}
+                        className={`group relative bg-white dark:bg-[#151720] border rounded-2xl p-4 transition-all hover:shadow-xl ${isLatest
+                            ? 'border-blue-500 dark:border-blue-500/50 shadow-blue-500/5'
                             : 'border-gray-100 dark:border-gray-800'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex gap-4">
@@ -1029,24 +997,24 @@ export default function AssetDetailPage() {
                           </div>
 
                           <div className="flex flex-col gap-2">
-                             <a 
-                               href={`${BASE_URL}/assets/${assetId}/versions/${version.id}/view`}
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                               title="View original"
-                             >
-                               <ArrowDownTrayIcon className="h-4 w-4" />
-                             </a>
-                             {!isLatest && (
-                               <button 
-                                 onClick={() => handleRevert(version.id)}
-                                 className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-                                 title="Revert to this version"
-                               >
-                                 <ArrowPathIcon className="h-4 w-4" />
-                               </button>
-                             )}
+                            <a
+                              href={`${BASE_URL}/assets/${assetId}/versions/${version.id}/view`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              title="View original"
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                            </a>
+                            {!isLatest && (
+                              <button
+                                onClick={() => handleRevert(version.id)}
+                                className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                title="Revert to this version"
+                              >
+                                <ArrowPathIcon className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1065,6 +1033,19 @@ export default function AssetDetailPage() {
             {activeTab === 'comments' && (
               <div className="h-full animate-in fade-in slide-in-from-right-2 duration-300">
                 <CommentsSection assetId={assetId} workspaceId={activeWorkspace?.id} />
+              </div>
+            )}
+            {activeTab === 'history' && (
+              <div className="h-full animate-in fade-in slide-in-from-right-2 duration-300">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                    <ClockIcon className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Audit History</h2>
+                </div>
+                <div className="bg-gray-50/30 dark:bg-gray-900/30 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                  <AssetHistory assetId={assetId} />
+                </div>
               </div>
             )}
           </div>

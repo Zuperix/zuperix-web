@@ -1,0 +1,222 @@
+'use client';
+
+import { useAssetHistory } from '@/hooks/useAssetHistory';
+import { 
+  ClockIcon, 
+  ArrowUpTrayIcon, 
+  ArrowPathIcon, 
+  PencilSquareIcon,
+  TrashIcon, 
+  ArrowDownTrayIcon,
+  EyeIcon,
+  TagIcon,
+  Square3Stack3DIcon
+} from '@heroicons/react/24/outline';
+
+const ACTION_ICONS: Record<string, any> = {
+  UPLOAD: ArrowUpTrayIcon,
+  DOWNLOAD: ArrowDownTrayIcon,
+  VIEW: EyeIcon,
+  UPDATE: PencilSquareIcon,
+  DELETE: TrashIcon,
+  METADATA_UPDATE: PencilSquareIcon,
+  TAGS_ADDED: TagIcon,
+  TAGS_REMOVED: TagIcon,
+  ORGANIZATION_UPDATE: Square3Stack3DIcon,
+  VERSION_UPLOAD: ArrowUpTrayIcon,
+  VERSION_REVERT: ArrowPathIcon,
+};
+
+const ACTION_COLORS: Record<string, string> = {
+  UPLOAD: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+  DOWNLOAD: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+  VIEW: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
+  UPDATE: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+  DELETE: 'text-red-400 bg-red-400/10 border-red-400/20',
+  METADATA_UPDATE: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
+  TAGS_ADDED: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20',
+  TAGS_REMOVED: 'text-pink-400 bg-pink-400/10 border-pink-400/20',
+  ORGANIZATION_UPDATE: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
+  VERSION_UPLOAD: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+  VERSION_REVERT: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
+};
+
+export default function AssetHistory({ assetId }: { assetId: string }) {
+  const { history, loading, error } = useAssetHistory(assetId);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="h-8 w-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-10 px-4">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6">
+          <p className="text-red-400 text-sm font-medium">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <div className="text-center py-20 bg-gray-50/30 dark:bg-gray-900/10 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800 m-4">
+        <ClockIcon className="h-12 w-12 text-gray-300 dark:text-gray-800 mx-auto mb-4" />
+        <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">No activity history recorded yet</p>
+      </div>
+    );
+  }
+
+  const renderMetadata = (event: any) => {
+    const meta = event.metadata;
+    if (!meta) return null;
+
+    if (meta.type === 'ORGANIZATION_UPDATE') {
+       return (
+         <div className="mt-2 space-y-2">
+            {meta.categories && (meta.categories.old.length !== meta.categories.new.length || meta.categories.new.some((n: string) => !meta.categories.old.includes(n))) && (
+              <div className="flex flex-wrap gap-1 items-center text-[11px]">
+                <span className="text-gray-500">Categories:</span>
+                {meta.categories.new.length > 0 ? meta.categories.new.map((c: string) => (
+                  <span key={c} className="bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">{c}</span>
+                )) : <span className="text-gray-600">None</span>}
+              </div>
+            )}
+            {meta.collections && (meta.collections.old.length !== meta.collections.new.length || meta.collections.new.some((n: string) => !meta.collections.old.includes(n))) && (
+              <div className="flex flex-wrap gap-1 items-center text-[11px]">
+                <span className="text-gray-500">Collections:</span>
+                {meta.collections.new.length > 0 ? meta.collections.new.map((c: string) => (
+                  <span key={c} className="bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-500/20">{c}</span>
+                )) : <span className="text-gray-600">None</span>}
+              </div>
+            )}
+         </div>
+       );
+    }
+
+    if (meta.type === 'TAGS_ADDED' || meta.type === 'TAGS_REMOVED') {
+      return (
+        <div className="mt-2 flex flex-wrap gap-1 items-center text-[11px]">
+          <span className="text-gray-500">{meta.type === 'TAGS_ADDED' ? 'Added:' : 'Removed:'}</span>
+          {meta.tags?.map((t: string) => (
+            <span key={t} className={`px-1.5 py-0.5 rounded border ${meta.type === 'TAGS_ADDED' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-pink-500/10 text-pink-400 border-pink-500/20'}`}>
+              {t}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    if (meta.type === 'METADATA_UPDATE' && meta.updates) {
+      return (
+        <p className="mt-1 text-[11px] text-gray-500 italic">
+          Updated fields: {meta.updates.join(', ')}
+        </p>
+      );
+    }
+
+    if (meta.type === 'VERSION_UPLOAD' || meta.type === 'VERSION_REVERT') {
+        return (
+          <div className="mt-2 p-2 bg-gray-900/50 rounded-lg border border-gray-800 text-[11px]">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-gray-400">Version info</span>
+              <span className="bg-blue-500/20 text-blue-400 px-1 rounded uppercase font-bold tracking-tighter">v{meta.version || meta.newVersion}</span>
+            </div>
+            {meta.notes && <p className="text-gray-500 italic">"{meta.notes}"</p>}
+            {meta.revertedTo && <p className="text-amber-500/80">Reverted from v{meta.revertedTo}</p>}
+          </div>
+        );
+    }
+
+    if (meta.filename) {
+      return <p className="mt-1 text-[11px] text-blue-400/80 italic">"{meta.filename}"</p>;
+    }
+
+    return null;
+  };
+
+  const getEventTitle = (event: any) => {
+    switch(event.metadata?.type) {
+      case 'ORGANIZATION_UPDATE': return 'Updated organization';
+      case 'TAGS_ADDED': return 'Added tags';
+      case 'TAGS_REMOVED': return 'Removed tags';
+      case 'METADATA_UPDATE': return 'Updated metadata';
+      case 'VERSION_UPLOAD': return 'Uploaded new version';
+      case 'VERSION_REVERT': return 'Reverted to old version';
+      default: return event.action.toLowerCase().replace('_', ' ');
+    }
+  };
+
+  return (
+    <div className="flow-root p-6 animate-in fade-in duration-500">
+      <ul role="list" className="-mb-8">
+        {history.map((event, eventIdx) => {
+          const Icon = ACTION_ICONS[event.metadata?.type || event.action] || ClockIcon;
+          const colorClass = ACTION_COLORS[event.metadata?.type || event.action] || 'text-gray-400 bg-gray-400/10 border-gray-400/20';
+          const initials = event.user?.name ? event.user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 'S';
+          
+          return (
+            <li key={event.id} className="group">
+              <div className="relative pb-8">
+                {eventIdx !== history.length - 1 ? (
+                  <span
+                    className="absolute left-[19px] top-10 -ml-px h-[calc(100%-16px)] w-0.5 bg-gradient-to-b from-gray-800 to-transparent group-hover:from-blue-900/30 transition-colors duration-300"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                <div className="relative flex items-start space-x-4">
+                  {/* User Avatar Circle */}
+                  <div className="relative">
+                    <div className="h-10 w-10 rounded-2xl bg-gray-900 border border-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 shadow-xl overflow-hidden group-hover:border-blue-500/30 transition-all duration-300">
+                       {event.user?.name ? (
+                         <span className="z-10">{initials.slice(0, 2)}</span>
+                       ) : (
+                         <div className="bg-gray-800 w-full h-full flex items-center justify-center opacity-50">
+                           <ClockIcon className="h-4 w-4" />
+                         </div>
+                       )}
+                       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+                    </div>
+                    {/* Tiny Action Badge */}
+                    <div className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-lg border-2 border-gray-950 flex items-center justify-center ${colorClass} shadow-lg scale-90 group-hover:scale-100 transition-transform duration-300`}>
+                      <Icon className="h-2.5 w-2.5" />
+                    </div>
+                  </div>
+
+                  <div className="flex min-w-0 flex-1 flex-col pt-0.5">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white tracking-tight">
+                            {event.user?.name || 'System Auto'}
+                          </span>
+                          <span className="h-1 w-1 rounded-full bg-gray-700" />
+                          <span className="text-[11px] text-gray-500 font-medium lowercase tracking-wide">
+                            {getEventTitle(event)}
+                          </span>
+                        </div>
+                        {renderMetadata(event)}
+                      </div>
+                      <div className="whitespace-nowrap text-right pt-0.5">
+                        <time dateTime={event.created_at} className="block text-[10px] font-bold text-gray-600 group-hover:text-blue-500/50 transition-colors">
+                           {new Date(event.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </time>
+                        <time className="text-[10px] text-gray-700 font-medium">
+                           {new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </time>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
