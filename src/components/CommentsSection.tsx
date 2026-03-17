@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { ChatBubbleLeftIcon, LockClosedIcon, GlobeAltIcon, PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PermissionGate } from './PermissionGate';
+import { Action } from '@/types/auth';
 
 interface Comment {
   id: string;
@@ -15,7 +17,7 @@ interface Comment {
   created_at: string;
 }
 
-export default function CommentsSection({ assetId }: { assetId: string }) {
+export default function CommentsSection({ assetId, workspaceId }: { assetId: string, workspaceId?: string | null }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [content, setContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
@@ -113,12 +115,14 @@ export default function CommentsSection({ assetId }: { assetId: string }) {
                     </span>
                   )}
                 </div>
-                <button 
-                  onClick={() => handleDelete(comment.id)}
-                  className="p-1 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                >
-                  <TrashIcon className="h-3.5 w-3.5" />
-                </button>
+                <PermissionGate action={Action.Delete} subject="AssetComment" workspaceId={workspaceId}>
+                  <button 
+                    onClick={() => handleDelete(comment.id)}
+                    className="p-1 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </button>
+                </PermissionGate>
               </div>
               <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
             </div>
@@ -127,36 +131,48 @@ export default function CommentsSection({ assetId }: { assetId: string }) {
       </div>
 
       <div className="p-4 bg-black/20 border-t border-white/5">
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Write a comment..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:bg-white/10 placeholder:text-gray-600 transition-all resize-none min-h-[100px]"
-          />
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setIsPrivate(!isPrivate)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                isPrivate 
-                ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
-                : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'
-              }`}
-            >
-              {isPrivate ? <LockClosedIcon className="h-3 w-3" /> : <GlobeAltIcon className="h-3 w-3" />}
-              {isPrivate ? 'Private' : 'Global'}
-            </button>
-            <button
-              type="submit"
-              disabled={submitting || !content.trim()}
-              className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:tracking-wide text-white text-[11px] font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-purple-600/20 disabled:opacity-50 disabled:shadow-none transition-all active:scale-95"
-            >
-              Post
-              <PaperAirplaneIcon className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </form>
+        <PermissionGate 
+          action={Action.Create} 
+          subject="AssetComment" 
+          workspaceId={workspaceId}
+          fallback={
+            <div className="flex flex-col items-center justify-center py-6 text-gray-500 gap-2">
+              <LockClosedIcon className="h-6 w-6 opacity-30" />
+              <p className="text-[10px] font-bold uppercase tracking-widest">You don't have permission to post comments</p>
+            </div>
+          }
+        >
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Write a comment..."
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:bg-white/10 placeholder:text-gray-600 transition-all resize-none min-h-[100px]"
+            />
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setIsPrivate(!isPrivate)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                  isPrivate 
+                  ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
+                  : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10'
+                }`}
+              >
+                {isPrivate ? <LockClosedIcon className="h-3 w-3" /> : <GlobeAltIcon className="h-3 w-3" />}
+                {isPrivate ? 'Private' : 'Global'}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || !content.trim()}
+                className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:tracking-wide text-white text-[11px] font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-purple-600/20 disabled:opacity-50 disabled:shadow-none transition-all active:scale-95"
+              >
+                Post
+                <PaperAirplaneIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </form>
+        </PermissionGate>
       </div>
     </div>
   );

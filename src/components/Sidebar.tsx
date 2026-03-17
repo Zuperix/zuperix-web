@@ -20,7 +20,9 @@ import {
   KeyIcon,
   UsersIcon
 } from '@heroicons/react/24/outline';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Action } from '@/types/auth';
 
 const NAV = [
   { name: 'Assets', href: '/dashboard', icon: FolderIcon },
@@ -42,9 +44,19 @@ export default function Sidebar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { logout, user } = useAuth();
+  const { can } = usePermissions();
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const { sidebarCollapsed, setSidebarCollapsed } = useLayout();
   const [wsOpen, setWsOpen] = useState(false);
+
+  const filteredAdminNav = useMemo(() => {
+    return ADMIN_NAV.filter(item => {
+      if (item.name === 'Users') return can(Action.Read, 'User', activeWorkspace?.id);
+      if (item.name === 'Roles') return can(Action.Read, 'Role', activeWorkspace?.id);
+      if (item.name === 'Permissions') return can(Action.Read, 'Permission', activeWorkspace?.id);
+      return false;
+    });
+  }, [can, activeWorkspace]);
 
   const collapsed = sidebarCollapsed;
 
@@ -167,7 +179,7 @@ export default function Sidebar() {
             })}
           </nav>
 
-          {user?.system_role === 'SUPER_ADMIN' && (
+          {filteredAdminNav.length > 0 && (
             <>
               {!collapsed && (
                 <p className="px-6 py-2 mt-4 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">
@@ -175,7 +187,7 @@ export default function Sidebar() {
                 </p>
               )}
               <nav className={`flex flex-col gap-0.5 ${collapsed ? 'items-center px-2' : 'px-3'}`}>
-                {ADMIN_NAV.map((item) => {
+                {filteredAdminNav.map((item) => {
                   const active = pathname === item.href;
                   return (
                     <Link

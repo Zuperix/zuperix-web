@@ -11,9 +11,12 @@ import {
   ArrowPathIcon,
   ChevronLeftIcon,
   ExclamationCircleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { PermissionGate } from '@/components/PermissionGate';
+import { Action } from '@/types/auth';
 
 type Field = components['schemas']['CreateMetadataFieldDto'] & { id: string };
 
@@ -140,86 +143,98 @@ export default function MetadataManagementPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Create Form */}
         <div className="lg:col-span-1">
-          <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 sticky top-8">
-            <h3 className="text-lg font-bold text-gray-200 mb-6 flex items-center gap-2">
-              <PlusIcon className="h-5 w-5 text-blue-400" />
-              New Custom Field
-            </h3>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Label</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Photographer Name"
-                  className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all"
-                  value={newField.label}
-                  onChange={(e) => {
-                    const label = e.target.value;
-                    const key = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                    setNewField(prev => ({ ...prev, label, key }));
-                  }}
-                />
+          <PermissionGate 
+            action={Action.Create} 
+            subject="MetadataField" 
+            workspaceId={activeWorkspace.id}
+            fallback={
+              <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 sticky top-8 flex flex-col items-center justify-center text-center gap-4">
+                <LockClosedIcon className="h-10 w-10 text-gray-700" />
+                <p className="text-gray-500 text-sm font-medium">You don't have permission to create metadata fields.</p>
               </div>
+            }
+          >
+            <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 sticky top-8">
+              <h3 className="text-lg font-bold text-gray-200 mb-6 flex items-center gap-2">
+                <PlusIcon className="h-5 w-5 text-blue-400" />
+                New Custom Field
+              </h3>
+              
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Label</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Photographer Name"
+                    className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all"
+                    value={newField.label}
+                    onChange={(e) => {
+                      const label = e.target.value;
+                      const key = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                      setNewField(prev => ({ ...prev, label, key }));
+                    }}
+                  />
+                </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Key (Internal)</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. photographer_name"
-                  className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-400 font-mono text-xs outline-none transition-all"
-                  value={newField.key}
-                  onChange={(e) => setNewField(prev => ({ ...prev, key: e.target.value }))}
-                />
-              </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Key (Internal)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. photographer_name"
+                    className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-400 font-mono text-xs outline-none transition-all"
+                    value={newField.key}
+                    onChange={(e) => setNewField(prev => ({ ...prev, key: e.target.value }))}
+                  />
+                </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Field Type</label>
-                <select
-                  className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all appearance-none cursor-pointer"
-                  value={newField.fieldType}
-                  onChange={(e) => setNewField(prev => ({ ...prev, fieldType: e.target.value }))}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Field Type</label>
+                  <select
+                    className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all appearance-none cursor-pointer"
+                    value={newField.fieldType}
+                    onChange={(e) => setNewField(prev => ({ ...prev, fieldType: e.target.value }))}
+                  >
+                    {FIELD_TYPES.map(t => <option key={t.value} value={t.value} className="bg-gray-950">{t.label}</option>)}
+                  </select>
+                </div>
+
+                <div className="pt-2 flex flex-col gap-3">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={newField.isRequired}
+                      onChange={(e) => setNewField(prev => ({ ...prev, isRequired: e.target.checked }))}
+                    />
+                    <div className="w-10 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 after:shadow-sm"></div>
+                    <span className="text-xs font-semibold text-gray-400 group-hover:text-gray-300 transition-colors">Required Field</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={newField.isSearchable}
+                      onChange={(e) => setNewField(prev => ({ ...prev, isSearchable: e.target.checked }))}
+                    />
+                    <div className="w-10 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 after:shadow-sm"></div>
+                    <span className="text-xs font-semibold text-gray-400 group-hover:text-gray-300 transition-colors">Searchable</span>
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full mt-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2"
                 >
-                  {FIELD_TYPES.map(t => <option key={t.value} value={t.value} className="bg-gray-950">{t.label}</option>)}
-                </select>
-              </div>
-
-              <div className="pt-2 flex flex-col gap-3">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={newField.isRequired}
-                    onChange={(e) => setNewField(prev => ({ ...prev, isRequired: e.target.checked }))}
-                  />
-                  <div className="w-10 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 after:shadow-sm"></div>
-                  <span className="text-xs font-semibold text-gray-400 group-hover:text-gray-300 transition-colors">Required Field</span>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={newField.isSearchable}
-                    onChange={(e) => setNewField(prev => ({ ...prev, isSearchable: e.target.checked }))}
-                  />
-                  <div className="w-10 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 after:shadow-sm"></div>
-                  <span className="text-xs font-semibold text-gray-400 group-hover:text-gray-300 transition-colors">Searchable</span>
-                </label>
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full mt-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2"
-              >
-                {submitting ? <ArrowPathIcon className="h-5 w-5 animate-spin" /> : <PlusIcon className="h-5 w-5" />}
-                {submitting ? 'Creating...' : 'Add Field'}
-              </button>
-            </form>
-          </div>
+                  {submitting ? <ArrowPathIcon className="h-5 w-5 animate-spin" /> : <PlusIcon className="h-5 w-5" />}
+                  {submitting ? 'Creating...' : 'Add Field'}
+                </button>
+              </form>
+            </div>
+          </PermissionGate>
         </div>
 
         {/* Fields List */}
@@ -283,13 +298,15 @@ export default function MetadataManagementPage() {
                     </div>
                   </div>
                   
-                  <button 
-                    onClick={() => handleDelete(field.id)}
-                    className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                    title="Delete Field"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
+                  <PermissionGate action={Action.Delete} subject="MetadataField" workspaceId={activeWorkspace.id}>
+                    <button 
+                      onClick={() => handleDelete(field.id)}
+                      className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                      title="Delete Field"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </PermissionGate>
                 </div>
               ))}
             </div>

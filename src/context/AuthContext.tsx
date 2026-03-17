@@ -4,12 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { components } from '@/types/api';
-
-type User = components['schemas']['UpdateUserDto'] & { 
-  id: string; 
-  system_role?: string;
-  customerId?: string;
-};
+import { User } from '@/types/auth';
 
 interface AuthContextType {
   user: User | null;

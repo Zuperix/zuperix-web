@@ -15,9 +15,13 @@ import {
   CheckIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import { PermissionGate } from '@/components/PermissionGate';
+import { Action } from '@/types/auth';
+import { useWorkspace } from '@/context/WorkspaceContext';
 
 export default function CategoriesPage() {
   const { categories, createCategory, deleteCategory, refresh } = useCategories();
+  const { activeWorkspace } = useWorkspace();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isAddingTo, setIsAddingTo] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
@@ -88,21 +92,25 @@ export default function CategoriesPage() {
           </div>
 
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
-              onClick={() => setIsAddingTo(cat.id)}
-              className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all"
-              title="Add sub-category"
-            >
-              <PlusIcon className="h-4 w-4" />
-            </button>
-            {cat.name !== 'Global' && (
+            <PermissionGate action={Action.Update} subject="Category" workspaceId={activeWorkspace?.id}>
               <button 
-                onClick={() => handleDelete(cat.id)}
-                className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-xl transition-all"
-                title="Delete"
+                onClick={() => setIsAddingTo(cat.id)}
+                className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all"
+                title="Add sub-category"
               >
-                <TrashIcon className="h-4 w-4" />
+                <PlusIcon className="h-4 w-4" />
               </button>
+            </PermissionGate>
+            {cat.name !== 'Global' && (
+              <PermissionGate action={Action.Delete} subject="Category" workspaceId={activeWorkspace?.id}>
+                <button 
+                  onClick={() => handleDelete(cat.id)}
+                  className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-xl transition-all"
+                  title="Delete"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </button>
+              </PermissionGate>
             )}
           </div>
         </div>
@@ -153,13 +161,15 @@ export default function CategoriesPage() {
           </h1>
           <p className="text-gray-500 text-sm mt-1">Manage hierarchical labels to organize your global asset library.</p>
         </div>
-        <button 
-          onClick={() => setIsAddingTo('root')}
-          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Add Root Category
-        </button>
+        <PermissionGate action={Action.Create} subject="Category" workspaceId={activeWorkspace?.id}>
+          <button 
+            onClick={() => setIsAddingTo('root')}
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Add Root Category
+          </button>
+        </PermissionGate>
       </header>
 
       {isAddingTo === 'root' && (

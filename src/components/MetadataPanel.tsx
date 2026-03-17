@@ -31,6 +31,8 @@ type AssetDetails = {
 };
 
 import AssetOrganizationDialog from './AssetOrganizationDialog';
+import { PermissionGate } from './PermissionGate';
+import { Action } from '@/types/auth';
 
 export default function MetadataPanel({ 
   assetId, 
@@ -148,13 +150,15 @@ export default function MetadataPanel({
           <p className="mt-3 text-[10px] text-gray-500 font-mono break-all text-center">{assetId}</p>
           
           <div className="mt-4">
-            <button 
-              onClick={() => setIsOrganizeOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700/60 rounded-2xl text-xs font-bold text-white uppercase tracking-widest transition-all group"
-            >
-              <TagIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
-              Organize
-            </button>
+            <PermissionGate action={Action.Update} subject="Asset" workspaceId={workspaceId}>
+              <button 
+                onClick={() => setIsOrganizeOpen(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700/60 rounded-2xl text-xs font-bold text-white uppercase tracking-widest transition-all group"
+              >
+                <TagIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
+                Organize
+              </button>
+            </PermissionGate>
           </div>
         </div>
 
@@ -250,22 +254,24 @@ export default function MetadataPanel({
         >
           <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
         </button>
-        <button
-          onClick={handleSave}
-          disabled={saving || loading}
-          className={`flex-1 py-2 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-            success 
-              ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-              : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20'
-          } disabled:opacity-50`}
-        >
-          {saving ? (
-            <ArrowPathIcon className="h-4 w-4 animate-spin" />
-          ) : success ? (
-            <CheckIcon className="h-4 w-4" />
+        <PermissionGate action={Action.Update} subject="Asset" workspaceId={workspaceId}>
+          <button
+            onClick={handleSave}
+            disabled={saving || loading}
+            className={`flex-1 py-2 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+              success 
+                ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20'
+            } disabled:opacity-50`}
+          >
+            {saving ? (
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            ) : success ? (
+              <CheckIcon className="h-4 w-4" />
           ) : null}
-          {saving ? 'Saving...' : success ? 'Updated' : 'Save Changes'}
-        </button>
+            {saving ? 'Saving...' : success ? 'Updated' : 'Save Changes'}
+          </button>
+        </PermissionGate>
       </div>
 
       <AssetOrganizationDialog 

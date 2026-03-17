@@ -32,6 +32,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useCollections, Collection as CollectionType } from '@/hooks/useCollections';
+import { PermissionGate } from '@/components/PermissionGate';
+import { Action } from '@/types/auth';
 import { useRef } from 'react';
 
 interface Field {
@@ -382,25 +384,29 @@ export default function AssetDetailPage() {
           >
             <ArrowDownTrayIcon className="h-5 w-5" />
           </a>
-          <button 
-            onClick={handleDelete}
-            className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
-            title="Delete"
-          >
-            <TrashIcon className="h-5 w-5" />
-          </button>
-          <button
-            onClick={handleSaveMetadata}
-            disabled={saving}
-            className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${
-              success 
-                ? 'bg-green-500 text-white shadow-green-500/20' 
-                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20'
-            } disabled:opacity-50`}
-          >
-            {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : success ? <CheckIcon className="h-4 w-4" /> : null}
-            {saving ? 'Saving...' : success ? 'Saved' : 'Save Changes'}
-          </button>
+          <PermissionGate action={Action.Delete} subject="Asset" workspaceId={activeWorkspace?.id}>
+            <button 
+              onClick={handleDelete}
+              className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+              title="Delete"
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
+          </PermissionGate>
+          <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+            <button
+              onClick={handleSaveMetadata}
+              disabled={saving}
+              className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${
+                success 
+                  ? 'bg-green-500 text-white shadow-green-500/20' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20'
+              } disabled:opacity-50`}
+            >
+              {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : success ? <CheckIcon className="h-4 w-4" /> : null}
+              {saving ? 'Saving...' : success ? 'Saved' : 'Save Changes'}
+            </button>
+          </PermissionGate>
         </div>
       </header>
 
@@ -520,12 +526,14 @@ export default function AssetDetailPage() {
                            </div>
                            <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Categories</label>
                         </div>
-                        <button 
-                          onClick={() => setIsManagingCategories(!isManagingCategories)}
-                          className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all ${isManagingCategories ? 'bg-blue-600 text-white' : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
-                        >
-                          {isManagingCategories ? 'Close' : 'Manage'}
-                        </button>
+                        <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                          <button 
+                            onClick={() => setIsManagingCategories(!isManagingCategories)}
+                            className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all ${isManagingCategories ? 'bg-blue-600 text-white' : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+                          >
+                            {isManagingCategories ? 'Close' : 'Manage'}
+                          </button>
+                        </PermissionGate>
                       </div>
 
                       {/* Selected Categories Display */}
@@ -551,13 +559,15 @@ export default function AssetDetailPage() {
                           <div className="flex items-center justify-between px-1">
                             <span className="text-[10px] text-gray-400 font-bold uppercase">Assign Categories</span>
                             <div className="flex gap-2">
-                              <button 
-                                onClick={() => setShowCategoryInput(!showCategoryInput)}
-                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                              >
-                                <PlusIcon className="h-3 w-3" />
-                                New
-                              </button>
+                              <PermissionGate action={Action.Create} subject="Category" workspaceId={activeWorkspace?.id}>
+                                <button 
+                                  onClick={() => setShowCategoryInput(!showCategoryInput)}
+                                  className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                >
+                                  <PlusIcon className="h-3 w-3" />
+                                  New
+                                </button>
+                              </PermissionGate>
                               <button 
                                 onClick={() => refreshCategories()}
                                 className="text-[10px] font-bold text-gray-400 hover:text-gray-600"
@@ -626,12 +636,14 @@ export default function AssetDetailPage() {
                            </div>
                            <label className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Collections</label>
                         </div>
-                        <button 
-                          onClick={() => setIsManagingCollections(!isManagingCollections)}
-                          className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all ${isManagingCollections ? 'bg-indigo-600 text-white' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
-                        >
-                          {isManagingCollections ? 'Close' : 'Manage'}
-                        </button>
+                        <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                          <button 
+                            onClick={() => setIsManagingCollections(!isManagingCollections)}
+                            className={`text-[10px] font-bold px-2 py-1 rounded-lg transition-all ${isManagingCollections ? 'bg-indigo-600 text-white' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'}`}
+                          >
+                            {isManagingCollections ? 'Close' : 'Manage'}
+                          </button>
+                        </PermissionGate>
                       </div>
 
                       {/* Selected Collections Display */}
@@ -657,13 +669,15 @@ export default function AssetDetailPage() {
                            <div className="flex items-center justify-between px-1">
                             <span className="text-[10px] text-gray-400 font-bold uppercase">Assign Collections</span>
                             <div className="flex gap-2">
-                              <button 
-                                onClick={() => setShowCollectionInput(!showCollectionInput)}
-                                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-                              >
-                                <PlusIcon className="h-3 w-3" />
-                                New
-                              </button>
+                              <PermissionGate action={Action.Create} subject="Collection" workspaceId={activeWorkspace?.id}>
+                                <button 
+                                  onClick={() => setShowCollectionInput(!showCollectionInput)}
+                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                                >
+                                  <PlusIcon className="h-3 w-3" />
+                                  New
+                                </button>
+                              </PermissionGate>
                               <button 
                                 onClick={() => refreshCollections()}
                                 className="text-[10px] font-bold text-gray-400 hover:text-gray-600"
@@ -730,21 +744,23 @@ export default function AssetDetailPage() {
                         ].map((item) => (
                           <div key={item.id} className="flex items-center justify-between py-2 px-1">
                             <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{item.label}</span>
-                            <div className="relative group">
-                              <input 
-                                type="date"
-                                id={`input-${item.id}`}
-                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                                value={item.value ? new Date(item.value).toISOString().split('T')[0] : ''}
-                                onChange={(e) => handleUpdateAsset({ [item.id]: e.target.value || null })}
-                              />
-                              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl group-hover:border-blue-400/50 transition-all min-w-[140px] justify-between">
-                                <span className={`text-[11px] font-semibold ${item.value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 italic'}`}>
-                                  {item.value ? new Date(item.value).toLocaleDateString() : 'Set date'}
-                                </span>
-                                <ClockIcon className="h-3.5 w-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                            <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                              <div className="relative group">
+                                <input 
+                                  type="date"
+                                  id={`input-${item.id}`}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                                  value={item.value ? new Date(item.value).toISOString().split('T')[0] : ''}
+                                  onChange={(e) => handleUpdateAsset({ [item.id]: e.target.value || null })}
+                                />
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl group-hover:border-blue-400/50 transition-all min-w-[140px] justify-between">
+                                  <span className={`text-[11px] font-semibold ${item.value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 italic'}`}>
+                                    {item.value ? new Date(item.value).toLocaleDateString() : 'Set date'}
+                                  </span>
+                                  <ClockIcon className="h-3.5 w-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                </div>
                               </div>
-                            </div>
+                            </PermissionGate>
                           </div>
                         ))}
                       </div>
@@ -762,25 +778,29 @@ export default function AssetDetailPage() {
                           {(asset?.tags || []).map((tag: any, i: number) => (
                              <span key={i} className="group flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl text-[11px] font-semibold border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
                                {tag.name}
-                               <button 
-                                 onClick={() => handleRemoveTag(tag.name)}
-                                 className="text-gray-400 hover:text-red-500 transition-colors"
-                               >
-                                 <XMarkIcon className="h-3 w-3" />
-                               </button>
+                               <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                                 <button 
+                                   onClick={() => handleRemoveTag(tag.name)}
+                                   className="text-gray-400 hover:text-red-500 transition-colors"
+                                 >
+                                   <XMarkIcon className="h-3 w-3" />
+                                 </button>
+                               </PermissionGate>
                              </span>
                           ))}
                           
-                          <form onSubmit={handleAddTag} className="flex-1 min-w-[120px]">
-                            <input 
-                              type="text"
-                              placeholder="Add tag..."
-                              value={tagInput}
-                              onChange={(e) => setTagInput(e.target.value)}
-                              disabled={isAddingTag}
-                              className="w-full px-4 py-2 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl text-[11px] outline-none focus:border-teal-500/50 transition-all shadow-sm"
-                            />
-                          </form>
+                          <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                            <form onSubmit={handleAddTag} className="flex-1 min-w-[120px]">
+                              <input 
+                                type="text"
+                                placeholder="Add tag..."
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                disabled={isAddingTag}
+                                className="w-full px-4 py-2 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl text-[11px] outline-none focus:border-teal-500/50 transition-all shadow-sm"
+                              />
+                            </form>
+                          </PermissionGate>
                        </div>
                     </section>
 
@@ -1044,7 +1064,7 @@ export default function AssetDetailPage() {
             )}
             {activeTab === 'comments' && (
               <div className="h-full animate-in fade-in slide-in-from-right-2 duration-300">
-                <CommentsSection assetId={assetId} />
+                <CommentsSection assetId={assetId} workspaceId={activeWorkspace?.id} />
               </div>
             )}
           </div>

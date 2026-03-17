@@ -8,9 +8,9 @@ export interface Collection {
   id: string;
   name: string;
   description?: string;
-  userId: string;
-  workspaceId: string;
-  customerId: string;
+  user_id: string;
+  workspace_id: string;
+  customer_id: string;
 }
 
 export function useCollections() {
@@ -46,7 +46,7 @@ export function useCollections() {
           name,
           description,
           workspace_id: activeWorkspace.id,
-          customer_id: (activeWorkspace as any).customerId,
+          customer_id: (activeWorkspace as any).customer_id,
         }),
       });
       await fetchCollections();

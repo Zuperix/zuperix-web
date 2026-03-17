@@ -7,7 +7,7 @@ import { useWorkspace } from '@/context/WorkspaceContext';
 export interface Category {
   id: string;
   name: string;
-  parentId: string | null;
+  parent_id: string | null;
   path: string;
   depth: number;
   children?: Category[];
@@ -46,7 +46,7 @@ export function useCategories() {
           name,
           parent_id: parentId,
           workspace_id: activeWorkspace.id,
-          customer_id: (activeWorkspace as any).customerId, // Assuming customerId is available on workspace
+          customer_id: (activeWorkspace as any).customer_id, // Match snake_case from API
         }),
       });
       await fetchCategories();

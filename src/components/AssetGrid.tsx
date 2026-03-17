@@ -12,6 +12,9 @@ import {
   ShareIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
+import { PermissionGate } from './PermissionGate';
+import { Action } from '@/types/auth';
+import { useWorkspace } from '@/context/WorkspaceContext';
 
 type Asset = components['schemas']['MetadataEntryDto'] & { 
   id: string;
@@ -40,6 +43,7 @@ const AssetCard = ({
   onSelect?: (id: string) => void, 
   isSelected: boolean 
 }) => {
+  const { activeWorkspace } = useWorkspace();
   const [imgError, setImgError] = useState(false);
   const mimeType = asset.mime_type || 'application/octet-stream';
   const Icon = getIcon(mimeType);
@@ -104,16 +108,18 @@ const AssetCard = ({
             >
               <ArrowDownTrayIcon className="h-4 w-4" />
             </a>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(assetId);
-              }}
-              className="p-2 bg-white/10 hover:bg-red-500/20 text-white rounded-xl backdrop-blur-md border border-white/20 transition-all"
-              title="Delete asset"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
+            <PermissionGate action={Action.Delete} subject="Asset" workspaceId={activeWorkspace?.id}>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(assetId);
+                }}
+                className="p-2 bg-white/10 hover:bg-red-500/20 text-white rounded-xl backdrop-blur-md border border-white/20 transition-all"
+                title="Delete asset"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            </PermissionGate>
           </div>
           
           <div className="space-y-1">

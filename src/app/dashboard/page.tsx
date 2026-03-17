@@ -8,10 +8,20 @@ import AssetGrid from '@/components/AssetGrid';
 import UploadModal from '@/components/UploadModal';
 import MetadataPanel from '@/components/MetadataPanel';
 import FilterSidebar from '@/components/FilterSidebar';
-import { PlusIcon, ArrowPathIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { 
+  PlusIcon, 
+  ArrowPathIcon, 
+  XMarkIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon, 
+  MagnifyingGlassIcon, 
+  FunnelIcon 
+} from '@heroicons/react/24/outline';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
 import Pagination from '@/components/Pagination';
 import { useLayout } from '@/context/LayoutContext';
+import { PermissionGate } from '@/components/PermissionGate';
+import { Action } from '@/types/auth';
 
 function FilterChips({ 
   activeFilters, 
@@ -331,13 +341,15 @@ function DashboardContent() {
                     currentSortOrder={currentSort.order}
                     onSortChange={handleSortChange}
                   />
-                  <button 
-                    onClick={() => setIsUploadOpen(true)}
-                    className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95 shrink-0"
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1.5" />
-                    Upload
-                  </button>
+                  <PermissionGate action={Action.Create} subject="Asset" workspaceId={activeWorkspace.id}>
+                    <button 
+                      onClick={() => setIsUploadOpen(true)}
+                      className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95 shrink-0"
+                    >
+                      <PlusIcon className="h-4 w-4 mr-1.5" />
+                      Upload
+                    </button>
+                  </PermissionGate>
                 </div>
               </div>
             </div>

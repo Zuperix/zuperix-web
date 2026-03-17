@@ -14,6 +14,8 @@ import {
   TrashIcon,
   CheckIcon
 } from '@heroicons/react/24/outline';
+import { PermissionGate } from '@/components/PermissionGate';
+import { Action } from '@/types/auth';
 
 interface Role {
   id: string;
@@ -36,9 +38,9 @@ interface User {
 
 interface Membership {
   id: string;
-  workspaceId: string;
-  userId: string;
-  roleId: string;
+  workspace_id: string;
+  user_id: string;
+  role_id: string;
   workspace: { id: string; name: string };
   role: { id: string; name: string };
 }
@@ -145,6 +147,19 @@ export default function UsersPage() {
     }
   };
 
+  const handleUpdateMemberRole = async (workspaceId: string, roleId: string) => {
+    if (!editingUser) return;
+    try {
+      await apiFetch(`/workspaces/${workspaceId}/members/${editingUser.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role_id: roleId }),
+      });
+      fetchMemberships(editingUser.id);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const handleRemoveMembership = async (workspaceId: string) => {
     if (!editingUser) return;
     try {
@@ -169,13 +184,15 @@ export default function UsersPage() {
             <p className="text-sm text-gray-500">Manage users, their access levels, and workspace assignments.</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-95"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Add New User
-        </button>
+        <PermissionGate action={Action.Create} subject="User">
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Add New User
+          </button>
+        </PermissionGate>
       </div>
 
       {error && (
@@ -331,13 +348,21 @@ export default function UsersPage() {
                              </div>
                              <div>
                                <p className="text-sm font-semibold text-gray-200">{m.workspace.name}</p>
-                               <span className="text-[10px] font-bold text-indigo-400 uppercase bg-indigo-500/5 px-1.5 py-0.5 rounded border border-indigo-500/10">
-                                 {m.role.name}
-                               </span>
+                               <select
+                                 value={m.role_id}
+                                 onChange={(e) => handleUpdateMemberRole(m.workspace_id, e.target.value)}
+                                 className="mt-1 bg-transparent text-[10px] font-bold text-indigo-400 uppercase border border-indigo-500/20 rounded px-1 py-0.5 outline-none hover:bg-indigo-500/5 transition-colors focus:ring-1 focus:ring-indigo-500/50"
+                               >
+                                 {roles.filter(r => r.type === 'WORKSPACE').map(r => (
+                                   <option key={r.id} value={r.id} className="bg-gray-900 text-gray-200">
+                                     {r.name}
+                                   </option>
+                                 ))}
+                               </select>
                              </div>
                           </div>
                           <button 
-                            onClick={() => handleRemoveMembership(m.workspaceId)}
+                            onClick={() => handleRemoveMembership(m.workspace_id)}
                             className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                           >
                             <TrashIcon className="h-4 w-4" />
@@ -357,7 +382,7 @@ export default function UsersPage() {
                    }}>
                       <select name="ws" required className="md:col-span-2 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-blue-500 outline-none">
                         <option value="">Select Workspace</option>
-                        {workspaces.filter(ws => !memberships.some(m => m.workspaceId === ws.id)).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                        {workspaces.filter(ws => !memberships.some(m => m.workspace_id === ws.id)).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                       </select>
                       <select name="role" required className="md:col-span-2 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-blue-500 outline-none">
                         <option value="">Select Role</option>
@@ -405,12 +430,14 @@ export default function UsersPage() {
                   </td>
                   <td className="px-6 py-4 text-xs text-gray-500 font-mono">{new Date(user.created_at).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-right">
-                    <button 
-                      onClick={() => { setEditingUser(user); fetchMemberships(user.id); }}
-                      className="text-xs text-gray-500 hover:text-white transition-colors underline underline-offset-4 decoration-gray-700 hover:decoration-white"
-                    >
-                      Manage Access
-                    </button>
+                    <PermissionGate action={Action.Update} subject="User">
+                      <button 
+                        onClick={() => { setEditingUser(user); fetchMemberships(user.id); }}
+                        className="text-xs text-gray-500 hover:text-white transition-colors underline underline-offset-4 decoration-gray-700 hover:decoration-white"
+                      >
+                        Manage Access
+                      </button>
+                    </PermissionGate>
                   </td>
                 </tr>
               ))}
