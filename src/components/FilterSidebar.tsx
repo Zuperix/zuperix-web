@@ -122,13 +122,13 @@ function RangeSlider({
   currentMax: number | undefined; 
   onChange: (min: number | undefined, max: number | undefined) => void;
 }) {
-  const [localMin, setLocalMin] = useState(currentMin ?? min);
-  const [localMax, setLocalMax] = useState(currentMax ?? max);
+  const [localMin, setLocalMin] = useState(Number(currentMin ?? min));
+  const [localMax, setLocalMax] = useState(Number(currentMax ?? max));
   const rangeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setLocalMin(currentMin ?? min);
-    setLocalMax(currentMax ?? max);
+    setLocalMin(Number(currentMin ?? min));
+    setLocalMax(Number(currentMax ?? max));
   }, [currentMin, currentMax, min, max]);
 
   const getPercent = (value: number) => ((value - min) / (max - min)) * 100;
@@ -200,7 +200,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
   const filterConfig: Record<string, { label: string; icon: any }> = {
     mime_type: { label: 'File Type', icon: Square3Stack3DIcon },
     orientation: { label: 'Orientation', icon: ArrowsPointingOutIcon },
-    tags: { label: 'Tags', icon: TagIcon },
+    tag_uuids: { label: 'Tags', icon: TagIcon },
     file_extension: { label: 'Extension', icon: DocumentIcon },
     color_palette: { label: 'Colors', icon: PaintBrushIcon },
     aspect_ratio: { label: 'Aspect Ratio', icon: PhotoIcon },
@@ -208,7 +208,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     release_date: { label: 'Release Date', icon: CalendarIcon },
     expiration_date: { label: 'Expiration', icon: ClockIcon },
     category_uuids: { label: 'Categories', icon: TagIcon },
-    category_paths: { label: 'Category Paths', icon: TagIcon },
+    category_paths: { label: 'Category', icon: TagIcon },
     collection_uuids: { label: 'Collections', icon: FolderIcon },
   };
 
@@ -240,7 +240,9 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
   };
 
   const handleCheckboxChange = (groupKey: string, value: string | number, checked: boolean) => {
-    const currentValues = activeFilters[groupKey] || [];
+    const rawValue = activeFilters[groupKey];
+    const currentValues = Array.isArray(rawValue) ? rawValue : (rawValue ? [rawValue] : []);
+    
     let newValues;
     if (checked) {
       newValues = [...currentValues, value];
@@ -390,14 +392,15 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                           {data.map((bucket) => {
                             const hex = String(bucket.value);
                             const clusterHexes = bucket.hexes || [hex];
-                            const activeHexes = activeFilters[key] || [];
+                            const rawActiveHexes = activeFilters[key];
+                            const activeHexes = Array.isArray(rawActiveHexes) ? rawActiveHexes : (rawActiveHexes ? [rawActiveHexes] : []);
                             const isActive = clusterHexes.some(h => activeHexes.includes(h));
                             return (
                               <button
                                 key={hex}
                                 onClick={() => {
                                   const nextActive = isActive 
-                                    ? activeHexes.filter((h: string) => !clusterHexes.includes(h))
+                                    ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
                                     : Array.from(new Set([...activeHexes, ...clusterHexes]));
                                   onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
                                 }}
@@ -419,7 +422,9 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                           {data
                             .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
                             .map((bucket) => {
-                              const isActive = (activeFilters[key] || []).includes(bucket.value);
+                              const rawActive = activeFilters[key];
+                              const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
+                              const isActive = activeList.includes(bucket.value);
                               return (
                                 <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
                                   <div className="flex items-center overflow-hidden pr-2">

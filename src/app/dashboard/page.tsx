@@ -27,7 +27,7 @@ function FilterChips({
   const filterLabels: Record<string, string> = {
     mime_type: 'File Type',
     orientation: 'Orientation',
-    tags: 'Tag',
+    tag_uuids: 'Tag',
     file_extension: 'Extension',
     color_palette: 'Color',
     category_uuids: 'Category',
@@ -156,7 +156,7 @@ function DashboardContent() {
     });
     
     const normalized: Record<string, any> = {};
-    const arrayKeys = ['mime_type', 'file_extension', 'tags', 'orientation', 'color_palette', 'category_uuids', 'collection_uuids'];
+    const arrayKeys = ['mime_type', 'file_extension', 'tag_uuids', 'orientation', 'color_palette', 'category_uuids', 'collection_uuids', 'category_paths'];
     Object.entries(params).forEach(([k, v]) => {
       if (arrayKeys.includes(k) && !Array.isArray(v)) {
         normalized[k] = [v];

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, BASE_URL } from '@/lib/api';
 import { 
   ArrowLeftIcon, 
   ArrowPathIcon,
@@ -16,6 +16,7 @@ import {
   PhotoIcon,
   VideoCameraIcon,
   ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
   TrashIcon,
   ShareIcon,
   Square3Stack3DIcon,
@@ -24,10 +25,12 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   GlobeAltIcon,
-  PlusIcon
+  PlusIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useCollections, Collection as CollectionType } from '@/hooks/useCollections';
+import { useRef } from 'react';
 
 interface Field {
   id: string;
@@ -75,6 +78,12 @@ export default function AssetDetailPage() {
   const [isManagingCollections, setIsManagingCollections] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [isAddingTag, setIsAddingTag] = useState(false);
+
+  // Versioning state
+  const [isUploadingVersion, setIsUploadingVersion] = useState(false);
+  const [versionNotes, setVersionNotes] = useState('');
+  const [showVersionUpload, setShowVersionUpload] = useState(false);
+  const versionFileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
     if (!activeWorkspace || !assetId) return;
@@ -276,6 +285,56 @@ export default function AssetDetailPage() {
     }
   };
 
+  const handleUploadNewVersion = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !assetId) return;
+
+    setIsUploadingVersion(true);
+    setError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (versionNotes.trim()) {
+        formData.append('notes', versionNotes.trim());
+      }
+
+      await apiFetch(`/assets/${assetId}/versions`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      setSuccess(true);
+      setVersionNotes('');
+      setShowVersionUpload(false);
+      setTimeout(() => setSuccess(false), 3000);
+      fetchData(); // Refresh to get new version in list
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload new version');
+    } finally {
+      setIsUploadingVersion(false);
+      if (versionFileInputRef.current) versionFileInputRef.current.value = '';
+    }
+  };
+
+  const handleRevert = async (versionId: string) => {
+    if (!confirm('Are you sure you want to revert to this version? A new version will be created reflecting this state.')) return;
+    
+    setSaving(true);
+    setError('');
+    try {
+      await apiFetch(`/assets/${assetId}/versions/${versionId}/revert`, {
+        method: 'POST',
+      });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+      fetchData(); // Refresh to see the new "reverted" version
+    } catch (err: any) {
+      setError(err.message || 'Failed to revert version');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading && !asset) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#f8f9fb] dark:bg-[#0f111a] gap-4">
@@ -350,7 +409,7 @@ export default function AssetDetailPage() {
             <div className="relative group w-full max-w-4xl bg-white dark:bg-[#151720] rounded-2xl shadow-xl overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 flex items-center justify-center min-h-[400px]">
               {asset?.mime_type?.startsWith('image/') ? (
                 <img 
-                  src={`http://localhost:3000/api/v1/assets/${assetId}/view`} 
+                  src={`${BASE_URL}/assets/${assetId}/view`} 
                   alt={asset?.original_name}
                   className="max-w-full max-h-[70vh] object-contain"
                 />
@@ -409,9 +468,9 @@ export default function AssetDetailPage() {
         </div>
 
         {/* Right Column: Tabbed Information Panel */}
-        <div className="w-[450px] flex flex-col bg-white dark:bg-[#0a0b10] border-l border-gray-200 dark:border-gray-800 shadow-2xl relative z-10">
+        <div className="w-2/5 flex flex-col bg-white dark:bg-[#0a0b10] border-l border-gray-200 dark:border-gray-800 shadow-2xl relative z-10">
           {/* Tabs */}
-          <div className="flex border-b border-gray-200 dark:border-gray-800 h-14 shrink-0 overflow-x-auto custom-scrollbar no-scrollbar">
+          <div className="flex border-b border-gray-200 dark:border-gray-800 h-14 shrink-0 overflow-x-auto custom-scrollbar">
             {[
               { id: 'details', label: 'Details', icon: InformationCircleIcon },
               { id: 'file-info', label: 'File info', icon: InboxIcon },
@@ -421,14 +480,14 @@ export default function AssetDetailPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as Tab)}
-                className={`flex items-center gap-2 px-6 h-full text-xs font-bold uppercase tracking-widest transition-all relative border-r border-gray-100 dark:border-gray-800/50 shrink-0 ${
+                className={`flex-1 flex items-center justify-center gap-2 px-2 h-full text-[10px] font-bold uppercase tracking-wider transition-all relative border-r border-gray-100 dark:border-gray-800/50 ${
                   activeTab === tab.id 
                     ? 'text-blue-600 dark:text-blue-400 bg-gray-50/50 dark:bg-gray-800/20' 
                     : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50/30 dark:hover:bg-gray-800/10'
                 }`}
               >
-                <tab.icon className={`h-4 w-4 ${activeTab === tab.id ? 'text-blue-500' : 'text-gray-400'}`} />
-                {tab.label}
+                <tab.icon className={`h-4 w-4 shrink-0 ${activeTab === tab.id ? 'text-blue-500' : 'text-gray-400'}`} />
+                <span className="truncate">{tab.label}</span>
                 {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-400" />}
               </button>
             ))}
@@ -660,40 +719,31 @@ export default function AssetDetailPage() {
                           </div>
                         </div>
                       )}
-                    </section>
-
-                    {/* Lifecycle / Dates Section */}
-                    <section className="pt-6 border-t border-gray-100 dark:border-gray-800">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center justify-between py-3.5 border-b border-gray-50 dark:border-gray-900/50">
-                          <span className="text-xs font-bold text-blue-900/80 dark:text-blue-300/80">Release date</span>
-                          <div className="flex items-center gap-2">
-                             <input 
-                               type="date"
-                               className="bg-transparent border-none text-[13px] font-medium text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer p-0 text-right min-w-[120px] appearance-none"
-                               value={asset?.release_date ? new Date(asset.release_date).toISOString().split('T')[0] : ''}
-                               onChange={(e) => handleUpdateAsset({ release_date: e.target.value || null })}
-                             />
-                             {!asset?.release_date && (
-                                <span className="text-[13px] text-gray-400 italic">None</span>
-                             )}
+                    </section>                    <section className="pt-6 border-t border-gray-100 dark:border-gray-800">
+                      <div className="space-y-2">
+                        {[
+                          { id: 'release_date', label: 'Release date', value: asset?.release_date },
+                          { id: 'expiration_date', label: 'Expiration date', value: asset?.expiration_date },
+                        ].map((item) => (
+                          <div key={item.id} className="flex items-center justify-between py-2 px-1">
+                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{item.label}</span>
+                            <div className="relative group">
+                              <input 
+                                type="date"
+                                id={`input-${item.id}`}
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                                value={item.value ? new Date(item.value).toISOString().split('T')[0] : ''}
+                                onChange={(e) => handleUpdateAsset({ [item.id]: e.target.value || null })}
+                              />
+                              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-800 rounded-xl group-hover:border-blue-400/50 transition-all min-w-[140px] justify-between">
+                                <span className={`text-[11px] font-semibold ${item.value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 italic'}`}>
+                                  {item.value ? new Date(item.value).toLocaleDateString() : 'Set date'}
+                                </span>
+                                <ClockIcon className="h-3.5 w-3.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                              </div>
+                            </div>
                           </div>
-                        </div>
-
-                        <div className="flex items-center justify-between py-3.5 border-b border-gray-50 dark:border-gray-900/50">
-                          <span className="text-xs font-bold text-blue-900/80 dark:text-blue-300/80">Expiration date</span>
-                          <div className="flex items-center gap-2">
-                             <input 
-                               type="date"
-                               className="bg-transparent border-none text-[13px] font-medium text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer p-0 text-right min-w-[120px] appearance-none"
-                               value={asset?.expiration_date ? new Date(asset.expiration_date).toISOString().split('T')[0] : ''}
-                               onChange={(e) => handleUpdateAsset({ expiration_date: e.target.value || null })}
-                             />
-                             {!asset?.expiration_date && (
-                                <span className="text-[13px] text-gray-400 italic">None</span>
-                             )}
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     </section>
 
@@ -843,13 +893,150 @@ export default function AssetDetailPage() {
               </div>
             )}
 
-            {['attachments', 'versions'].includes(activeTab) && (
+            {activeTab === 'attachments' && (
               <div className="flex flex-col items-center justify-center h-64 text-center p-12 animate-in fade-in duration-300">
                 <div className="bg-gray-100 dark:bg-gray-800/50 p-6 rounded-3xl mb-6">
                   <InboxIcon className="h-12 w-12 text-gray-300 dark:text-gray-700" />
                 </div>
                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Coming soon</h3>
                 <p className="text-xs text-gray-500 leading-relaxed">This feature is part of our roadmap and will be available in a future update.</p>
+              </div>
+            )}
+
+            {activeTab === 'versions' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                      <ClockIcon className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Version history</h2>
+                  </div>
+                  <button 
+                    onClick={() => setShowVersionUpload(!showVersionUpload)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-500/20"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    New Version
+                  </button>
+                </div>
+
+                {showVersionUpload && (
+                  <div className="bg-gray-50 dark:bg-gray-900/40 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 space-y-4 animate-in slide-in-from-top-2 duration-300 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-2">
+                       <button onClick={() => setShowVersionUpload(false)} className="text-gray-400 hover:text-gray-600">
+                          <XMarkIcon className="h-4 w-4" />
+                       </button>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Version notes</label>
+                      <textarea
+                        rows={2}
+                        className="w-full px-4 py-3 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl focus:border-blue-500/50 outline-none text-xs transition-all resize-none"
+                        placeholder="What changed in this version?"
+                        value={versionNotes}
+                        onChange={(e) => setVersionNotes(e.target.value)}
+                      />
+                    </div>
+                    <input 
+                      type="file" 
+                      ref={versionFileInputRef}
+                      className="hidden" 
+                      onChange={handleUploadNewVersion}
+                    />
+                    <button
+                      onClick={() => versionFileInputRef.current?.click()}
+                      disabled={isUploadingVersion}
+                      className="w-full py-3 border-2 border-dashed border-blue-200 dark:border-blue-900/30 rounded-xl flex flex-col items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group"
+                    >
+                      {isUploadingVersion ? (
+                        <ArrowPathIcon className="h-6 w-6 text-blue-500 animate-spin" />
+                      ) : (
+                        <CloudArrowUpIcon className="h-6 w-6 text-blue-400 group-hover:text-blue-600 transition-colors" />
+                      )}
+                      <span className="text-[10px] font-bold text-gray-400 group-hover:text-blue-600 uppercase tracking-wider">
+                        {isUploadingVersion ? 'Uploading...' : 'Click to select file'}
+                      </span>
+                    </button>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {(asset?.versions || []).map((version: any, index: number) => {
+                    const isLatest = index === 0;
+                    return (
+                      <div 
+                        key={version.id} 
+                        className={`group relative bg-white dark:bg-[#151720] border rounded-2xl p-4 transition-all hover:shadow-xl ${
+                          isLatest 
+                            ? 'border-blue-500 dark:border-blue-500/50 shadow-blue-500/5' 
+                            : 'border-gray-100 dark:border-gray-800'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex gap-4">
+                            <div className={`h-10 w-10 flex-shrink-0 rounded-xl flex items-center justify-center ${isLatest ? 'bg-blue-600' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                              <span className={`text-xs font-bold ${isLatest ? 'text-white' : 'text-gray-400'}`}>
+                                v{version.version_number}
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
+                                  {isLatest ? 'Current Version' : `Version ${version.version_number}`}
+                                </span>
+                                {isLatest && (
+                                  <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[8px] font-extrabold uppercase rounded tracking-tighter">Active</span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2 italic">
+                                {version.notes || 'No change notes provided.'}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400 font-medium">
+                                <span className="flex items-center gap-1">
+                                  <ClockIcon className="h-3 w-3" />
+                                  {version.created_at ? new Date(version.created_at).toLocaleString() : 'N/A'}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <DocumentIcon className="h-3 w-3" />
+                                  {(version.size / 1024 / 1024).toFixed(2)} MB
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                             <a 
+                               href={`${BASE_URL}/assets/${assetId}/versions/${version.id}/view`}
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                               title="View original"
+                             >
+                               <ArrowDownTrayIcon className="h-4 w-4" />
+                             </a>
+                             {!isLatest && (
+                               <button 
+                                 onClick={() => handleRevert(version.id)}
+                                 className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                 title="Revert to this version"
+                               >
+                                 <ArrowPathIcon className="h-4 w-4" />
+                               </button>
+                             )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {(asset?.versions?.length || 0) === 0 && (
+                    <div className="p-12 text-center bg-gray-50 dark:bg-gray-900/20 border border-dashed border-gray-200 dark:border-gray-800 rounded-3xl">
+                      <ClockIcon className="h-12 w-12 text-gray-300 dark:text-gray-800 mx-auto mb-4" />
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No version history available</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
