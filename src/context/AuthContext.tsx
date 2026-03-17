@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { components } from '@/types/api';
 
-type User = components['schemas']['UpdateUserDto'] & { id: string };
+type User = components['schemas']['UpdateUserDto'] & { 
+  id: string; 
+  system_role?: string;
+  customerId?: string;
+};
 
 interface AuthContextType {
   user: User | null;

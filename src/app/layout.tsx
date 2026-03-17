@@ -15,7 +15,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Open DAM",
+  title: {
+    default: "Open DAM",
+    template: "%s | Open DAM",
+  },
   description: "Open source Digital Asset Management system",
 };
 

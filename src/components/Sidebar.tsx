@@ -15,7 +15,10 @@ import {
   CheckIcon,
   PlusIcon,
   TagIcon,
-  Square3Stack3DIcon
+  Square3Stack3DIcon,
+  ShieldCheckIcon,
+  KeyIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
@@ -26,6 +29,12 @@ const NAV = [
   { name: 'Collections', href: '/dashboard/collections', icon: Square3Stack3DIcon },
   { name: 'Trash', href: '/dashboard/trash', icon: TrashIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
+];
+
+const ADMIN_NAV = [
+  { name: 'Users', href: '/dashboard/admin/users', icon: UsersIcon },
+  { name: 'Roles', href: '/dashboard/admin/roles', icon: ShieldCheckIcon },
+  { name: 'Permissions', href: '/dashboard/admin/permissions', icon: KeyIcon },
 ];
 
 export default function Sidebar() {
@@ -157,6 +166,47 @@ export default function Sidebar() {
               );
             })}
           </nav>
+
+          {user?.system_role === 'SUPER_ADMIN' && (
+            <>
+              {!collapsed && (
+                <p className="px-6 py-2 mt-4 text-[10px] font-semibold text-gray-600 uppercase tracking-widest">
+                  Admin
+                </p>
+              )}
+              <nav className={`flex flex-col gap-0.5 ${collapsed ? 'items-center px-2' : 'px-3'}`}>
+                {ADMIN_NAV.map((item) => {
+                  const active = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={collapsed ? item.name : undefined}
+                      className={`flex items-center rounded-lg transition-all duration-150 group ${
+                        collapsed ? 'justify-center w-10 h-10' : 'gap-3 px-3 py-2'
+                      } ${
+                        active
+                          ? 'bg-purple-600/15 text-purple-400'
+                          : 'text-gray-500 hover:text-gray-200 hover:bg-gray-800/70'
+                      }`}
+                    >
+                      <item.icon
+                        className={`flex-shrink-0 transition-colors ${collapsed ? 'h-5 w-5' : 'h-4 w-4'} ${
+                          active ? 'text-purple-400' : 'text-gray-500 group-hover:text-gray-300'
+                        }`}
+                      />
+                      {!collapsed && (
+                        <span className="text-sm font-medium">{item.name}</span>
+                      )}
+                      {active && !collapsed && (
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-purple-400" />
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </>
+          )}
         </div>
 
         <div className={`border-t border-gray-800/60 flex-shrink-0 ${collapsed ? 'py-3 flex flex-col items-center gap-2' : 'p-3'}`}>

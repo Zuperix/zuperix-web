@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch, BASE_URL } from '@/lib/api';
+import CommentsSection from '@/components/CommentsSection';
 import { 
   ArrowLeftIcon, 
   ArrowPathIcon,
@@ -26,7 +27,8 @@ import {
   ChevronUpIcon,
   GlobeAltIcon,
   PlusIcon,
-  CloudArrowUpIcon
+  CloudArrowUpIcon,
+  ChatBubbleLeftIcon
 } from '@heroicons/react/24/outline';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useCollections, Collection as CollectionType } from '@/hooks/useCollections';
@@ -44,7 +46,7 @@ interface MetadataValue {
   value: any;
 }
 
-type Tab = 'details' | 'file-info' | 'attachments' | 'versions';
+type Tab = 'details' | 'file-info' | 'attachments' | 'versions' | 'comments';
 
 export default function AssetDetailPage() {
   const params = useParams();
@@ -476,6 +478,7 @@ export default function AssetDetailPage() {
               { id: 'file-info', label: 'File info', icon: InboxIcon },
               { id: 'attachments', label: 'Attachments', icon: Square3Stack3DIcon },
               { id: 'versions', label: 'Versions', icon: ClockIcon },
+              { id: 'comments', label: 'Comments', icon: ChatBubbleLeftIcon },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1037,6 +1040,11 @@ export default function AssetDetailPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+            {activeTab === 'comments' && (
+              <div className="h-full animate-in fade-in slide-in-from-right-2 duration-300">
+                <CommentsSection assetId={assetId} />
               </div>
             )}
           </div>
