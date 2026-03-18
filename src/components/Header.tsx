@@ -2,7 +2,7 @@
 
 import { MagnifyingGlassIcon, Bars3Icon, BellIcon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon } from '@heroicons/react/24/outline';
 import { useLayout } from '@/context/LayoutContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState, useRef } from 'react';
 import { useWorkspace } from '@/context/WorkspaceContext';
@@ -13,6 +13,7 @@ export default function Header() {
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const router = useRouter();
+  const pathname = usePathname();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -63,7 +64,7 @@ export default function Header() {
   };
 
   const fetchSuggestions = async (query: string) => {
-    if (!activeWorkspace || !query.trim() || query.length < 2) {
+    if (!activeWorkspace || !query.trim() || query.length < 2 || pathname === '/dashboard/search') {
       setSuggestions([]);
       setShowSuggestions(false);
       return;

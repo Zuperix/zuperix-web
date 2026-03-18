@@ -199,6 +199,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
   // ... rest of component
   const filterConfig: Record<string, { label: string; icon: any }> = {
     mime_type: { label: 'File Type', icon: Square3Stack3DIcon },
+    status: { label: 'Status', icon: ClockIcon },
     orientation: { label: 'Orientation', icon: ArrowsPointingOutIcon },
     tag_uuids: { label: 'Tags', icon: TagIcon },
     file_extension: { label: 'Extension', icon: DocumentIcon },
@@ -210,6 +211,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     category_uuids: { label: 'Categories', icon: TagIcon },
     category_paths: { label: 'Category', icon: TagIcon },
     collection_uuids: { label: 'Collections', icon: FolderIcon },
+    uploaded_by_id: { label: 'Uploaded By', icon: IdentificationIcon },
   };
 
   const getGroupConfig = (key: string) => {

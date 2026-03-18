@@ -28,6 +28,16 @@ type AssetDetails = {
   mime_type: string;
   size: number;
   created_at: string;
+  status: string;
+  release_date: string | null;
+  expiration_date: string | null;
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  pending_review: 'Pending Review',
+  approved: 'Approved',
+  archived: 'Archived'
 };
 
 import AssetOrganizationDialog from './AssetOrganizationDialog';
@@ -57,21 +67,26 @@ export default function MetadataPanel({
       setLoading(true);
       setError('');
       
-      // Fetch all field definitions for the workspace
-      const fieldDefs = await apiFetch<Field[]>(`/workspaces/${workspaceId}/metadata/fields`);
-      setFields(fieldDefs);
+      const [fieldDefs, currentValues, assetData] = await Promise.all([
+        apiFetch<Field[]>(`/workspaces/${workspaceId}/metadata/fields`),
+        apiFetch<MetadataValue[]>(`/assets/${assetId}/metadata`),
+        apiFetch<AssetDetails>(`/assets/${assetId}`)
+      ]);
 
-      // Fetch current values for this asset
-      const currentValues = await apiFetch<MetadataValue[]>(`/assets/${assetId}/metadata`);
-      const valueMap: Record<string, any> = {};
+      setFields(fieldDefs);
+      setAsset(assetData);
+
+      const valueMap: Record<string, any> = {
+        _status: assetData.status,
+        _release_date: assetData.release_date ? assetData.release_date.split('T')[0] : '',
+        _expiration_date: assetData.expiration_date ? assetData.expiration_date.split('T')[0] : '',
+      };
+      
       currentValues.forEach(v => {
         valueMap[v.fieldId] = v.value;
       });
       setValues(valueMap);
 
-      // Fetch asset details (hacky way for now since we don't have a single asset GET, 
-      // but we can find it in the list or maybe we should add a GET /assets/:id)
-      // For now, assume we'll just show the preview if it's an image
     } catch (err: any) {
       setError('Failed to load metadata');
       console.error(err);
@@ -89,15 +104,27 @@ export default function MetadataPanel({
     setError('');
     setSuccess(false);
     try {
-      const entries = Object.entries(values).map(([fieldId, value]) => ({
-        fieldId,
-        value,
-      }));
+      const entries = Object.entries(values)
+        .filter(([key]) => !key.startsWith('_'))
+        .map(([fieldId, value]) => ({
+          fieldId,
+          value,
+        }));
 
-      await apiFetch(`/assets/${assetId}/metadata`, {
-        method: 'PUT',
-        body: JSON.stringify({ entries }),
-      });
+      await Promise.all([
+        apiFetch(`/assets/${assetId}/metadata`, {
+          method: 'PUT',
+          body: JSON.stringify({ entries }),
+        }),
+        apiFetch(`/assets/${assetId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: values._status,
+            release_date: values._release_date || null,
+            expiration_date: values._expiration_date || null,
+          }),
+        })
+      ]);
       
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -111,8 +138,6 @@ export default function MetadataPanel({
   const updateValue = (fieldId: string, value: any) => {
     setValues(prev => ({ ...prev, [fieldId]: value }));
   };
-
-  const isImage = (mime: string) => mime?.startsWith('image/');
 
   return (
     <div className="flex flex-col h-full bg-gray-900 border-l border-gray-800 w-[350px] shadow-2xl animate-in slide-in-from-right duration-300">
@@ -136,8 +161,11 @@ export default function MetadataPanel({
               className="w-full h-full object-contain"
               alt="Asset preview"
               onError={(e) => {
-                (e.target as any).style.display = 'none';
-                (e.target as any).nextSibling.style.display = 'flex';
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                if (target.nextElementSibling) {
+                  (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                }
               }}
             />
             <div className="hidden absolute inset-0 items-center justify-center bg-gray-800">
@@ -178,6 +206,54 @@ export default function MetadataPanel({
                 </div>
               )}
               
+              <div className="space-y-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <ArrowPathIcon className="h-4 w-4 text-gray-500" />
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lifecycle</h3>
+                </div>
+
+                <div className="space-y-2 group">
+                  <label className="block text-[10px] font-bold text-gray-500 group-focus-within:text-blue-400 uppercase tracking-widest transition-colors">
+                    Status
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 text-sm bg-gray-800/50 border border-gray-700/50 rounded-lg focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all text-gray-200 outline-none appearance-none cursor-pointer"
+                    value={values._status || ''}
+                    onChange={(e) => updateValue('_status', e.target.value)}
+                  >
+                    {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2 group">
+                  <label className="block text-[10px] font-bold text-gray-500 group-focus-within:text-blue-400 uppercase tracking-widest transition-colors">
+                    Release Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 text-sm bg-gray-800/50 border border-gray-700/50 rounded-lg focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all text-gray-200 outline-none"
+                    value={values._release_date || ''}
+                    onChange={(e) => updateValue('_release_date', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2 group">
+                  <label className="block text-[10px] font-bold text-gray-500 group-focus-within:text-blue-400 uppercase tracking-widest transition-colors">
+                    Expiration Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 text-sm bg-gray-800/50 border border-gray-700/50 rounded-lg focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all text-gray-200 outline-none"
+                    value={values._expiration_date || ''}
+                    onChange={(e) => updateValue('_expiration_date', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="h-px bg-gray-800/50 my-6" />
+
               <div className="space-y-5">
                 <div className="flex items-center gap-2 mb-2">
                   <TagIcon className="h-4 w-4 text-gray-500" />
@@ -268,7 +344,7 @@ export default function MetadataPanel({
               <ArrowPathIcon className="h-4 w-4 animate-spin" />
             ) : success ? (
               <CheckIcon className="h-4 w-4" />
-          ) : null}
+            ) : null}
             {saving ? 'Saving...' : success ? 'Updated' : 'Save Changes'}
           </button>
         </PermissionGate>

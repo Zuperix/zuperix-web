@@ -51,6 +51,20 @@ interface MetadataValue {
 
 type Tab = 'file-info' | 'attachments' | 'versions' | 'comments' | 'history';
 
+const STATUS_STYLING: Record<string, string> = {
+  draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  pending_review: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30',
+  approved: 'bg-green-500/20 text-green-500 border-green-500/30',
+  archived: 'bg-red-500/20 text-red-400 border-red-500/30',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  pending_review: 'Pending Review',
+  approved: 'Approved',
+  archived: 'Archived',
+};
+
 export default function AssetDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -206,7 +220,7 @@ export default function AssetDetailPage() {
       setSaving(false);
     }
   };
-  const handleUpdateAsset = async (updates: { release_date?: string | null; expiration_date?: string | null }) => {
+  const handleUpdateAsset = async (updates: { status?: string; release_date?: string | null; expiration_date?: string | null }) => {
     if (!assetId) return;
     try {
       setSaving(true);
@@ -414,7 +428,14 @@ export default function AssetDetailPage() {
 
       <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-[#0f111a] border-b border-gray-200 dark:border-gray-800/60 sticky top-0 z-20">
         <div>
-          <h1 className="text-xl font-bold truncate max-w-[600px] leading-tight text-blue-900 dark:text-gray-100">{asset?.original_name || 'Asset Details'}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold truncate max-w-[600px] leading-tight text-blue-900 dark:text-gray-100">{asset?.original_name || 'Asset Details'}</h1>
+            {asset?.status && (
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                {STATUS_LABELS[asset.status] || asset.status}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -755,6 +776,26 @@ export default function AssetDetailPage() {
                     <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Ownership & Dates</label>
                   </div>
                   <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</span>
+                      <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                        <div className="relative group">
+                          <select
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                            value={asset?.status || ''}
+                            onChange={(e) => handleUpdateAsset({ status: e.target.value })}
+                          >
+                            {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                              <option key={val} value={val}>{label}</option>
+                            ))}
+                          </select>
+                          <div className={`flex items-center gap-3 px-3 py-1.5 border rounded-xl text-[11px] font-bold transition-all ${STATUS_STYLING[asset?.status || ''] || 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800'}`}>
+                            {STATUS_LABELS[asset?.status || ''] || 'Set status'}
+                            <ChevronDownIcon className="h-3.5 w-3.5 opacity-50" />
+                          </div>
+                        </div>
+                      </PermissionGate>
+                    </div>
                     {[
                       { id: 'release_date', label: 'Release date', value: asset?.release_date },
                       { id: 'expiration_date', label: 'Expiration date', value: asset?.expiration_date },

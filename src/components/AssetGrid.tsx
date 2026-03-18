@@ -24,6 +24,21 @@ type Asset = components['schemas']['MetadataEntryDto'] & {
   size: number;
   created_at: string;
   color_palette?: string[] | null;
+  status?: string;
+};
+
+const STATUS_STYLING: Record<string, string> = {
+  draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  pending_review: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30',
+  approved: 'bg-green-500/20 text-green-500 border-green-500/30',
+  archived: 'bg-red-500/20 text-red-400 border-red-500/30',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
+  pending_review: 'Pending',
+  approved: 'Approved',
+  archived: 'Archived',
 };
 
 const getIcon = (mime: string) => {
@@ -81,6 +96,13 @@ const AssetCard = ({
           <div className="flex flex-col items-center gap-2">
             <Icon className="h-14 w-14 text-gray-300 dark:text-gray-700 group-hover:text-blue-500/50 transition-colors" />
             <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest">{mimeType.split('/')[1] || 'FILE'}</span>
+          </div>
+        )}
+
+        {/* Status Badge */}
+        {asset.status && (
+          <div className={`absolute top-3 left-3 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border backdrop-blur-md z-20 ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+            {STATUS_LABELS[asset.status] || asset.status}
           </div>
         )}
         
