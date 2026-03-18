@@ -11,6 +11,7 @@ import {
   PhotoIcon,
   VideoCameraIcon,
 } from '@heroicons/react/24/outline';
+import { BASE_URL } from '@/lib/api';
 
 const CONCURRENCY = 5;
 const MAX_FILES = 500;
@@ -25,6 +26,10 @@ interface FileEntry {
   progress: number;
   error?: string;
   force?: boolean;
+  duplicateAsset?: {
+    id: string;
+    original_name: string;
+  };
 }
 
 function fileIcon(file: File) {
@@ -47,7 +52,7 @@ function uploadFileXHR(
   token: string | null,
   onProgress: (pct: number) => void,
   force: boolean = false
-): Promise<void> {
+): Promise<void | { id: string; original_name: string }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
@@ -67,7 +72,7 @@ function uploadFileXHR(
         try {
           const body = JSON.parse(xhr.responseText);
           if (xhr.status === 409) {
-            reject(new DuplicateError(body.message || 'Duplicate detected'));
+            reject(new DuplicateError(body.message || 'Duplicate detected', body.existing_asset));
             return;
           }
           msg = body.message || msg;
@@ -87,9 +92,16 @@ function uploadFileXHR(
 }
 
 class DuplicateError extends Error {
-  constructor(message: string) {
+  public asset?: { id: string; original_name: string };
+  constructor(message: string, asset?: any) {
     super(message);
     this.name = 'DuplicateError';
+    if (asset) {
+      this.asset = {
+        id: asset.id,
+        original_name: asset.originalName || asset.original_name,
+      };
+    }
   }
 }
 
@@ -157,7 +169,12 @@ export default function UploadModal({
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: any) {
         if (err instanceof DuplicateError) {
-          updateEntry(entry.id, { status: 'duplicate', progress: 0, error: err.message });
+          updateEntry(entry.id, { 
+            status: 'duplicate', 
+            progress: 0, 
+            error: err.message,
+            duplicateAsset: err.asset
+          });
         } else {
           updateEntry(entry.id, { status: 'error', progress: 0, error: err.message });
         }
@@ -212,7 +229,7 @@ export default function UploadModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-all">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b dark:border-gray-800 flex-shrink-0">
           <div>
@@ -234,7 +251,9 @@ export default function UploadModal({
                   <span className="text-red-500 ml-2">· {counts.error} failed</span>
                 )}
                 {counts.duplicate > 0 && (
-                  <span className="text-amber-500 ml-2">· {counts.duplicate} duplicate</span>
+                  <span className="text-amber-500 ml-2 font-bold tracking-tight bg-amber-500/10 px-1.5 py-0.5 rounded">
+                    {counts.duplicate} duplication conflicts found
+                  </span>
                 )}
               </span>
               <span className="text-gray-500">{overallProgress}%</span>
@@ -249,7 +268,7 @@ export default function UploadModal({
         )}
 
         {/* Drop zone or File list */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0 custom-scrollbar">
           {/* Drop zone — always visible if not at max files */}
           {entries.length < MAX_FILES && (
             <div
@@ -283,84 +302,109 @@ export default function UploadModal({
 
           {/* File list */}
           {entries.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {entries.map((entry) => {
                 const Icon = fileIcon(entry.file);
                 const isActive = entry.status === 'uploading';
+                const isDuplicate = entry.status === 'duplicate';
+                
                 return (
-                  <div
-                    key={entry.id}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${
-                      entry.status === 'done'
-                        ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/30'
-                        : entry.status === 'error'
-                        ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30'
-                        : entry.status === 'duplicate'
-                        ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/30'
-                        : 'bg-white dark:bg-gray-800/50 border-gray-100 dark:border-gray-800'
-                    }`}
-                  >
-                    <div className="flex-shrink-0">
-                      <Icon className="h-6 w-6 text-gray-400" />
-                    </div>
+                  <div key={entry.id} className="flex flex-col gap-2">
+                    <div
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
+                        entry.status === 'done'
+                          ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/30'
+                          : entry.status === 'error'
+                          ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30'
+                          : isDuplicate
+                          ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/30 ring-1 ring-amber-500/20 shadow-sm'
+                          : 'bg-white dark:bg-gray-800/50 border-gray-100 dark:border-gray-800'
+                      }`}
+                    >
+                      <div className="flex-shrink-0">
+                        <Icon className="h-6 w-6 text-gray-400" />
+                      </div>
 
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium dark:text-white truncate">{entry.file.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-xs text-gray-400">{formatSize(entry.file.size)}</p>
-                        {entry.error && (
-                          <p className="text-xs text-red-500 truncate">{entry.error}</p>
-                        )}
-                        {entry.status === 'duplicate' && !entry.error && (
-                          <p className="text-xs text-amber-500">Duplicate</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium dark:text-white truncate">{entry.file.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-xs text-gray-400">{formatSize(entry.file.size)}</p>
+                          {entry.error && !isDuplicate && (
+                            <p className="text-xs text-red-500 truncate">{entry.error}</p>
+                          )}
+                        </div>
+
+                        {isActive && (
+                          <div className="mt-1.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1 overflow-hidden">
+                            <div
+                              className="h-full bg-blue-500 rounded-full transition-all duration-200"
+                              style={{ width: `${entry.progress}%` }}
+                            />
+                          </div>
                         )}
                       </div>
 
-                      {isActive && (
-                        <div className="mt-1.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1 overflow-hidden">
-                          <div
-                            className="h-full bg-blue-500 rounded-full transition-all duration-200"
-                            style={{ width: `${entry.progress}%` }}
-                          />
-                        </div>
-                      )}
+                      <div className="flex-shrink-0 flex items-center gap-1">
+                        {entry.status === 'done' && (
+                          <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                        )}
+                        {entry.status === 'error' && (
+                          <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
+                        )}
+                        {isDuplicate && (
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] font-bold text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Duplicate</span>
+                          </div>
+                        )}
+                        {entry.status === 'uploading' && (
+                          <ArrowPathIcon className="h-5 w-5 text-blue-400 animate-spin" />
+                        )}
+                        {(entry.status === 'pending' || entry.status === 'error' || isDuplicate) && !running && (
+                          <button
+                            onClick={() => removeEntry(entry.id)}
+                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-400 transition-colors"
+                          >
+                            <XMarkIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex-shrink-0 flex items-center gap-1">
-                      {entry.status === 'done' && (
-                        <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                      )}
-                      {entry.status === 'error' && (
-                        <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
-                      )}
-                      {entry.status === 'duplicate' && (
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-[10px] font-bold text-amber-500 border border-amber-400 rounded px-1 uppercase tracking-tight">Duplicate</span>
-                          {!running && (
-                            <button
-                              onClick={() => {
-                                updateEntry(entry.id, { force: true });
-                                setTimeout(() => uploadAll(), 0);
-                              }}
-                              className="text-[10px] font-bold text-blue-600 hover:text-blue-700 underline uppercase tracking-tight"
-                            >
-                              Force
-                            </button>
+                    {/* Duplicate preview box */}
+                    {isDuplicate && entry.duplicateAsset && (
+                      <div className="ml-9 mr-2 p-3 bg-amber-50/50 dark:bg-amber-900/5 rounded-2xl border border-amber-200/50 dark:border-amber-800/10 flex items-center gap-4 animate-in slide-in-from-top-1 duration-200">
+                        <div className="h-16 w-16 bg-white dark:bg-gray-950 rounded-lg overflow-hidden border border-amber-200 dark:border-amber-800 shadow-inner flex-shrink-0">
+                          {entry.file.type.startsWith('image/') ? (
+                            <img 
+                              src={`${BASE_URL}/assets/${entry.duplicateAsset.id}/view`} 
+                              className="h-full w-full object-cover" 
+                              alt="Existing duplicate" 
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <DocumentIcon className="h-6 w-6 text-amber-200" />
+                            </div>
                           )}
                         </div>
-                      )}
-                      {entry.status === 'uploading' && (
-                        <ArrowPathIcon className="h-5 w-5 text-blue-400 animate-spin" />
-                      )}
-                      {(entry.status === 'pending' || entry.status === 'error') && !running && (
-                        <button
-                          onClick={() => removeEntry(entry.id)}
-                          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-400 transition-colors"
-                        >
-                          <XMarkIcon className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-1">Found Match in Library</p>
+                          <p className="text-xs text-amber-800 dark:text-amber-200 font-medium truncate mb-2">{entry.duplicateAsset.original_name}</p>
+                          {!running && (
+                            <div className="flex items-center gap-3">
+                              <button
+                                onClick={() => {
+                                  updateEntry(entry.id, { force: true });
+                                  setTimeout(() => uploadAll(), 0);
+                                }}
+                                className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 hover:text-blue-700 underline uppercase tracking-widest"
+                              >
+                                Skip and upload anyway
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

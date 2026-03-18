@@ -183,8 +183,13 @@ export default function Header() {
                     )}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500 transition-colors">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500 transition-colors flex items-center gap-2">
                       {asset.original_name}
+                      {asset.is_ocr_match && (
+                        <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[8px] font-extrabold uppercase rounded tracking-tighter shrink-0 ring-1 ring-amber-500/20">
+                          OCR Match
+                        </span>
+                      )}
                     </span>
                     <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
                       {(asset.mime_type || 'file').split('/')[1]} • {formatSize(asset.size)}

@@ -867,6 +867,23 @@ export default function AssetDetailPage() {
                   )}
                 </div>
               </section>
+
+              {/* OCR Text Section */}
+              {asset?.ocr_text && (
+                <section className="space-y-6 bg-white dark:bg-[#151720] p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                  <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
+                    <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                      <DocumentIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">AI Extracted Text</label>
+                  </div>
+                  <div className="p-6 bg-gray-50/50 dark:bg-[#0a0b10]/50 border border-gray-200 dark:border-gray-800 rounded-2xl">
+                    <div className="text-sm leading-relaxed text-gray-600 dark:text-gray-400 font-mono whitespace-pre-wrap max-h-[500px] overflow-y-auto custom-scrollbar selection:bg-blue-500/30">
+                      {asset.ocr_text}
+                    </div>
+                  </div>
+                </section>
+              )}
             </div>
           </div>
         </div>

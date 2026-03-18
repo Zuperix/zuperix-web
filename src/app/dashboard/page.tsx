@@ -8,6 +8,7 @@ import AssetGrid from '@/components/AssetGrid';
 import UploadModal from '@/components/UploadModal';
 import MetadataPanel from '@/components/MetadataPanel';
 import FilterSidebar from '@/components/FilterSidebar';
+import DuplicateFinderModal from '@/components/DuplicateFinderModal';
 import { 
   PlusIcon, 
   ArrowPathIcon, 
@@ -15,7 +16,8 @@ import {
   ChevronLeftIcon, 
   ChevronRightIcon, 
   MagnifyingGlassIcon, 
-  FunnelIcon 
+  FunnelIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
 import Pagination from '@/components/Pagination';
@@ -148,6 +150,7 @@ function DashboardContent() {
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isDuplicateFinderOpen, setIsDuplicateFinderOpen] = useState(false);
   const { sidebarCollapsed, setSidebarCollapsed, isFilterOpen, setIsFilterOpen } = useLayout();
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
 
@@ -336,6 +339,13 @@ function DashboardContent() {
                   </button>
                 </div>
                 <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                  <button 
+                    onClick={() => setIsDuplicateFinderOpen(true)}
+                    className="flex-1 flex items-center justify-center px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all shrink-0"
+                  >
+                    <SparklesIcon className="h-4 w-4 mr-1.5" />
+                    Clean Library
+                  </button>
                   <SortDropdown 
                     currentSortBy={currentSort.by}
                     currentSortOrder={currentSort.order}
@@ -395,6 +405,14 @@ function DashboardContent() {
           workspaceId={activeWorkspace.id} 
           onClose={() => setIsUploadOpen(false)} 
           onSuccess={fetchAssets}
+        />
+      )}
+
+      {isDuplicateFinderOpen && (
+        <DuplicateFinderModal
+          workspaceId={activeWorkspace.id}
+          onClose={() => setIsDuplicateFinderOpen(false)}
+          onRefresh={fetchAssets}
         />
       )}
     </div>

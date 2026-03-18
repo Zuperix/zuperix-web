@@ -31,6 +31,7 @@ type AssetDetails = {
   status: string;
   release_date: string | null;
   expiration_date: string | null;
+  ocr_text?: string | null;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -315,6 +316,24 @@ export default function MetadataPanel({
                   ))
                 )}
               </div>
+
+              {/* OCR Text Section */}
+              {asset?.ocr_text && (
+                <>
+                  <div className="h-px bg-gray-800/50 my-6" />
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <DocumentIcon className="h-4 w-4 text-gray-500" />
+                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">AI Extracted Text</h3>
+                    </div>
+                    <div className="p-3 bg-gray-950/40 border border-gray-800 rounded-xl">
+                      <div className="text-[11px] leading-relaxed text-gray-400 font-mono whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar selection:bg-blue-500/30">
+                        {asset.ocr_text}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

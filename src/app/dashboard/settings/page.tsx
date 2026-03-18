@@ -32,6 +32,14 @@ const SETTINGS_SECTIONS = [
     icon: QueueListIcon,
     href: '/dashboard/settings/workflows',
     color: 'bg-purple-500/10 text-purple-400',
+  },
+  {
+    id: 'api-keys',
+    name: 'API Keys',
+    description: 'Manage API keys for programmatic access to your assets.',
+    icon: IdentificationIcon, // Will use KeyIcon if I can find it, but IdentificationIcon is already imported
+    href: '/dashboard/settings/api-keys',
+    color: 'bg-amber-500/10 text-amber-400',
   }
 ];
 
