@@ -9,6 +9,7 @@ import UploadModal from '@/components/UploadModal';
 import MetadataPanel from '@/components/MetadataPanel';
 import FilterSidebar from '@/components/FilterSidebar';
 import DuplicateFinderModal from '@/components/DuplicateFinderModal';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import { 
   PlusIcon, 
   ArrowPathIcon, 
@@ -55,7 +56,7 @@ function FilterChips({
   Object.entries(activeFilters).forEach(([key, value]) => {
     if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) return;
     
-    if (key.startsWith('ws') || key === 'page' || key === 'limit') return;
+    if (key.startsWith('ws') || key === 'page' || key === 'limit' || key === 'is_semantic') return;
 
     const label = filterLabels[key] || (key.startsWith('metadata.') ? key.split('.')[1].replace(/_/g, ' ') : key);
     
@@ -153,6 +154,13 @@ function DashboardContent() {
   const [isDuplicateFinderOpen, setIsDuplicateFinderOpen] = useState(false);
   const { sidebarCollapsed, setSidebarCollapsed, isFilterOpen, setIsFilterOpen } = useLayout();
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const q = searchParams.get('q') || '';
+  const isSemantic = searchParams.get('is_semantic') === 'true';
+
+  // Delete Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [assetToDelete, setAssetToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const params: Record<string, any> = {};
@@ -266,16 +274,25 @@ function DashboardContent() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this asset?')) return;
+  const confirmDelete = async () => {
+    if (!assetToDelete) return;
     try {
-      // Deleting uses the original assets endpoint
-      await apiFetch(`/assets/${id}`, { method: 'DELETE' });
-      setAssets(prev => prev.filter((a: any) => a.id !== id));
-      if (selectedAssetId === id) setSelectedAssetId(null);
+      setIsDeleting(true);
+      await apiFetch(`/assets/${assetToDelete}`, { method: 'DELETE' });
+      setAssets(prev => prev.filter((a: any) => a.id !== assetToDelete));
+      if (selectedAssetId === assetToDelete) setSelectedAssetId(null);
+      setDeleteModalOpen(false);
+      setAssetToDelete(null);
     } catch (error) {
-      alert('Failed to delete asset');
+      alert('Delete failed');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDeleteTrigger = (id: string) => {
+    setAssetToDelete(id);
+    setDeleteModalOpen(true);
   };
 
   if (!activeWorkspace) {
@@ -300,9 +317,12 @@ function DashboardContent() {
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Assets</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                  {q ? 'Search Results' : 'Assets'}
+                </h1>
                 <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
                   Showing <span className="text-gray-900 dark:text-gray-100 font-semibold">{assets.length}</span> out of <span className="text-gray-900 dark:text-gray-100 font-semibold">{totalMatching}</span> assets
+                  {isSemantic && <span className="ml-2 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-500 text-[10px] font-medium rounded-full border border-amber-200/50 dark:border-amber-800/30 transition-all animate-pulse">AI can make mistakes</span>}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -386,7 +406,7 @@ function DashboardContent() {
             <div>
               <AssetGrid 
                 assets={assets} 
-                onDelete={handleDelete} 
+                onDelete={handleDeleteTrigger} 
                 onSelect={(id) => router.push(`/dashboard/assets/${id}`)}
               />
               
@@ -415,6 +435,14 @@ function DashboardContent() {
           onRefresh={fetchAssets}
         />
       )}
+
+      {/* Custom Delete Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        isDeleting={isDeleting}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

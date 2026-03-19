@@ -2,7 +2,7 @@
 
 import { MagnifyingGlassIcon, Bars3Icon, BellIcon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon } from '@heroicons/react/24/outline';
 import { useLayout } from '@/context/LayoutContext';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState, useRef } from 'react';
 import { useWorkspace } from '@/context/WorkspaceContext';
@@ -15,6 +15,7 @@ export default function Header() {
   const { activeWorkspace } = useWorkspace();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -60,10 +61,23 @@ export default function Header() {
     }
   };
 
+
   const toggleSemantic = () => {
     const newState = !isSemantic;
     setIsSemantic(newState);
     localStorage.setItem('isSemantic', String(newState));
+    
+    // If on dashboard or search results, update the URL to trigger re-fetch
+    if (pathname === '/dashboard') {
+      const params = new URLSearchParams(searchParams.toString());
+      if (newState) {
+        params.set('is_semantic', 'true');
+      } else {
+        params.delete('is_semantic');
+      }
+      router.push(`${pathname}?${params.toString()}`);
+    }
+
     // Trigger fresh suggestions with new state
     if (searchQuery.length > 1) {
       fetchSuggestions(searchQuery, newState);
@@ -74,7 +88,7 @@ export default function Header() {
     e.preventDefault();
     setShowSuggestions(false);
     if (searchQuery.trim()) {
-      router.push(`/dashboard/search?q=${encodeURIComponent(searchQuery)}${isSemantic ? '&is_semantic=true' : ''}`);
+      router.push(`/dashboard?q=${encodeURIComponent(searchQuery)}${isSemantic ? '&is_semantic=true' : ''}`);
     }
   };
 
@@ -139,9 +153,6 @@ export default function Header() {
         <div className="hidden lg:flex flex-col">
           <span className="text-[10px] font-bold text-blue-600 dark:text-blue-500 uppercase tracking-[0.2em] leading-none mb-1">
             {activeWorkspace?.name || 'Workspace'}
-          </span>
-          <span className="text-xs font-medium text-gray-400 dark:text-gray-500 truncate max-w-[120px]">
-            Digital Assets
           </span>
         </div>
       </div>
