@@ -26,7 +26,6 @@ import { Action } from '@/types/auth';
 
 const NAV = [
   { name: 'Assets', href: '/dashboard', icon: FolderIcon },
-  { name: 'Search', href: '/dashboard/search', icon: MagnifyingGlassIcon },
   { name: 'Categories', href: '/dashboard/categories', icon: TagIcon },
   { name: 'Collections', href: '/dashboard/collections', icon: Square3Stack3DIcon },
   { name: 'Trash', href: '/dashboard/trash', icon: TrashIcon },

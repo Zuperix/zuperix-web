@@ -5,28 +5,39 @@ import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch } from '@/lib/api';
 import AssetGrid from '@/components/AssetGrid';
 import Pagination from '@/components/Pagination';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
-
 import { useLayout } from '@/context/LayoutContext';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function SearchPage() {
   const { activeWorkspace } = useWorkspace();
   const { searchQuery, setSearchQuery } = useLayout();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [results, setResults] = useState<any[]>([]);
   const [totalResults, setTotalResults] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isSemantic, setIsSemantic] = useState(searchParams.get('is_semantic') === 'true');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // Delete Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [assetToDelete, setAssetToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleSearch = useCallback(async (q: string, p: number, l: number) => {
+  const handleSearch = useCallback(async (q: string, p: number, l: number, s: boolean) => {
     if (!activeWorkspace || !q.trim()) {
       setResults([]);
       return;
     }
     try {
       setLoading(true);
-      const data = await apiFetch<{ results: any[], pagination: { total_results: number, total_pages: number } }>(`/workspaces/${activeWorkspace.id}/search/assets?q=${encodeURIComponent(q)}&limit=${l}&page=${p}`);
+      const data = await apiFetch<{ results: any[], pagination: { total_results: number, total_pages: number } }>(
+        `/workspaces/${activeWorkspace.id}/search/assets?q=${encodeURIComponent(q)}&limit=${l}&page=${p}${s ? '&is_semantic=true' : ''}`
+      );
       setResults(data.results || []);
       setTotalResults(data.pagination?.total_results || 0);
       setTotalPages(data.pagination?.total_pages || 1);
@@ -38,22 +49,40 @@ export default function SearchPage() {
     }
   }, [activeWorkspace]);
 
+  // Sync state from URL on mount or param change
+  useEffect(() => {
+    const semanticParam = searchParams.get('is_semantic') === 'true';
+    if (semanticParam !== isSemantic) {
+      setIsSemantic(semanticParam);
+    }
+  }, [searchParams]);
+
   // Simple debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      handleSearch(searchQuery, page, limit);
+      handleSearch(searchQuery, page, limit, isSemantic);
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, page, limit, handleSearch]);
+  }, [searchQuery, page, limit, isSemantic, handleSearch]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure?')) return;
+  const confirmDelete = async () => {
+    if (!assetToDelete) return;
     try {
-      await apiFetch(`/assets/${id}`, { method: 'DELETE' });
-      setResults(prev => prev.filter((a: any) => a.id !== id));
+      setIsDeleting(true);
+      await apiFetch(`/assets/${assetToDelete}`, { method: 'DELETE' });
+      setResults(prev => prev.filter((a: any) => a.id !== assetToDelete));
+      setDeleteModalOpen(false);
+      setAssetToDelete(null);
     } catch (error) {
       alert('Delete failed');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDeleteTrigger = (id: string) => {
+    setAssetToDelete(id);
+    setDeleteModalOpen(true);
   };
 
   return (
@@ -64,7 +93,10 @@ export default function SearchPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Search Results</h1>
             <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-1">
               {searchQuery.trim() ? (
-                <>Found <span className="text-gray-900 dark:text-gray-100 font-semibold">{results.length}</span> out of <span className="text-gray-900 dark:text-gray-100 font-semibold">{totalResults}</span> assets matching your query</>
+                <>
+                  Found <span className="text-gray-900 dark:text-gray-100 font-semibold">{results.length}</span> out of <span className="text-gray-900 dark:text-gray-100 font-semibold">{totalResults}</span> assets matching your query
+                  {isSemantic && <span className="ml-2 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-500 text-[10px] font-medium rounded-full border border-amber-200/50 dark:border-amber-800/30 transition-all animate-pulse">AI can make mistakes</span>}
+                </>
               ) : (
                 <>Find anything across your workspace</>
               )}
@@ -87,34 +119,6 @@ export default function SearchPage() {
           </div>
         </div>
 
-        <div className="relative group max-w-3xl">
-          <div className="absolute inset-0 bg-blue-500/5 blur-2xl rounded-3xl group-focus-within:bg-blue-500/10 transition-all" />
-          <div className="relative flex items-center bg-white dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200 dark:border-gray-700/50 rounded-2xl sm:rounded-[2rem] shadow-xl shadow-black/5 dark:shadow-none transition-all group-focus-within:ring-2 group-focus-within:ring-blue-500/20 group-focus-within:border-blue-500/40 overflow-hidden">
-            <div className="pl-4 sm:pl-6 text-gray-400 group-focus-within:text-blue-500 transition-colors">
-              <MagnifyingGlassIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-            </div>
-            <input
-              type="text"
-              className="flex-1 pl-3 sm:pl-4 pr-12 py-4 sm:py-6 bg-transparent outline-none text-base sm:text-xl text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
-              placeholder="Search filenames, tags, or metadata..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {loading && (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500/30 border-t-blue-500" />
-              </div>
-            )}
-            {searchQuery && !loading && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            )}
-          </div>
-        </div>
 
         <div className="pt-4">
           {searchQuery.trim() && !loading && results.length === 0 ? (
@@ -135,7 +139,11 @@ export default function SearchPage() {
             </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <AssetGrid assets={results} onDelete={handleDelete} />
+              <AssetGrid 
+                assets={results} 
+                onDelete={handleDeleteTrigger} 
+                onSelect={(id) => router.push(`/dashboard/assets/${id}`)}
+              />
               
               <div className="mt-8 border-t border-gray-100 dark:border-gray-800/60 pt-4">
                 <Pagination 
@@ -148,6 +156,14 @@ export default function SearchPage() {
           )}
         </div>
       </div>
+
+      {/* Custom Delete Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        isDeleting={isDeleting}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
