@@ -45,7 +45,7 @@ interface Field {
 }
 
 interface MetadataValue {
-  fieldId: string;
+  field_id: string;
   value: any;
 }
 
@@ -127,7 +127,9 @@ export default function AssetDetailPage() {
       setFields(fieldDefs);
       const valueMap: Record<string, any> = {};
       currentValues.forEach(v => {
-        valueMap[v.fieldId] = v.value;
+        if (v.field_id && v.field_id !== 'undefined') {
+          valueMap[v.field_id] = v.value;
+        }
       });
       setValues(valueMap);
     } catch (err: any) {
@@ -191,10 +193,12 @@ export default function AssetDetailPage() {
     setError('');
     setSuccess(false);
     try {
-      const entries = Object.entries(values).map(([fieldId, value]) => ({
-        fieldId,
-        value,
-      }));
+      const entries = Object.entries(values)
+        .filter(([key, value]) => key && key !== 'undefined' && value !== undefined && !key.startsWith('_'))
+        .map(([fieldId, value]) => ({
+          field_id: fieldId,
+          value,
+        }));
 
       // Update metadata
       await apiFetch(`/assets/${assetId}/metadata`, {
@@ -881,6 +885,37 @@ export default function AssetDetailPage() {
                     <div className="text-sm leading-relaxed text-gray-600 dark:text-gray-400 font-mono whitespace-pre-wrap max-h-[500px] overflow-y-auto custom-scrollbar selection:bg-blue-500/30">
                       {asset.ocr_text}
                     </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Geo Location Section */}
+              {asset?.latitude && asset?.longitude && (
+                <section className="space-y-6 bg-white dark:bg-[#151720] p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                  <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
+                    <div className="h-8 w-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
+                      <GlobeAltIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Asset Location</label>
+                  </div>
+                  <div className="rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 h-[400px] w-full relative">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${asset.longitude - 0.01},${asset.latitude - 0.01},${asset.longitude + 0.01},${asset.latitude + 0.01}&layer=mapnik&marker=${asset.latitude},${asset.longitude}`}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <span>Coordinates: {asset.latitude.toFixed(6)}, {asset.longitude.toFixed(6)}</span>
+                    <a 
+                      href={`https://www.openstreetmap.org/?mlat=${asset.latitude}&mlon=${asset.longitude}#map=15/${asset.latitude}/${asset.longitude}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-600 underline"
+                    >
+                      View on OpenStreetMap
+                    </a>
                   </div>
                 </section>
               )}

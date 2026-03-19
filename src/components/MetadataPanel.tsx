@@ -16,11 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 type Field = components['schemas']['CreateMetadataFieldDto'] & { id: string };
-type MetadataValue = { 
-  fieldId: string; 
-  value: any;
-  field?: Field;
-};
+type MetadataValue = { field_id: string; value: any };
 
 type AssetDetails = {
   id: string;
@@ -84,7 +80,9 @@ export default function MetadataPanel({
       };
       
       currentValues.forEach(v => {
-        valueMap[v.fieldId] = v.value;
+        if (v.field_id && v.field_id !== 'undefined') {
+          valueMap[v.field_id] = v.value;
+        }
       });
       setValues(valueMap);
 
@@ -106,9 +104,9 @@ export default function MetadataPanel({
     setSuccess(false);
     try {
       const entries = Object.entries(values)
-        .filter(([key]) => !key.startsWith('_'))
+        .filter(([key, value]) => key && key !== 'undefined' && value !== undefined && !key.startsWith('_'))
         .map(([fieldId, value]) => ({
-          fieldId,
+          field_id: fieldId,
           value,
         }));
 

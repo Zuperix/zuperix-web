@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState, useRef } from 'react';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch, BASE_URL } from '@/lib/api';
+import NotificationCenter from './NotificationCenter';
 
 export default function Header() {
   const { sidebarCollapsed, setSidebarCollapsed, searchQuery, setSearchQuery } = useLayout();
@@ -110,124 +111,146 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="h-16 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800/60 flex items-center gap-2 sm:gap-4 px-4 sm:px-6 sticky top-0 z-30 transition-all">
-      {/* Hamburger */}
-      <button
-        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        className="p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all shrink-0"
-        aria-label="Toggle sidebar"
-      >
-        <Bars3Icon className="h-5 w-5" />
-      </button>
-
-      {/* Search */}
-      <div className="flex-1 max-w-2xl min-w-0" ref={searchRef}>
-        <form onSubmit={handleSearch} className="relative flex items-center group">
-          <MagnifyingGlassIcon className="absolute left-3 sm:left-4 h-4 w-4 text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
-          <input
-            type="text"
-            className="w-full pl-9 sm:pl-11 pr-4 py-2 bg-gray-100/50 dark:bg-gray-900/50 border-transparent dark:border-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-xl outline-none focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all truncate"
-            placeholder="Search…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => {
-              if (suggestions.length > 0) setShowSuggestions(true);
-            }}
-          />
-          {loadingSuggestions && (
-            <div className="absolute right-12 flex items-center">
-              <ArrowPathIcon className="h-4 w-4 text-blue-500 animate-spin" />
-            </div>
-          )}
-          <kbd className="absolute right-4 px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[10px] text-gray-400 dark:text-gray-500 rounded-md hidden md:flex items-center gap-1 shadow-sm pointer-events-none font-medium">
-            <span className="font-sans">⌘</span>K
-          </kbd>
-        </form>
-
-        {showSuggestions && (
-          <div className="absolute top-full left-0 right-0 mt-3 mx-4 sm:mx-6 max-w-2xl bg-white dark:bg-[#0f111a] border border-gray-200 dark:border-gray-800/60 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="p-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              <div className="px-3 py-2 mb-1 flex items-center justify-between">
-                <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Suggested Assets</span>
-                <span className="h-1 flex-1 ml-4 bg-gradient-to-r from-gray-100 dark:from-gray-800/50 to-transparent rounded-full" />
-              </div>
-              {suggestions.map((asset) => (
-                <button
-                  key={asset.id}
-                  onClick={() => {
-                    setShowSuggestions(false);
-                    router.push(`/dashboard/assets/${asset.id}`);
-                  }}
-                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-blue-50/50 dark:hover:bg-blue-900/10 flex items-center gap-4 transition-all group"
-                >
-                  <div className="h-11 w-11 rounded-xl bg-gray-50 dark:bg-gray-900 overflow-hidden flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-800 group-hover:border-blue-500/30 transition-all shadow-sm">
-                    {asset.mime_type?.startsWith('image/') ? (
-                      <img 
-                        src={`${BASE_URL}/assets/${asset.id}/view`} 
-                        alt="" 
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          target.style.display = 'none';
-                          const parent = target.parentElement;
-                          if (parent) {
-                            const icon = document.createElement('div');
-                            icon.className = 'h-5 w-5 text-gray-400 dark:text-gray-600';
-                            icon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>';
-                            parent.appendChild(icon);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <DocumentIcon className="h-5 w-5 text-gray-400 dark:text-gray-600" />
-                    )}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-500 transition-colors flex items-center gap-2">
-                      {asset.original_name}
-                      {asset.is_ocr_match && (
-                        <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[8px] font-extrabold uppercase rounded tracking-tighter shrink-0 ring-1 ring-amber-500/20">
-                          OCR Match
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
-                      {(asset.mime_type || 'file').split('/')[1]} • {formatSize(asset.size)}
-                    </span>
-                  </div>
-                </button>
-              ))}
-              
-              <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/10 -mx-2 -mb-2">
-                <button 
-                  onClick={handleSearch}
-                  className="w-full text-center py-2.5 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 transition-colors tracking-wide uppercase"
-                >
-                  View all results for "{searchQuery}"
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+    <header className="h-16 bg-white/70 dark:bg-[#0f111a]/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/40 flex items-center gap-4 px-6 sticky top-0 z-30 transition-all duration-300">
+      {/* Sidebar Toggle & Logo/Context */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100/80 dark:hover:bg-gray-800/60 transition-all duration-200 shrink-0 group focus:ring-2 focus:ring-blue-500/20"
+          aria-label="Toggle sidebar"
+        >
+          <Bars3Icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+        </button>
+        
+        <div className="hidden lg:flex flex-col">
+          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-500 uppercase tracking-[0.2em] leading-none mb-1">
+            {activeWorkspace?.name || 'Workspace'}
+          </span>
+          <span className="text-xs font-medium text-gray-400 dark:text-gray-500 truncate max-w-[120px]">
+            Digital Assets
+          </span>
+        </div>
       </div>
 
-      {/* Right actions */}
-      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-        <button 
-          onClick={toggleTheme}
-          className="p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-        </button>
-        <button className="hidden sm:flex p-2 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
-          <BellIcon className="h-5 w-5" />
-        </button>
+      {/* Search - Centered and Premium */}
+      <div className="flex-1 flex justify-center min-w-0" ref={searchRef}>
+        <div className="w-full max-w-2xl relative">
+          <form onSubmit={handleSearch} className="relative flex items-center group">
+            <div className="absolute left-3.5 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+            </div>
+            <input
+              type="text"
+              className="w-full pl-10 pr-16 py-2.5 bg-gray-100/80 dark:bg-gray-900/40 border border-transparent dark:border-gray-800/50 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-2xl outline-none focus:bg-white dark:focus:bg-[#161b22] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all duration-300 shadow-sm"
+              placeholder="Search assets, metadata, tags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => {
+                if (suggestions.length > 0) setShowSuggestions(true);
+              }}
+            />
+            
+            <div className="absolute right-3 flex items-center gap-2">
+              {loadingSuggestions && (
+                <ArrowPathIcon className="h-4 w-4 text-blue-500 animate-spin" />
+              )}
+              <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1.5 font-sans text-[10px] font-medium text-gray-400 dark:text-gray-500 shadow-sm">
+                <span className="text-[8px]">⌘</span>K
+              </kbd>
+            </div>
+          </form>
 
-        {/* Avatar */}
-        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold ring-2 ring-gray-100 dark:ring-gray-800 cursor-pointer hover:ring-blue-500 transition-all shrink-0">
-          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+          {/* Suggestions Dropdown - Enhanced */}
+          {showSuggestions && (
+            <div className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-[#0f111a] border border-gray-200 dark:border-gray-800/60 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="p-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="px-3 py-2 mb-1 flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Suggested Assets</span>
+                  <div className="h-[1px] flex-1 ml-4 bg-gradient-to-r from-gray-100 dark:from-gray-800/50 to-transparent" />
+                </div>
+                
+                {suggestions.map((asset) => (
+                  <button
+                    key={asset.id}
+                    onClick={() => {
+                      setShowSuggestions(false);
+                      router.push(`/dashboard/assets/${asset.id}`);
+                    }}
+                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-blue-50/80 dark:hover:bg-blue-900/10 flex items-center gap-4 transition-all group/item"
+                  >
+                    <div className="h-12 w-12 rounded-xl bg-gray-50 dark:bg-gray-900/40 overflow-hidden flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-800 group-hover/item:border-blue-500/30 transition-all shadow-sm">
+                      {asset.mime_type?.startsWith('image/') ? (
+                        <img 
+                          src={`${BASE_URL}/assets/${asset.id}/view`} 
+                          alt="" 
+                          className="h-full w-full object-cover group-hover/item:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <DocumentIcon className="h-6 w-6 text-gray-400 dark:text-gray-600 group-hover/item:text-blue-500 transition-colors" />
+                      )}
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors">
+                          {asset.original_name}
+                        </span>
+                        {asset.is_ocr_match && (
+                          <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[8px] font-extrabold uppercase rounded tracking-tighter shrink-0 ring-1 ring-amber-500/20">
+                            OCR
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider mt-0.5">
+                        {(asset.mime_type || 'file').split('/')[1]} • {formatSize(asset.size)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+                
+                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/10 -mx-2 -mb-2">
+                  <button 
+                    onClick={handleSearch}
+                    className="w-full text-center py-3 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors tracking-widest uppercase"
+                  >
+                    Search all for "{searchQuery}"
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Right actions - Clean & Grouped */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center bg-gray-100/50 dark:bg-gray-800/40 p-1 rounded-xl border border-gray-200/50 dark:border-gray-700/30">
+          <button 
+            onClick={toggleTheme}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-none hover:shadow-sm"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <SunIcon className="h-4.5 w-4.5" /> : <MoonIcon className="h-4.5 w-4.5" />}
+          </button>
+          
+          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
+          
+          <NotificationCenter />
+        </div>
+
+        {/* User Profile - Premium Avatar */}
+        <button className="flex items-center gap-3 p-1 pl-1 pr-2 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 rounded-xl transition-all duration-200 group">
+          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-500 to-teal-400 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/20 ring-2 ring-white dark:ring-gray-900 group-hover:scale-105 transition-transform duration-300">
+            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+          </div>
+          <div className="hidden md:flex flex-col items-start">
+            <span className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-none">
+              {user?.name || 'User'}
+            </span>
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+              Admin
+            </span>
+          </div>
+        </button>
       </div>
     </header>
   );

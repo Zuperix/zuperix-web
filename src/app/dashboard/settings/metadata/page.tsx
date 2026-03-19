@@ -12,13 +12,26 @@ import {
   ChevronLeftIcon,
   ExclamationCircleIcon,
   CheckCircleIcon,
-  LockClosedIcon
+  LockClosedIcon,
+  PencilIcon,
+  XMarkIcon,
+  TableCellsIcon,
+  ListBulletIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
+import { BulkImport } from './BulkImport';
 
-type Field = components['schemas']['CreateMetadataFieldDto'] & { id: string };
+type Field = { 
+  id: string; 
+  key: string; 
+  label: string; 
+  fieldType: string; 
+  is_required: boolean; 
+  is_searchable: boolean; 
+  is_filterable: boolean 
+};
 
 const FIELD_TYPES = [
   { value: 'string', label: 'Short Text' },
@@ -41,13 +54,18 @@ export default function MetadataManagementPage() {
   const [success, setSuccess] = useState('');
 
   // Form state
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [newField, setNewField] = useState({
     key: '',
     label: '',
     fieldType: 'string' as any,
-    isRequired: false,
-    isSearchable: true,
+    is_required: false,
+    is_searchable: true,
+    is_filterable: true,
   });
+
+  const [activeTab, setActiveTab] = useState<'fields' | 'bulk'>('fields');
+  const [showReindexWarning, setShowReindexWarning] = useState(false);
 
   const fetchFields = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -75,25 +93,76 @@ export default function MetadataManagementPage() {
     setSuccess('');
     
     try {
-      await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields`, {
-        method: 'POST',
-        body: JSON.stringify(newField),
-      });
+      if (editingFieldId) {
+        await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields/${editingFieldId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            key: newField.key,
+            label: newField.label,
+            is_required: newField.is_required,
+            is_searchable: newField.is_searchable,
+            is_filterable: newField.is_filterable,
+          }),
+        });
+        setSuccess('Field updated successfully');
+      } else {
+        await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields`, {
+          method: 'POST',
+          body: JSON.stringify({
+            key: newField.key,
+            label: newField.label,
+            field_type: newField.fieldType,
+            is_required: newField.is_required,
+            is_searchable: newField.is_searchable,
+            is_filterable: newField.is_filterable,
+          }),
+        });
+        setSuccess('Field created successfully');
+      }
       
-      setSuccess('Field created successfully');
+      setEditingFieldId(null);
       setNewField({
         key: '',
         label: '',
         fieldType: 'string',
-        isRequired: false,
-        isSearchable: true,
+        is_required: false,
+        is_searchable: true,
+        is_filterable: true,
       });
+      setShowReindexWarning(false);
       fetchFields();
     } catch (err: any) {
-      setError(err.message || 'Failed to create field');
+      setError(err.message || `Failed to ${editingFieldId ? 'update' : 'create'} field`);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const startEdit = (field: Field) => {
+    setEditingFieldId(field.id);
+    setNewField({
+      key: field.key,
+      label: field.label,
+      fieldType: field.fieldType,
+      is_required: field.is_required,
+      is_searchable: field.is_searchable,
+      is_filterable: field.is_filterable,
+    });
+    setShowReindexWarning(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingFieldId(null);
+    setNewField({
+      key: '',
+      label: '',
+      fieldType: 'string',
+      is_required: false,
+      is_searchable: true,
+      is_filterable: true,
+    });
+    setShowReindexWarning(false);
   };
 
   const handleDelete = async (fieldId: string) => {
@@ -125,7 +194,7 @@ export default function MetadataManagementPage() {
         <div>
           <Link 
             href="/dashboard/settings" 
-            className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-blue-400 uppercase tracking-widest mb-3 transition-colors group"
+            className="flex items-center gap-1 text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 transition-colors group"
           >
             <ChevronLeftIcon className="h-3 w-3 group-hover:-translate-x-1 transition-transform" />
             Back to Settings
@@ -138,9 +207,37 @@ export default function MetadataManagementPage() {
           </div>
           <p className="text-gray-400 mt-2 text-sm">Define custom properties to store alongside your digital assets.</p>
         </div>
+
+        <div className="flex bg-gray-900/40 p-1.5 rounded-2xl border border-gray-800 self-center">
+          <button
+            onClick={() => setActiveTab('fields')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+              activeTab === 'fields' 
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <ListBulletIcon className="h-4 w-4" />
+            Field Definitions
+          </button>
+          <button
+            onClick={() => setActiveTab('bulk')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+              activeTab === 'bulk' 
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <TableCellsIcon className="h-4 w-4" />
+            Bulk Import (CSV)
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {activeTab === 'bulk' ? (
+        <BulkImport workspaceId={activeWorkspace.id} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Create Form */}
         <div className="lg:col-span-1">
           <PermissionGate 
@@ -155,9 +252,19 @@ export default function MetadataManagementPage() {
             }
           >
             <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 sticky top-8">
-              <h3 className="text-lg font-bold text-gray-200 mb-6 flex items-center gap-2">
-                <PlusIcon className="h-5 w-5 text-blue-400" />
-                New Custom Field
+              <h3 className="text-lg font-bold text-gray-200 mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {editingFieldId ? <PencilIcon className="h-5 w-5 text-amber-400" /> : <PlusIcon className="h-5 w-5 text-blue-400" />}
+                  {editingFieldId ? 'Edit Field' : 'New Custom Field'}
+                </div>
+                {editingFieldId && (
+                  <button 
+                    onClick={cancelEdit}
+                    className="p-1 hover:bg-gray-800 rounded-md transition-colors"
+                  >
+                    <XMarkIcon className="h-4 w-4 text-gray-500" />
+                  </button>
+                )}
               </h3>
               
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -192,7 +299,8 @@ export default function MetadataManagementPage() {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Field Type</label>
                   <select
-                    className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all appearance-none cursor-pointer"
+                    disabled={!!editingFieldId}
+                    className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     value={newField.fieldType}
                     onChange={(e) => setNewField(prev => ({ ...prev, fieldType: e.target.value }))}
                   >
@@ -205,8 +313,8 @@ export default function MetadataManagementPage() {
                     <input
                       type="checkbox"
                       className="sr-only peer"
-                      checked={newField.isRequired}
-                      onChange={(e) => setNewField(prev => ({ ...prev, isRequired: e.target.checked }))}
+                      checked={newField.is_required}
+                      onChange={(e) => setNewField(prev => ({ ...prev, is_required: e.target.checked }))}
                     />
                     <div className="w-10 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 after:shadow-sm"></div>
                     <span className="text-xs font-semibold text-gray-400 group-hover:text-gray-300 transition-colors">Required Field</span>
@@ -216,21 +324,51 @@ export default function MetadataManagementPage() {
                     <input
                       type="checkbox"
                       className="sr-only peer"
-                      checked={newField.isSearchable}
-                      onChange={(e) => setNewField(prev => ({ ...prev, isSearchable: e.target.checked }))}
+                      checked={newField.is_searchable}
+                      onChange={(e) => {
+                        setNewField(prev => ({ ...prev, is_searchable: e.target.checked }));
+                        if (editingFieldId) setShowReindexWarning(true);
+                      }}
                     />
                     <div className="w-10 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 after:shadow-sm"></div>
-                    <span className="text-xs font-semibold text-gray-400 group-hover:text-gray-300 transition-colors">Searchable</span>
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-400 group-hover:text-gray-300 transition-colors">Include in Full-Text Search</span>
+                      <span className="block text-[10px] text-gray-600">Make this field searchable via the main search bar</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={newField.is_filterable}
+                      onChange={(e) => {
+                        setNewField(prev => ({ ...prev, is_filterable: e.target.checked }));
+                        if (editingFieldId) setShowReindexWarning(true);
+                      }}
+                    />
+                    <div className="w-10 h-5 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 after:shadow-sm"></div>
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-400 group-hover:text-gray-300 transition-colors">Show in Sidebar Filters</span>
+                      <span className="block text-[10px] text-gray-600">Add as a faceted filter in the search sidebar</span>
+                    </div>
                   </label>
                 </div>
+
+                {showReindexWarning && (
+                  <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3 text-amber-300 text-[10px] leading-relaxed animate-in fade-in slide-in-from-top-1">
+                    <ExclamationCircleIcon className="h-4 w-4 flex-shrink-0" />
+                    <p>Changing search or filter settings will update all your assets. This might take a moment. Please avoid doing this too often to keep the system running fast.</p>
+                  </div>
+                )}
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full mt-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-900/20 transition-all flex items-center justify-center gap-2"
+                  className={`w-full mt-4 ${editingFieldId ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20'} disabled:opacity-50 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2`}
                 >
-                  {submitting ? <ArrowPathIcon className="h-5 w-5 animate-spin" /> : <PlusIcon className="h-5 w-5" />}
-                  {submitting ? 'Creating...' : 'Add Field'}
+                  {submitting ? <ArrowPathIcon className="h-5 w-5 animate-spin" /> : (editingFieldId ? <CheckCircleIcon className="h-5 w-5" /> : <PlusIcon className="h-5 w-5" />)}
+                  {submitting ? (editingFieldId ? 'Updating...' : 'Creating...') : (editingFieldId ? 'Update Field' : 'Add Field')}
                 </button>
               </form>
             </div>
@@ -287,32 +425,49 @@ export default function MetadataManagementPage() {
                       <div className="flex items-center gap-4 text-xs">
                         <span className="text-gray-500 font-mono">{field.key}</span>
                         <div className="h-1 w-1 rounded-full bg-gray-700" />
-                        <span className={field.isRequired ? 'text-amber-500/80 font-medium' : 'text-gray-600'}>
-                          {field.isRequired ? 'Required' : 'Optional'}
+                        <span className={field.is_required ? 'text-amber-500/80 font-medium' : 'text-gray-600'}>
+                          {field.is_required ? 'Required' : 'Optional'}
                         </span>
                         <div className="h-1 w-1 rounded-full bg-gray-700" />
-                        <span className={field.isSearchable ? 'text-blue-400/80 font-medium' : 'text-gray-600'}>
-                          {field.isSearchable ? 'Searchable' : 'Hidden'}
+                        <span className={field.is_searchable ? 'text-blue-400/80 font-medium' : 'text-gray-600'}>
+                          {field.is_searchable ? 'Searchable' : 'Hidden'}
+                        </span>
+                        <div className="h-1 w-1 rounded-full bg-gray-700" />
+                        <span className={field.is_filterable ? 'text-purple-400/80 font-medium' : 'text-gray-600'}>
+                          {field.is_filterable ? 'Filterable' : 'No Filter'}
                         </span>
                       </div>
                     </div>
                   </div>
                   
-                  <PermissionGate action={Action.Delete} subject="MetadataField" workspaceId={activeWorkspace.id}>
-                    <button 
-                      onClick={() => handleDelete(field.id)}
-                      className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
-                      title="Delete Field"
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </PermissionGate>
+                  <div className="flex items-center gap-2">
+                    <PermissionGate action={Action.Update} subject="MetadataField" workspaceId={activeWorkspace.id}>
+                      <button 
+                        onClick={() => startEdit(field)}
+                        className="p-2.5 text-gray-600 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                        title="Edit Field"
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
+                    </PermissionGate>
+
+                    <PermissionGate action={Action.Delete} subject="MetadataField" workspaceId={activeWorkspace.id}>
+                      <button 
+                        onClick={() => handleDelete(field.id)}
+                        className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete Field"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </PermissionGate>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

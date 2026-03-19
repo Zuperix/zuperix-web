@@ -17,12 +17,25 @@ interface Comment {
   created_at: string;
 }
 
+interface Member {
+  id: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
 export default function CommentsSection({ assetId, workspaceId }: { assetId: string, workspaceId?: string | null }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [content, setContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [mentionFilter, setMentionFilter] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(-1);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const fetchComments = async () => {
     try {
@@ -36,9 +49,70 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
     }
   };
 
+  const fetchMembers = async () => {
+    if (!workspaceId) return;
+    try {
+      const data = await apiFetch<Member[]>(`/workspaces/${workspaceId}/members`);
+      setMembers(data);
+    } catch (error) {
+      console.error('Failed to fetch members:', error);
+    }
+  };
+
   useEffect(() => {
     fetchComments();
-  }, [assetId]);
+    fetchMembers();
+  }, [assetId, workspaceId]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursor = e.target.selectionStart;
+    setContent(value);
+
+    // Detect @ mention
+    const textBeforeCursor = value.substring(0, cursor);
+    const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtSymbol !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtSymbol + 1);
+      // Only trigger if @ is at start or preceded by space
+      if (lastAtSymbol === 0 || textBeforeCursor[lastAtSymbol - 1] === ' ' || textBeforeCursor[lastAtSymbol - 1] === '\n') {
+        // Only if there's no space between @ and cursor
+        if (!textAfterAt.includes(' ')) {
+          setMentionFilter(textAfterAt);
+          setMentionIndex(lastAtSymbol);
+          setSelectedIndex(0);
+          return;
+        }
+      }
+    }
+    setMentionFilter(null);
+  };
+
+  const insertMention = (user: { name: string }) => {
+    const before = content.substring(0, mentionIndex);
+    const after = content.substring(mentionIndex + mentionFilter!.length + 1);
+    const newContent = `${before}@${user.name} ${after}`;
+    setContent(newContent);
+    setMentionFilter(null);
+  };
+
+  const renderContent = (content: string) => {
+    const parts = content.split(/(@\S+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return <span key={i} className="font-bold text-purple-400">{part}</span>;
+      }
+      return part;
+    });
+  };
+
+  const filteredMembers = mentionFilter !== null
+    ? members.filter(m => 
+        m.user.name.toLowerCase().includes(mentionFilter.toLowerCase()) ||
+        m.user.email.toLowerCase().includes(mentionFilter.toLowerCase())
+      )
+    : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +198,7 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
                   </button>
                 </PermissionGate>
               </div>
-              <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
+              <p className="text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{renderContent(comment.content)}</p>
             </div>
           ))
         )}
@@ -142,10 +216,49 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
             </div>
           }
         >
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3 relative">
+            {mentionFilter !== null && filteredMembers.length > 0 && (
+              <div className="absolute bottom-full left-0 mb-2 w-64 bg-gray-800 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-20">
+                <div className="p-2 border-b border-white/5 bg-black/20">
+                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Mention User</span>
+                </div>
+                <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                  {filteredMembers.map((member, idx) => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => insertMention(member.user)}
+                      onMouseEnter={() => setSelectedIndex(idx)}
+                      className={`w-full text-left px-4 py-2 text-sm flex flex-col transition-all ${
+                        idx === selectedIndex ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="font-bold">{member.user.name}</span>
+                      <span className={`text-[10px] ${idx === selectedIndex ? 'text-purple-200' : 'text-gray-500'}`}>{member.user.email}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <textarea
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={handleTextChange}
+              onKeyDown={(e) => {
+                if (mentionFilter !== null && filteredMembers.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setSelectedIndex((prev) => (prev + 1) % filteredMembers.length);
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setSelectedIndex((prev) => (prev - 1 + filteredMembers.length) % filteredMembers.length);
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    insertMention(filteredMembers[selectedIndex].user);
+                  } else if (e.key === 'Escape') {
+                    setMentionFilter(null);
+                  }
+                }
+              }}
               placeholder="Write a comment..."
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:bg-white/10 placeholder:text-gray-600 transition-all resize-none min-h-[100px]"
             />

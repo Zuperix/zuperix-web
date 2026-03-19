@@ -206,8 +206,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     color_palette: { label: 'Colors', icon: PaintBrushIcon },
     aspect_ratio: { label: 'Aspect Ratio', icon: PhotoIcon },
     created_at: { label: 'Upload Date', icon: CalendarIcon },
-    release_date: { label: 'Release Date', icon: CalendarIcon },
-    expiration_date: { label: 'Expiration', icon: ClockIcon },
+    lifecycle: { label: 'Asset Lifecycle', icon: ClockIcon },
     category_uuids: { label: 'Categories', icon: TagIcon },
     category_paths: { label: 'Category', icon: TagIcon },
     collection_uuids: { label: 'Collections', icon: FolderIcon },
@@ -343,116 +342,237 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
           </div>
           
           <div className="flex-1 space-y-6">
-            {filteredFilterEntries.map(([key, data]) => {
-              const isSearchMatchValue = filterSearch && Array.isArray(data) && data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
-              const isExpanded = expanded[key] !== false || !!isSearchMatchValue;
+            {filteredFilterEntries
+              .filter(([key]) => !key.startsWith('metadata.'))
+              .map(([key, data]) => {
+                const isSearchMatchValue = filterSearch && Array.isArray(data) && data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
+                const isExpanded = expanded[key] !== false || !!isSearchMatchValue;
+                const { label, icon: Icon } = getGroupConfig(key);
 
-              const { label, icon: Icon } = getGroupConfig(key);
-
-              return (
-                <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-6 text-gray-900 dark:text-gray-100">
-                  <button
-                    onClick={() => toggleExpand(key)}
-                    className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                      <span>{label}</span>
-                    </div>
-                    {isExpanded ? <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />}
-                  </button>
-                  {isExpanded && (
-                    <div className="pt-4 px-1">
-                      {!Array.isArray(data) ? (
-                        <div className="px-2">
-                          {key.endsWith('_date') || key.endsWith('_at') ? (
-                            <DateRangePicker 
-                              min={data.min} 
-                              max={data.max} 
-                              currentMin={activeFilters[`${key}[gte]`]} 
-                              currentMax={activeFilters[`${key}[lte]`]} 
-                              onChange={(minVal, maxVal) => {
-                                onFilterChange(`${key}[gte]`, minVal);
-                                onFilterChange(`${key}[lte]`, maxVal);
-                              }}
-                            />
-                          ) : (
-                            <RangeSlider 
-                              min={data.min} 
-                              max={data.max} 
-                              currentMin={activeFilters[`${key}[gte]`]} 
-                              currentMax={activeFilters[`${key}[lte]`]} 
-                              onChange={(minVal, maxVal) => {
-                                onFilterChange(`${key}[gte]`, minVal);
-                                onFilterChange(`${key}[lte]`, maxVal);
-                              }}
-                            />
-                          )}
-                        </div>
-                      ) : key === 'color_palette' ? (
-                        <div className="grid grid-cols-5 gap-3">
-                          {data.map((bucket) => {
-                            const hex = String(bucket.value);
-                            const clusterHexes = bucket.hexes || [hex];
-                            const rawActiveHexes = activeFilters[key];
-                            const activeHexes = Array.isArray(rawActiveHexes) ? rawActiveHexes : (rawActiveHexes ? [rawActiveHexes] : []);
-                            const isActive = clusterHexes.some(h => activeHexes.includes(h));
-                            return (
-                              <button
-                                key={hex}
-                                onClick={() => {
-                                  const nextActive = isActive 
-                                    ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
-                                    : Array.from(new Set([...activeHexes, ...clusterHexes]));
-                                  onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
+                return (
+                  <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-6 text-gray-900 dark:text-gray-100">
+                    <button
+                      onClick={() => toggleExpand(key)}
+                      className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                        <span>{label}</span>
+                      </div>
+                      {isExpanded ? <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />}
+                    </button>
+                    {isExpanded && (
+                      <div className="pt-4 px-1">
+                        {!Array.isArray(data) ? (
+                          <div className="px-2">
+                            {key.endsWith('_date') || key.endsWith('_at') ? (
+                              <DateRangePicker 
+                                min={data.min} 
+                                max={data.max} 
+                                currentMin={activeFilters[`${key}[gte]`]} 
+                                currentMax={activeFilters[`${key}[lte]`]} 
+                                onChange={(minVal, maxVal) => {
+                                  onFilterChange(`${key}[gte]`, minVal);
+                                  onFilterChange(`${key}[lte]`, maxVal);
                                 }}
-                                className={`w-full aspect-square rounded-full border-2 transition-all relative group/swatch ${isActive ? 'border-blue-500 scale-110 shadow-md z-10' : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'}`}
-                                style={{ backgroundColor: hex }}
-                                title={hex}
-                              >
-                                {isActive && (
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
-                                  </div>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="space-y-2.5">
-                          {data
-                            .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
-                            .map((bucket) => {
-                              const rawActive = activeFilters[key];
-                              const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
-                              const isActive = activeList.includes(bucket.value);
+                              />
+                            ) : (
+                              <RangeSlider 
+                                min={data.min} 
+                                max={data.max} 
+                                currentMin={activeFilters[`${key}[gte]`]} 
+                                currentMax={activeFilters[`${key}[lte]`]} 
+                                onChange={(minVal, maxVal) => {
+                                  onFilterChange(`${key}[gte]`, minVal);
+                                  onFilterChange(`${key}[lte]`, maxVal);
+                                }}
+                              />
+                            )}
+                          </div>
+                        ) : key === 'color_palette' ? (
+                          <div className="grid grid-cols-5 gap-3">
+                            {data.map((bucket) => {
+                              const hex = String(bucket.value);
+                              const clusterHexes = bucket.hexes || [hex];
+                              const rawActiveHexes = activeFilters[key];
+                              const activeHexes = Array.isArray(rawActiveHexes) ? rawActiveHexes : (rawActiveHexes ? [rawActiveHexes] : []);
+                              const isActive = clusterHexes.some(h => activeHexes.includes(h));
                               return (
-                                <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
-                                  <div className="flex items-center overflow-hidden pr-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={isActive}
-                                      onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
-                                      className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
-                                    />
-                                    <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
-                                      {bucket.label || bucket.value}
-                                    </span>
-                                  </div>
-                                  <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
-                                    {bucket.count}
-                                  </span>
-                                </label>
+                                <button
+                                  key={hex}
+                                  onClick={() => {
+                                    const nextActive = isActive 
+                                      ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
+                                      : Array.from(new Set([...activeHexes, ...clusterHexes]));
+                                    onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
+                                  }}
+                                  className={`w-full aspect-square rounded-full border-2 transition-all relative group/swatch ${isActive ? 'border-blue-500 scale-110 shadow-md z-10' : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'}`}
+                                  style={{ backgroundColor: hex }}
+                                  title={hex}
+                                >
+                                  {isActive && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
+                                    </div>
+                                  )}
+                                </button>
                               );
                             })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5">
+                            {data
+                              .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
+                              .map((bucket) => {
+                                const rawActive = activeFilters[key];
+                                const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
+                                const isActive = activeList.includes(bucket.value);
+                                return (
+                                  <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                                    <div className="flex items-center overflow-hidden pr-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={isActive}
+                                        onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
+                                        className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                                      />
+                                      <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
+                                        {bucket.label || bucket.value}
+                                      </span>
+                                    </div>
+                                    <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+                                      {bucket.count}
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+            {filteredFilterEntries.some(([key]) => key.startsWith('metadata.')) && (
+              <div className="py-2 flex items-center gap-3">
+                <div className="h-px bg-gray-200 dark:bg-gray-800/60 grow" />
+                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] whitespace-nowrap">---- Metadata Filters ----</span>
+                <div className="h-px bg-gray-200 dark:bg-gray-800/60 grow" />
+              </div>
+            )}
+
+            {filteredFilterEntries
+              .filter(([key]) => key.startsWith('metadata.'))
+              .map(([key, data]) => {
+                const isSearchMatchValue = filterSearch && Array.isArray(data) && data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
+                const isExpanded = expanded[key] !== false || !!isSearchMatchValue;
+                const { label, icon: Icon } = getGroupConfig(key);
+
+                return (
+                  <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-6 text-gray-900 dark:text-gray-100">
+                    <button
+                      onClick={() => toggleExpand(key)}
+                      className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                        <span>{label}</span>
+                      </div>
+                      {isExpanded ? <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />}
+                    </button>
+                    {isExpanded && (
+                      <div className="pt-4 px-1">
+                        {!Array.isArray(data) ? (
+                          <div className="px-2">
+                            {key.endsWith('_date') || key.endsWith('_at') ? (
+                              <DateRangePicker 
+                                min={data.min} 
+                                max={data.max} 
+                                currentMin={activeFilters[`${key}[gte]`]} 
+                                currentMax={activeFilters[`${key}[lte]`]} 
+                                onChange={(minVal, maxVal) => {
+                                  onFilterChange(`${key}[gte]`, minVal);
+                                  onFilterChange(`${key}[lte]`, maxVal);
+                                }}
+                              />
+                            ) : (
+                              <RangeSlider 
+                                min={data.min} 
+                                max={data.max} 
+                                currentMin={activeFilters[`${key}[gte]`]} 
+                                currentMax={activeFilters[`${key}[lte]`]} 
+                                onChange={(minVal, maxVal) => {
+                                  onFilterChange(`${key}[gte]`, minVal);
+                                  onFilterChange(`${key}[lte]`, maxVal);
+                                }}
+                              />
+                            )}
+                          </div>
+                        ) : key === 'color_palette' ? (
+                          <div className="grid grid-cols-5 gap-3">
+                            {data.map((bucket) => {
+                              const hex = String(bucket.value);
+                              const clusterHexes = bucket.hexes || [hex];
+                              const rawActiveHexes = activeFilters[key];
+                              const activeHexes = Array.isArray(rawActiveHexes) ? rawActiveHexes : (rawActiveHexes ? [rawActiveHexes] : []);
+                              const isActive = clusterHexes.some(h => activeHexes.includes(h));
+                              return (
+                                <button
+                                  key={hex}
+                                  onClick={() => {
+                                    const nextActive = isActive 
+                                      ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
+                                      : Array.from(new Set([...activeHexes, ...clusterHexes]));
+                                    onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
+                                  }}
+                                  className={`w-full aspect-square rounded-full border-2 transition-all relative group/swatch ${isActive ? 'border-blue-500 scale-110 shadow-md z-10' : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'}`}
+                                  style={{ backgroundColor: hex }}
+                                  title={hex}
+                                >
+                                  {isActive && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5">
+                            {data
+                              .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
+                              .map((bucket) => {
+                                const rawActive = activeFilters[key];
+                                const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
+                                const isActive = activeList.includes(bucket.value);
+                                return (
+                                  <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                                    <div className="flex items-center overflow-hidden pr-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={isActive}
+                                        onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
+                                        className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                                      />
+                                      <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
+                                        {bucket.label || bucket.value}
+                                      </span>
+                                    </div>
+                                    <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+                                      {bucket.count}
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>
