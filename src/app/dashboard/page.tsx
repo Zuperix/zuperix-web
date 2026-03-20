@@ -25,6 +25,7 @@ import Pagination from '@/components/Pagination';
 import { useLayout } from '@/context/LayoutContext';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
+import { toast } from 'sonner';
 
 function FilterChips({ 
   activeFilters, 
@@ -284,7 +285,7 @@ function DashboardContent() {
       setDeleteModalOpen(false);
       setAssetToDelete(null);
     } catch (error) {
-      alert('Delete failed');
+      toast.error('Asset deletion failed');
     } finally {
       setIsDeleting(false);
     }

@@ -11,6 +11,7 @@ import {
   DocumentIcon
 } from '@heroicons/react/24/outline';
 import { apiFetch, BASE_URL } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface DuplicateGroup {
   type: 'exact' | 'near';
@@ -68,7 +69,7 @@ export default function DuplicateFinderModal({
       
       onRefresh();
     } catch (err) {
-      alert('Failed to delete asset');
+      toast.error('Failed to delete asset');
     } finally {
       setDeletingId(null);
     }

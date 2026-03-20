@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/api';
 import { ChatBubbleLeftIcon, LockClosedIcon, GlobeAltIcon, PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { PermissionGate } from './PermissionGate';
 import { Action } from '@/types/auth';
+import { toast } from 'sonner';
 
 interface Comment {
   id: string;
@@ -91,7 +92,7 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
 
   const insertMention = (user: { name: string }) => {
     const before = content.substring(0, mentionIndex);
-    const after = content.substring(mentionIndex + mentionFilter!.length + 1);
+    const after = content.substring(mentionIndex + (mentionFilter?.length || 0) + 1);
     const newContent = `${before}@${user.name} ${after}`;
     setContent(newContent);
     setMentionFilter(null);
@@ -129,8 +130,9 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
       });
       setContent('');
       fetchComments();
+      toast.success('Comment posted');
     } catch (error) {
-      alert('Failed to post comment');
+      toast.error('Failed to post comment');
     } finally {
       setSubmitting(false);
     }
@@ -141,8 +143,9 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
     try {
       await apiFetch(`/assets/comments/${id}`, { method: 'DELETE' });
       setComments(prev => prev.filter(c => c.id !== id));
+      toast.success('Comment deleted');
     } catch (error) {
-      alert('Failed to delete comment');
+      toast.error('Failed to delete comment');
     }
   };
 

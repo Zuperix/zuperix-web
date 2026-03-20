@@ -10,6 +10,7 @@ import {
   ExclamationCircleIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
+import { toast } from 'sonner';
 
 interface BulkImportProps {
   workspaceId: string;
@@ -182,9 +183,9 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
                   method: 'POST',
                   headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
-                alert('Sync started in the background.');
+                toast.success('Sync started in the background.');
               } catch (err) {
-                alert('Failed to start sync.');
+                toast.error('Failed to start sync.');
               }
             }}
             className="flex items-center gap-2 px-6 py-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 border border-purple-500/30 rounded-xl font-bold transition-all"

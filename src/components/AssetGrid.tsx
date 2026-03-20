@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { PermissionGate } from './PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { toast } from 'sonner';
 
 type Asset = components['schemas']['MetadataEntryDto'] & { 
   id: string;
@@ -114,7 +115,7 @@ const AssetCard = ({
                 e.stopPropagation();
                 const shareUrl = `${window.location.origin}/dashboard/assets/${assetId}`;
                 navigator.clipboard.writeText(shareUrl);
-                alert('Detail link copied to clipboard!');
+                toast.success('Detail link copied to clipboard!');
               }}
               className="p-2 bg-white/10 hover:bg-blue-500/20 text-white rounded-xl backdrop-blur-md border border-white/20 transition-all"
               title="Share asset"

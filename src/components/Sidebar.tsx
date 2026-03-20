@@ -18,7 +18,8 @@ import {
   Square3Stack3DIcon,
   ShieldCheckIcon,
   KeyIcon,
-  UsersIcon
+  UsersIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -28,6 +29,7 @@ const NAV = [
   { name: 'Assets', href: '/dashboard', icon: FolderIcon },
   { name: 'Categories', href: '/dashboard/categories', icon: TagIcon },
   { name: 'Collections', href: '/dashboard/collections', icon: Square3Stack3DIcon },
+  { name: 'Portals', href: '/dashboard/portals', icon: GlobeAltIcon },
   { name: 'Trash', href: '/dashboard/trash', icon: TrashIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 ];

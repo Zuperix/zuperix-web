@@ -36,6 +36,7 @@ import { useCollections, Collection as CollectionType } from '@/hooks/useCollect
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { useRef } from 'react';
+import { toast } from 'sonner';
 
 interface Field {
   id: string;
@@ -251,14 +252,14 @@ export default function AssetDetailPage() {
       await apiFetch(`/assets/${assetId}`, { method: 'DELETE' });
       router.push('/dashboard');
     } catch (err) {
-      alert('Failed to delete asset');
+      toast.error('Failed to delete asset');
     }
   };
 
   const handleShare = () => {
     const url = window.location.href;
     navigator.clipboard.writeText(url);
-    alert('Link copied to clipboard');
+    toast.success('Link copied to clipboard');
   };
 
   const updateValue = (fieldId: string, value: any) => {
@@ -291,7 +292,7 @@ export default function AssetDetailPage() {
       setNewCategoryName('');
       setShowCategoryInput(false);
     } catch (err) {
-      alert('Failed to create category');
+      toast.error('Failed to create category');
     } finally {
       setCreatingCategory(false);
     }
@@ -311,7 +312,7 @@ export default function AssetDetailPage() {
       setNewCollectionName('');
       setShowCollectionInput(false);
     } catch (err) {
-      alert('Failed to create collection');
+      toast.error('Failed to create collection');
     } finally {
       setCreatingCollection(false);
     }
@@ -334,7 +335,7 @@ export default function AssetDetailPage() {
       setTagInput('');
     } catch (err) {
       console.error('Failed to add tag:', err);
-      alert('Failed to add tag');
+      toast.error('Failed to add tag');
     } finally {
       setIsAddingTag(false);
     }
@@ -352,7 +353,7 @@ export default function AssetDetailPage() {
       setAsset(updatedAsset);
     } catch (err) {
       console.error('Failed to remove tag:', err);
-      alert('Failed to remove tag');
+      toast.error('Failed to remove tag');
     }
   };
 

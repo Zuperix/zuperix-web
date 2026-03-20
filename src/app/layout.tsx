@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   description: "Open source Digital Asset Management system",
 };
 
+import { Toaster } from 'sonner';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,6 +35,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>{children}</AuthProvider>
+        <Toaster position="top-right" richColors expand={false} />
       </body>
     </html>
   );
