@@ -281,7 +281,12 @@ export default function ApiKeysPage() {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-1">API Usage</h2>
-                <p className="text-gray-400 text-sm">Last 30 days of activity for <span className="text-blue-400 font-bold">"{showUsageModal.name}"</span></p>
+                <p className="text-gray-400 text-sm flex items-center gap-2">
+                  Last 30 days of activity for <span className="text-blue-400 font-bold">"{showUsageModal.name}"</span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20 ml-1">
+                    Updated Hourly
+                  </span>
+                </p>
               </div>
               <button 
                 onClick={() => {
@@ -304,10 +309,10 @@ export default function ApiKeysPage() {
               <div className="space-y-6">
                 <div className="grid grid-cols-4 gap-4">
                   {[
-                    { label: 'Total Requests', value: usageStats.reduce((acc, curr) => acc + curr.total_requests, 0), color: 'text-blue-400' },
-                    { label: 'Success Rate', value: `${((usageStats.reduce((acc, curr) => acc + curr.success_count, 0) / usageStats.reduce((acc, curr) => acc + curr.total_requests, 0)) * 100).toFixed(1)}%`, color: 'text-green-500' },
-                    { label: 'Avg Latency', value: `${(usageStats.reduce((acc, curr) => acc + curr.avg_latency, 0) / usageStats.length).toFixed(0)}ms`, color: 'text-purple-400' },
-                    { label: 'Error Count', value: usageStats.reduce((acc, curr) => acc + curr.error_count, 0), color: 'text-red-400' },
+                    { label: 'Total Requests', value: usageStats.reduce((acc, curr) => Number(acc) + Number(curr.total_requests), 0), color: 'text-blue-400' },
+                    { label: 'Success Rate', value: `${((usageStats.reduce((acc, curr) => Number(acc) + Number(curr.success_count), 0) / usageStats.reduce((acc, curr) => Number(acc) + Number(curr.total_requests), 0)) * 100).toFixed(1)}%`, color: 'text-green-500' },
+                    { label: 'Avg Latency', value: `${(usageStats.reduce((acc, curr) => Number(acc) + Number(curr.avg_latency), 0) / usageStats.length).toFixed(0)}ms`, color: 'text-purple-400' },
+                    { label: 'Error Count', value: usageStats.reduce((acc, curr) => Number(acc) + Number(curr.error_count), 0), color: 'text-red-400' },
                   ].map(metric => (
                     <div key={metric.label} className="bg-gray-950 p-4 rounded-2xl border border-gray-800">
                       <div className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{metric.label}</div>

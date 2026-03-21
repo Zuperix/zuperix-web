@@ -604,18 +604,32 @@ export default function AssetDetailPage() {
                         </button>
                       )}
 
-                      <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
-                        {flattenedCategories.map(cat => {
+                      <div className="max-h-60 overflow-y-auto custom-scrollbar px-1 py-1">
+                        {flattenedCategories.map((cat: any) => {
                           const isSelected = selectedCategoryIds.includes(cat.id);
+                          const depth = cat.depth || 0;
                           return (
-                            <div
-                              key={cat.id}
-                              onClick={() => handleToggleCategory(cat.id)}
-                              className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all ${isSelected ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                            <div key={cat.id} className="relative group/item">
+                              {depth > 0 && (
+                                <div 
+                                  className="absolute left-0 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-800 pointer-events-none" 
+                                  style={{ marginLeft: `${(depth - 1) * 1.5 + 0.75}rem` }}
+                                />
+                              )}
+                              <div
+                                onClick={() => handleToggleCategory(cat.id)}
+                                className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all duration-200 mb-1 ${
+                                  isSelected 
+                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 active:scale-[0.98]' 
+                                    : 'hover:bg-gray-50 dark:hover:bg-gray-800/80 text-gray-700 dark:text-gray-300'
                                 }`}
-                            >
-                              <span className="text-[11px] font-medium">{cat.name}</span>
-                              {isSelected && <CheckIcon className="h-3.5 w-3.5" />}
+                                style={{ marginLeft: `${depth * 1.5}rem` }}
+                              >
+                                <span className={`text-[11px] font-bold ${isSelected ? 'text-white' : ''}`}>
+                                  {cat.name}
+                                </span>
+                                {isSelected && <CheckIcon className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+                              </div>
                             </div>
                           );
                         })}
@@ -1194,12 +1208,12 @@ function ChevronLeftIcon(props: any) {
   );
 }
 
-function flattenCategories(categories: Category[]): Category[] {
-  let result: Category[] = [];
+function flattenCategories(categories: Category[], depth = 0): any[] {
+  let result: any[] = [];
   categories.forEach(cat => {
-    result.push(cat);
-    if (cat.children) {
-      result = result.concat(flattenCategories(cat.children));
+    result.push({ ...cat, depth });
+    if (cat.children && cat.children.length > 0) {
+      result = result.concat(flattenCategories(cat.children, depth + 1));
     }
   });
   return result;

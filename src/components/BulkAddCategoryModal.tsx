@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { 
   XMarkIcon, 
   FolderIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
@@ -31,7 +32,7 @@ export default function BulkAddCategoryModal({
     const fetchCategories = async () => {
       if (!activeWorkspace) return;
       try {
-        const data = await apiFetch<any[]>(`/categories?workspace_id=${activeWorkspace.id}`);
+        const data = await apiFetch<any[]>(`/categories/tree?workspace_id=${activeWorkspace.id}`);
         setCategories(data);
       } catch (error) {
         toast.error('Failed to load categories');
@@ -60,6 +61,59 @@ export default function BulkAddCategoryModal({
     }
   };
 
+  const renderCategory = (category: any, depth = 0) => {
+    const isExplicitlySelected = selectedCategoryId === category.id;
+    
+    const hasSelectedDescendant = (node: any): boolean => {
+      return node.children?.some((child: any) => 
+        child.id === selectedCategoryId || hasSelectedDescendant(child)
+      ) || false;
+    };
+
+    const reflectsSelection = isExplicitlySelected || hasSelectedDescendant(category);
+
+    return (
+      <div key={category.id} className="relative">
+        {depth > 0 && (
+          <div 
+            className="absolute left-0 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-800" 
+            style={{ marginLeft: `${(depth - 1) * 1.5 + 0.75}rem` }}
+          />
+        )}
+        <div className="space-y-1">
+          <button
+            onClick={() => setSelectedCategoryId(category.id)}
+            className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-200 group ${
+              isExplicitlySelected 
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-[1.02]' 
+                : reflectsSelection
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50'
+                  : 'hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300'
+            }`}
+            style={{ paddingLeft: `${depth * 1.5 + 0.75}rem` }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="text-left">
+                <p className={`text-sm font-bold tracking-tight ${isExplicitlySelected ? 'text-white' : ''}`}>
+                  {category.name}
+                </p>
+              </div>
+            </div>
+            {isExplicitlySelected && (
+              <CheckIcon className="h-5 w-5 text-white" strokeWidth={3} />
+            )}
+          </button>
+          
+          {category.children && category.children.length > 0 && (
+            <div className="space-y-1">
+              {category.children.map((child: any) => renderCategory(child, depth + 1))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-800 animate-in zoom-in-95 duration-200">
@@ -82,30 +136,7 @@ export default function BulkAddCategoryModal({
             </div>
           ) : (
             <div className="space-y-1">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategoryId(category.id)}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
-                    selectedCategoryId === category.id 
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 shadow-sm' 
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 border border-transparent text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${selectedCategoryId === category.id ? 'bg-blue-100 dark:bg-blue-800' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                      <FolderIcon className="h-4 w-4" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold">{category.name}</p>
-                      <p className="text-[10px] opacity-60 uppercase tracking-widest">{category.path}</p>
-                    </div>
-                  </div>
-                  {selectedCategoryId === category.id && (
-                    <div className="w-2 h-2 rounded-full bg-blue-600" />
-                  )}
-                </button>
-              ))}
+              {categories.map((category) => renderCategory(category))}
               {categories.length === 0 && (
                 <p className="text-center py-8 text-sm text-gray-500">No categories found in this workspace.</p>
               )}
