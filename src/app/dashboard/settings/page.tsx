@@ -4,7 +4,8 @@ import {
   IdentificationIcon, 
   TagIcon, 
   Square3Stack3DIcon,
-  QueueListIcon
+  QueueListIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
@@ -39,6 +40,14 @@ const SETTINGS_SECTIONS = [
     description: 'Manage API keys for programmatic access to your assets.',
     icon: IdentificationIcon, // Will use KeyIcon if I can find it, but IdentificationIcon is already imported
     href: '/dashboard/settings/api-keys',
+    color: 'bg-amber-500/10 text-amber-400',
+  },
+  {
+    id: 'maintenance',
+    name: 'Library Maintenance',
+    description: 'Scan for duplicates, near-matches, and keep your library organized.',
+    icon: SparklesIcon,
+    href: '/dashboard/settings/maintenance',
     color: 'bg-amber-500/10 text-amber-400',
   }
 ];

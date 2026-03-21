@@ -31,6 +31,7 @@ import {
   CloudArrowUpIcon,
   ChatBubbleLeftIcon
 } from '@heroicons/react/24/outline';
+import DownloadModal from '@/components/DownloadModal';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useCollections, Collection as CollectionType } from '@/hooks/useCollections';
 import { PermissionGate } from '@/components/PermissionGate';
@@ -107,6 +108,7 @@ export default function AssetDetailPage() {
   const [isUploadingVersion, setIsUploadingVersion] = useState(false);
   const [versionNotes, setVersionNotes] = useState('');
   const [showVersionUpload, setShowVersionUpload] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const versionFileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
@@ -451,14 +453,13 @@ export default function AssetDetailPage() {
           >
             <ShareIcon className="h-5 w-5" />
           </button>
-          <a
-            href={`http://localhost:3000/api/v1/assets/${assetId}/view`}
-            download={asset?.original_name}
+          <button
+            onClick={() => setIsDownloadModalOpen(true)}
             className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
             title="Download"
           >
             <ArrowDownTrayIcon className="h-5 w-5" />
-          </a>
+          </button>
           <PermissionGate action={Action.Delete} subject="Asset" workspaceId={activeWorkspace?.id}>
             <button
               onClick={handleDelete}
@@ -965,6 +966,7 @@ export default function AssetDetailPage() {
                   {[
                     { label: 'Original filename', value: asset?.original_name },
                     { label: 'File size', value: asset?.size ? `${(asset.size / 1024 / 1024).toFixed(2)} MB` : '0 MB' },
+                    { label: 'Dimensions', value: asset?.width && asset?.height ? `${asset.width} × ${asset.height} px` : 'N/A' },
                     { label: 'Mime type', value: asset?.mime_type },
                     { label: 'Date uploaded', value: asset?.created_at ? new Date(asset.created_at).toLocaleString() : 'N/A' },
                     // { label: 'Workspace ID', value: asset?.workspace_id },
@@ -1167,6 +1169,16 @@ export default function AssetDetailPage() {
           display: none;
         }
       `}</style>
+
+      <DownloadModal
+        isOpen={isDownloadModalOpen}
+        onClose={() => setIsDownloadModalOpen(false)}
+        assetId={assetId}
+        originalName={asset?.original_name || 'asset'}
+        width={asset?.width}
+        height={asset?.height}
+        mimeType={asset?.mime_type || 'application/octet-stream'}
+      />
     </div>
   );
 }

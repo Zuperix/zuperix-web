@@ -11,6 +11,8 @@ export interface Collection {
   user_id: string;
   workspace_id: string;
   customer_id: string;
+  is_smart: boolean;
+  smart_filter: any;
 }
 
 export function useCollections() {
@@ -37,7 +39,7 @@ export function useCollections() {
     fetchCollections();
   }, [fetchCollections]);
 
-  const createCollection = async (name: string, description?: string) => {
+  const createCollection = async (name: string, description?: string, isSmart: boolean = false, smartFilter: any = null) => {
     if (!activeWorkspace) return;
     try {
       await apiFetch('/collections', {
@@ -47,7 +49,21 @@ export function useCollections() {
           description,
           workspace_id: activeWorkspace.id,
           customer_id: (activeWorkspace as any).customer_id,
+          is_smart: isSmart,
+          smart_filter: smartFilter,
         }),
+      });
+      await fetchCollections();
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const updateCollection = async (id: string, body: { name?: string; description?: string; is_smart?: boolean; smart_filter?: any }) => {
+    try {
+      await apiFetch(`/collections/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
       });
       await fetchCollections();
     } catch (err: any) {
@@ -66,12 +82,23 @@ export function useCollections() {
     }
   };
 
+  const deleteCollection = async (id: string) => {
+    try {
+      await apiFetch(`/collections/${id}`, { method: 'DELETE' });
+      await fetchCollections();
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
   return {
     collections,
     loading,
     error,
     refresh: fetchCollections,
     createCollection,
+    updateCollection,
+    deleteCollection,
     addAssetsToCollection,
   };
 }
