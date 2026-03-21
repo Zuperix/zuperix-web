@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, DragEvent } from 'react';
+import { useState, useRef, useCallback, DragEvent, useEffect } from 'react';
 import {
   XMarkIcon,
   CloudArrowUpIcon,
@@ -10,8 +10,10 @@ import {
   DocumentIcon,
   PhotoIcon,
   VideoCameraIcon,
+  FolderIcon
 } from '@heroicons/react/24/outline';
 import { BASE_URL } from '@/lib/api';
+import { useCategories, Category } from '@/hooks/useCategories';
 
 const CONCURRENCY = 5;
 const MAX_FILES = 500;
@@ -51,6 +53,7 @@ function uploadFileXHR(
   workspaceId: string,
   token: string | null,
   onProgress: (pct: number) => void,
+  categoryIds: string[] = [],
   force: boolean = false
 ): Promise<void | { id: string; original_name: string }> {
   return new Promise((resolve, reject) => {
@@ -58,6 +61,10 @@ function uploadFileXHR(
     const formData = new FormData();
     formData.append('file', file);
     formData.append('workspace_id', workspaceId);
+    
+    if (categoryIds.length > 0) {
+      categoryIds.forEach(id => formData.append('category_ids[]', id));
+    }
 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -121,6 +128,10 @@ export default function UploadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
 
+  // Category selection state
+  const { categories } = useCategories();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+
   const addFiles = useCallback((files: FileList | File[]) => {
     const arr = Array.from(files).slice(0, MAX_FILES - entries.length);
     const valid = arr.filter((f) => {
@@ -155,6 +166,8 @@ export default function UploadModal({
     const pending = entries.filter((e) => e.status === 'pending' || e.status === 'error' || (e.status === 'duplicate' && e.force));
     let i = 0;
 
+    const categoryIds = selectedCategoryId ? [selectedCategoryId] : [];
+
     const next = async (): Promise<void> => {
       if (abortRef.current) return;
       const entry = pending[i++];
@@ -165,7 +178,7 @@ export default function UploadModal({
       try {
         await uploadFileXHR(entry.file, workspaceId, token, (pct) => {
           updateEntry(entry.id, { progress: pct });
-        }, entry.force);
+        }, categoryIds, entry.force);
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: any) {
         if (err instanceof DuplicateError) {
@@ -227,6 +240,20 @@ export default function UploadModal({
             counts.total,
         );
 
+  // Helper to flatten categories for the select dropdown
+  const flattenCategories = (cats: Category[], depth = 0): { id: string, name: string, depth: number }[] => {
+    let result: { id: string, name: string, depth: number }[] = [];
+    cats.forEach(cat => {
+      result.push({ id: cat.id, name: cat.name, depth });
+      if (cat.children && cat.children.length > 0) {
+        result = result.concat(flattenCategories(cat.children, depth + 1));
+      }
+    });
+    return result;
+  };
+
+  const flatCategories = flattenCategories(categories);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm">
       <div className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-all">
@@ -239,6 +266,36 @@ export default function UploadModal({
           <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
             <XMarkIcon className="h-5 w-5 text-gray-500" />
           </button>
+        </div>
+
+        {/* Category Selector */}
+        <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/20 border-b dark:border-gray-800 flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Target Category</label>
+              <div className="relative">
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value)}
+                  disabled={running}
+                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none disabled:opacity-50"
+                >
+                  <option value="">Default (Global Workspace)</option>
+                  {flatCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {'\u00A0'.repeat(cat.depth * 3)}{cat.name}
+                    </option>
+                  ))}
+                </select>
+                <FolderIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Summary bar */}

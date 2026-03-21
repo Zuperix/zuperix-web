@@ -35,6 +35,7 @@ import DownloadModal from '@/components/DownloadModal';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useCollections, Collection as CollectionType } from '@/hooks/useCollections';
 import { PermissionGate } from '@/components/PermissionGate';
+import SimilarAssets from '@/components/SimilarAssets';
 import { Action } from '@/types/auth';
 import { useRef } from 'react';
 import { toast } from 'sonner';
@@ -921,6 +922,8 @@ export default function AssetDetailPage() {
                   </div>
                 </section>
               )}
+              
+              <SimilarAssets assetId={assetId} />
             </div>
           </div>
         </div>
