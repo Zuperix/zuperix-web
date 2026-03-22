@@ -5,7 +5,8 @@ import {
   TagIcon, 
   Square3Stack3DIcon,
   QueueListIcon,
-  SparklesIcon
+  SparklesIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
@@ -49,6 +50,14 @@ const SETTINGS_SECTIONS = [
     icon: SparklesIcon,
     href: '/dashboard/settings/maintenance',
     color: 'bg-amber-500/10 text-amber-400',
+  },
+  {
+    id: 'trash',
+    name: 'Trash',
+    description: 'Recover or permanently delete items from your workspace.',
+    icon: TrashIcon,
+    href: '/dashboard/settings/trash',
+    color: 'bg-red-500/10 text-red-400',
   }
 ];
 

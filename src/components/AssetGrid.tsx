@@ -9,7 +9,9 @@ import {
   TrashIcon,
   FolderIcon,
   ArrowDownTrayIcon,
-  ShareIcon
+  ShareIcon,
+  LockClosedIcon,
+  ArrowUturnLeftIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { PermissionGate } from './PermissionGate';
@@ -37,7 +39,7 @@ const STATUS_STYLING: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Draft',
-  pending_review: 'Pending',
+  pending_review: 'Pending Review',
   approved: 'Approved',
   archived: 'Archived',
 };
@@ -54,14 +56,16 @@ const AssetCard = ({
   onSelect, 
   onToggleSelect,
   isSelected,
-  onDownload
+  onDownload,
+  onRestore
 }: { 
   asset: Asset, 
   onDelete: (id: string) => void, 
   onSelect?: (id: string) => void, 
   onToggleSelect?: (id: string, isShift: boolean) => void,
   isSelected: boolean,
-  onDownload?: (asset: Asset) => void
+  onDownload?: (asset: Asset) => void,
+  onRestore?: (id: string) => void
 }) => {
   const { activeWorkspace } = useWorkspace();
   const [imgError, setImgError] = useState(false);
@@ -144,7 +148,8 @@ const AssetCard = ({
 
             {/* Status Badge */}
             {asset.status && (
-              <div className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border backdrop-blur-xl ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+              <div className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border backdrop-blur-xl flex items-center gap-1.5 ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                {asset.status === 'pending_review' && <LockClosedIcon className="h-3 w-3" />}
                 {STATUS_LABELS[asset.status] || asset.status}
               </div>
             )}
@@ -191,6 +196,19 @@ const AssetCard = ({
             <ArrowDownTrayIcon className="h-4 w-4" />
           </button>
 
+          {onRestore && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onRestore(assetId);
+              }}
+              className="p-2.5 bg-gray-800/50 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 rounded-xl transition-all active:scale-95"
+              title="Restore"
+            >
+              <ArrowUturnLeftIcon className="h-4 w-4" />
+            </button>
+          )}
+
           <PermissionGate action={Action.Delete} subject="Asset" workspaceId={activeWorkspace?.id}>
             <button 
               onClick={(e) => {
@@ -198,7 +216,7 @@ const AssetCard = ({
                 onDelete(assetId);
               }}
               className="p-2.5 bg-gray-800/50 hover:bg-red-500/20 text-gray-500 hover:text-red-500 rounded-xl transition-all active:scale-90"
-              title="Delete"
+              title={onRestore ? "Permanently Delete" : "Delete"}
             >
               <TrashIcon className="h-4 w-4" />
             </button>
@@ -215,6 +233,7 @@ export default function AssetGrid({
   onSelect,
   onToggleSelect,
   onDownload,
+  onRestore,
   selectedIds = []
 }: {
   assets: Asset[],
@@ -222,6 +241,7 @@ export default function AssetGrid({
   onSelect?: (id: string) => void,
   onToggleSelect?: (id: string, isShift: boolean) => void,
   onDownload?: (asset: Asset) => void,
+  onRestore?: (id: string) => void,
   selectedIds?: string[]
 }) {
   const assetList = Array.isArray(assets) ? assets : [];
@@ -249,6 +269,7 @@ export default function AssetGrid({
             onSelect={onSelect}
             onToggleSelect={onToggleSelect}
             onDownload={onDownload}
+            onRestore={onRestore}
             isSelected={isSelected}
           />
         );

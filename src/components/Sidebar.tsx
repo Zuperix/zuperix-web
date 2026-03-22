@@ -19,7 +19,9 @@ import {
   ShieldCheckIcon,
   KeyIcon,
   UsersIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  InboxIcon,
+  QueueListIcon
 } from '@heroicons/react/24/outline';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -27,10 +29,10 @@ import { Action } from '@/types/auth';
 
 const NAV = [
   { name: 'Assets', href: '/dashboard', icon: FolderIcon },
+  { name: 'My Tasks', href: '/dashboard/tasks', icon: InboxIcon },
   { name: 'Categories', href: '/dashboard/categories', icon: TagIcon },
   { name: 'Collections', href: '/dashboard/collections', icon: Square3Stack3DIcon },
   { name: 'Portals', href: '/dashboard/portals', icon: GlobeAltIcon },
-  { name: 'Trash', href: '/dashboard/trash', icon: TrashIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 ];
 

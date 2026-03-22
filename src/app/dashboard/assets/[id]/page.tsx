@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch, BASE_URL } from '@/lib/api';
@@ -12,6 +12,7 @@ import {
   XMarkIcon,
   CheckIcon,
   TagIcon,
+  QueueListIcon,
   InformationCircleIcon,
   DocumentDuplicateIcon,
   DocumentIcon,
@@ -37,8 +38,11 @@ import { useCollections, Collection as CollectionType } from '@/hooks/useCollect
 import { PermissionGate } from '@/components/PermissionGate';
 import SimilarAssets from '@/components/SimilarAssets';
 import { Action } from '@/types/auth';
-import { useRef } from 'react';
 import { toast } from 'sonner';
+import WorkflowStartDialog from '@/components/WorkflowStartDialog';
+import AssetWorkflowStatus from '@/components/AssetWorkflowStatus';
+import { useWorkflows } from '@/hooks/useWorkflows';
+import { AssetWorkflow } from '@/types/workflow';
 
 interface Field {
   id: string;
@@ -52,7 +56,7 @@ interface MetadataValue {
   value: any;
 }
 
-type Tab = 'file-info' | 'attachments' | 'versions' | 'comments' | 'history';
+type Tab = 'file-info' | 'attachments' | 'versions' | 'comments' | 'history' | 'workflow';
 
 const STATUS_STYLING: Record<string, string> = {
   draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
@@ -111,6 +115,10 @@ export default function AssetDetailPage() {
   const [showVersionUpload, setShowVersionUpload] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const versionFileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [activeWorkflow, setActiveWorkflow] = useState<AssetWorkflow | null>(null);
+  const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
+  const { fetchAssetWorkflow } = useWorkflows();
 
   const fetchData = useCallback(async () => {
     if (!activeWorkspace || !assetId) return;
@@ -123,12 +131,14 @@ export default function AssetDetailPage() {
       setSelectedCategoryIds(assetData.categories?.map((c: any) => c.id) || []);
       setSelectedCollectionIds(assetData.collections?.map((c: any) => c.id) || []);
 
-      const [fieldDefs, currentValues] = await Promise.all([
+      const [fieldDefs, currentValues, workflowData] = await Promise.all([
         apiFetch<Field[]>(`/workspaces/${activeWorkspace.id}/metadata/fields`),
-        apiFetch<MetadataValue[]>(`/assets/${assetId}/metadata`)
+        apiFetch<MetadataValue[]>(`/assets/${assetId}/metadata`),
+        fetchAssetWorkflow(assetId).catch(() => null)
       ]);
 
       setFields(fieldDefs);
+      setActiveWorkflow(workflowData);
       const valueMap: Record<string, any> = {};
       currentValues.forEach(v => {
         if (v.field_id && v.field_id !== 'undefined') {
@@ -948,6 +958,7 @@ export default function AssetDetailPage() {
           <div className="flex border-b border-gray-200 dark:border-gray-800 h-14 shrink-0 overflow-x-auto custom-scrollbar">
             {[
               { id: 'file-info', label: 'File info', icon: InboxIcon },
+              { id: 'workflow', label: 'Workflow', icon: QueueListIcon },
               { id: 'history', label: 'History', icon: ClockIcon },
               { id: 'attachments', label: 'Attachments', icon: Square3Stack3DIcon },
               { id: 'versions', label: 'Versions', icon: ClockIcon },
@@ -1159,6 +1170,58 @@ export default function AssetDetailPage() {
                 <div className="bg-gray-50/30 dark:bg-gray-900/30 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
                   <AssetHistory assetId={assetId} />
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'workflow' && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300 h-full flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                      <QueueListIcon className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Workflow Status</h2>
+                  </div>
+                  {!activeWorkflow && (
+                    <button
+                      onClick={() => setIsWorkflowDialogOpen(true)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                      Start Workflow
+                    </button>
+                  )}
+                </div>
+
+                {activeWorkflow ? (
+                  <div className="flex-1 bg-gray-50/50 dark:bg-gray-900/30 rounded-3xl border border-gray-200 dark:border-gray-800 p-8">
+                    <AssetWorkflowStatus workflow={activeWorkflow} />
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-12 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-[40px] bg-gray-50/30 dark:bg-gray-900/10">
+                    <div className="bg-gray-100 dark:bg-gray-800/50 p-6 rounded-full mb-6">
+                      <QueueListIcon className="h-12 w-12 text-gray-300 dark:text-gray-700" />
+                    </div>
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">No Active Workflow</h3>
+                    <p className="text-xs text-gray-500 leading-relaxed max-w-[240px]">This asset is currently not enrolled in any approval process.</p>
+                    <button
+                      onClick={() => setIsWorkflowDialogOpen(true)}
+                      className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20"
+                    >
+                      Initiate Workflow
+                    </button>
+                  </div>
+                )}
+
+                <WorkflowStartDialog
+                  assetId={assetId}
+                  isOpen={isWorkflowDialogOpen}
+                  onClose={() => setIsWorkflowDialogOpen(false)}
+                  onSuccess={() => {
+                    fetchData();
+                    toast.success('Workflow initiated successfully!');
+                  }}
+                />
               </div>
             )}
           </div>
