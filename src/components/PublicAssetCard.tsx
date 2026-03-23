@@ -7,6 +7,7 @@ import {
   VideoCameraIcon,
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
+import { BASE_URL } from '@/lib/api';
 
 interface PublicAsset {
   id: string;
@@ -27,7 +28,7 @@ export default function PublicAssetCard({ asset }: { asset: PublicAsset }) {
   const Icon = getIcon(asset.type);
 
   // Use the full URL if it's a relative path from the backend
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3000';
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || BASE_URL.replace('/api/v1', '');
   const imageUrl = asset.thumbnail_url.startsWith('http') ? asset.thumbnail_url : `${backendUrl}${asset.thumbnail_url}`;
   const downloadUrl = asset.download_url.startsWith('http') ? asset.download_url : `${backendUrl}${asset.download_url}`;
 

@@ -10,10 +10,15 @@ import {
   DocumentIcon,
   PhotoIcon,
   VideoCameraIcon,
-  FolderIcon
+  FolderIcon,
+  MagnifyingGlassIcon,
+  TagIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from '@heroicons/react/24/outline';
 import { BASE_URL } from '@/lib/api';
 import { useCategories, Category } from '@/hooks/useCategories';
+import { useMetadataFields, MetadataField } from '@/hooks/useMetadataFields';
 
 const CONCURRENCY = 5;
 const MAX_FILES = 500;
@@ -54,7 +59,8 @@ function uploadFileXHR(
   token: string | null,
   onProgress: (pct: number) => void,
   categoryIds: string[] = [],
-  force: boolean = false
+  force: boolean = false,
+  metadata: Record<string, any> = {}
 ): Promise<void | { id: string; original_name: string }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -64,6 +70,10 @@ function uploadFileXHR(
     
     if (categoryIds.length > 0) {
       categoryIds.forEach(id => formData.append('category_ids[]', id));
+    }
+
+    if (Object.keys(metadata).length > 0) {
+      formData.append('metadata', JSON.stringify(metadata));
     }
 
     xhr.upload.addEventListener('progress', (e) => {
@@ -92,7 +102,7 @@ function uploadFileXHR(
     xhr.ontimeout = () => reject(new Error('Request timed out'));
     xhr.timeout = 120_000;
 
-    xhr.open('POST', `http://localhost:3000/api/v1/assets/upload${force ? '?force=true' : ''}`);
+    xhr.open('POST', `${BASE_URL}/assets/upload?workspace_id=${workspaceId}${force ? '&force=true' : ''}`);
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.send(formData);
   });
@@ -131,6 +141,12 @@ export default function UploadModal({
   // Category selection state
   const { categories } = useCategories();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+
+  // Metadata state
+  const { fields: metadataFields } = useMetadataFields(workspaceId);
+  const [initialMetadata, setInitialMetadata] = useState<Record<string, any>>({});
+  const [showMetadata, setShowMetadata] = useState(false);
+  const [metadataSearch, setMetadataSearch] = useState('');
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const arr = Array.from(files).slice(0, MAX_FILES - entries.length);
@@ -178,7 +194,7 @@ export default function UploadModal({
       try {
         await uploadFileXHR(entry.file, workspaceId, token, (pct) => {
           updateEntry(entry.id, { progress: pct });
-        }, categoryIds, entry.force);
+        }, categoryIds, entry.force, initialMetadata);
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: any) {
         if (err instanceof DuplicateError) {
@@ -297,6 +313,95 @@ export default function UploadModal({
             </div>
           </div>
         </div>
+
+        {/* Metadata Toggle & Fields */}
+        {metadataFields.length > 0 && (
+          <div className="flex-shrink-0 border-b dark:border-gray-800">
+            <button
+              onClick={() => setShowMetadata(!showMetadata)}
+              className="w-full px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <TagIcon className={`h-4 w-4 ${showMetadata ? 'text-blue-500' : 'text-gray-400'}`} />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Initial Metadata (Apply to all)
+                </span>
+                {Object.keys(initialMetadata).length > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] font-bold rounded-md">
+                    {Object.keys(initialMetadata).length} fields set
+                  </span>
+                )}
+              </div>
+              {showMetadata ? (
+                <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              )}
+            </button>
+
+            {showMetadata && (
+              <div className="px-6 pb-6 bg-gray-50/30 dark:bg-gray-900/40 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* Search Fields */}
+                {metadataFields.length > 6 && (
+                  <div className="relative mb-4">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Search metadata fields..."
+                      value={metadataSearch}
+                      onChange={(e) => setMetadataSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-1.5 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-[11px] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 max-h-[300px] overflow-y-auto px-1 pt-1 custom-scrollbar">
+                  {metadataFields
+                    .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase()))
+                    .map((field) => (
+                    <div key={field.id} className="space-y-1 group">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide group-focus-within:text-blue-500 transition-colors truncate">
+                          {field.label}
+                        </label>
+                        <span className="text-[8px] font-medium text-gray-600 dark:text-gray-500 uppercase tracking-tighter">
+                          {field.field_type}
+                        </span>
+                      </div>
+                      
+                      {field.field_type === 'boolean' ? (
+                        <div className="flex items-center h-9 px-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl">
+                          <label className="flex items-center gap-2 cursor-pointer w-full">
+                            <input
+                              type="checkbox"
+                              checked={initialMetadata[field.key] || false}
+                              onChange={(e) => setInitialMetadata(prev => ({ ...prev, [field.key]: e.target.checked }))}
+                              className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 transition-all"
+                            />
+                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Enabled</span>
+                          </label>
+                        </div>
+                      ) : (
+                        <input
+                          type={field.field_type === 'integer' || field.field_type === 'float' ? 'number' : 'text'}
+                          value={initialMetadata[field.key] || ''}
+                          onChange={(e) => setInitialMetadata(prev => ({ ...prev, [field.key]: e.target.value }))}
+                          placeholder={`Enter ${field.label.toLowerCase()}...`}
+                          className="w-full px-3 py-2 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-gray-600"
+                        />
+                      )}
+                    </div>
+                  ))}
+                  {metadataFields.filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
+                    <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
+                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching "{metadataSearch}"</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Summary bar */}
         {counts.total > 0 && (

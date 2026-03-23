@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, BASE_URL } from '@/lib/api';
 import { components } from '@/types/api';
 import { 
   XMarkIcon, 
@@ -167,7 +167,7 @@ export default function MetadataPanel({
         <div className="p-4 bg-gray-950/20 border-b border-gray-800/50">
           <div className="aspect-video rounded-xl overflow-hidden bg-gray-800 border border-gray-700/50 relative group">
             <img 
-              src={`http://localhost:3000/api/v1/assets/${assetId}/view`} 
+              src={`${BASE_URL}/assets/${assetId}/view`} 
               className="w-full h-full object-contain"
               alt="Asset preview"
               onError={(e) => {

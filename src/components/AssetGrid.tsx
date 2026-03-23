@@ -18,6 +18,7 @@ import { PermissionGate } from './PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { toast } from 'sonner';
+import { BASE_URL } from '@/lib/api';
 
 type Asset = components['schemas']['MetadataEntryDto'] & { 
   id: string;
@@ -112,7 +113,7 @@ const AssetCard = ({
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-gray-950/50">
         {mimeType.startsWith('image/') && !imgError ? (
           <img 
-            src={`http://localhost:3000/api/v1/assets/${assetId}/view`} 
+            src={`${BASE_URL}/assets/${assetId}/view`} 
             alt={originalName}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
             onError={() => setImgError(true)}
