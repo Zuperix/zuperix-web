@@ -14,7 +14,8 @@ import {
   CalendarIcon,
   ArrowRightIcon,
   SparklesIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  GlobeAmericasIcon
 } from '@heroicons/react/24/outline';
 import SmartFilterBuilder from '@/components/SmartFilterBuilder';
 import Link from 'next/link';
@@ -30,16 +31,18 @@ export default function CollectionsPage() {
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [isSmart, setIsSmart] = useState(false);
+  const [isGlobal, setIsGlobal] = useState(false);
   const [smartFilter, setSmartFilter] = useState<any>({});
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
-      await createCollection(newName, newDesc, isSmart, isSmart ? smartFilter : null);
+      await createCollection(newName, newDesc, isSmart, isSmart ? smartFilter : null, isGlobal);
       setNewName('');
       setNewDesc('');
       setIsSmart(false);
+      setIsGlobal(false);
       setSmartFilter({});
       setIsAdding(false);
     } catch (err) {
@@ -55,6 +58,7 @@ export default function CollectionsPage() {
         description: newDesc,
         is_smart: isSmart,
         smart_filter: isSmart ? smartFilter : null,
+        is_global: isGlobal,
       });
       setEditingId(null);
       setNewName('');
@@ -71,6 +75,7 @@ export default function CollectionsPage() {
     setNewName(col.name);
     setNewDesc(col.description || '');
     setIsSmart(col.is_smart);
+    setIsGlobal(col.is_global || false);
     setSmartFilter(col.smart_filter || {});
   };
 
@@ -179,6 +184,24 @@ export default function CollectionsPage() {
               </div>
             )}
           </div>
+
+          <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div className={`p-2 rounded-lg transition-all ${isGlobal ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20' : 'bg-gray-700 text-gray-400 group-hover:bg-gray-600'}`}>
+                <GlobeAmericasIcon className="h-4 w-4" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-white tracking-tight">Global Collection</p>
+                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Visible to all users in this workspace</p>
+              </div>
+              <input 
+                type="checkbox" 
+                checked={isGlobal} 
+                onChange={e => setIsGlobal(e.target.checked)} 
+                className="h-5 w-5 rounded border-gray-700 bg-gray-800 text-amber-600 focus:ring-amber-500/20"
+              />
+            </label>
+          </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-800/60">
             <button 
               onClick={() => setIsAdding(false)}
@@ -247,8 +270,19 @@ export default function CollectionsPage() {
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base font-bold text-white truncate group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{col.name}</h3>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <UserIcon className="h-3 w-3 text-gray-600" />
-                      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Personal Collection</span>
+                      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                        {col.is_global ? (
+                          <span className="flex items-center gap-1 text-amber-500">
+                            <GlobeAmericasIcon className="h-3 w-3" />
+                            Global Collection
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <UserIcon className="h-3 w-3" />
+                            Personal Collection
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -320,6 +354,24 @@ export default function CollectionsPage() {
                         <SmartFilterBuilder filter={smartFilter} onChange={setSmartFilter} />
                       </div>
                     )}
+                  </div>
+
+                  <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className={`p-2 rounded-lg transition-all ${isGlobal ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20' : 'bg-gray-700 text-gray-400 group-hover:bg-gray-600'}`}>
+                        <GlobeAmericasIcon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-white tracking-tight">Global Collection</p>
+                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Visible to all users in this workspace</p>
+                      </div>
+                      <input 
+                        type="checkbox" 
+                        checked={isGlobal} 
+                        onChange={e => setIsGlobal(e.target.checked)} 
+                        className="h-5 w-5 rounded border-gray-700 bg-gray-800 text-amber-600 focus:ring-amber-500/20"
+                      />
+                    </label>
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4 border-t border-gray-800/60">

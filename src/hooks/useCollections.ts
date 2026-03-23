@@ -13,6 +13,7 @@ export interface Collection {
   customer_id: string;
   is_smart: boolean;
   smart_filter: any;
+  is_global: boolean;
 }
 
 export function useCollections() {
@@ -39,7 +40,7 @@ export function useCollections() {
     fetchCollections();
   }, [fetchCollections]);
 
-  const createCollection = async (name: string, description?: string, isSmart: boolean = false, smartFilter: any = null) => {
+  const createCollection = async (name: string, description?: string, isSmart: boolean = false, smartFilter: any = null, isGlobal: boolean = false) => {
     if (!activeWorkspace) return;
     try {
       await apiFetch('/collections', {
@@ -51,6 +52,7 @@ export function useCollections() {
           customer_id: (activeWorkspace as any).customer_id,
           is_smart: isSmart,
           smart_filter: smartFilter,
+          is_global: isGlobal,
         }),
       });
       await fetchCollections();
@@ -59,7 +61,7 @@ export function useCollections() {
     }
   };
 
-  const updateCollection = async (id: string, body: { name?: string; description?: string; is_smart?: boolean; smart_filter?: any }) => {
+  const updateCollection = async (id: string, body: { name?: string; description?: string; is_smart?: boolean; smart_filter?: any; is_global?: boolean }) => {
     try {
       await apiFetch(`/collections/${id}`, {
         method: 'PATCH',

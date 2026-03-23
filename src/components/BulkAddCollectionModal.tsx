@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { 
   XMarkIcon, 
-  RectangleGroupIcon
+  RectangleGroupIcon,
+  GlobeAmericasIcon
 } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
@@ -95,8 +96,16 @@ export default function BulkAddCollectionModal({
                     <div className={`p-2 rounded-lg ${selectedCollectionId === collection.id ? 'bg-purple-100 dark:bg-purple-800' : 'bg-gray-100 dark:bg-gray-800'}`}>
                       <RectangleGroupIcon className="h-4 w-4" />
                     </div>
-                    <div className="text-left">
-                      <p className="text-sm font-semibold">{collection.name}</p>
+                    <div className="text-left flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold">{collection.name}</p>
+                        {collection.is_global && (
+                          <span className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-600 border border-amber-500/20 px-1.5 py-0.5 rounded-md">
+                            <GlobeAmericasIcon className="h-2 w-2" />
+                            Global
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] opacity-60 truncate max-w-[200px]">{collection.description || 'No description'}</p>
                     </div>
                   </div>

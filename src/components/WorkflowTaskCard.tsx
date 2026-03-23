@@ -8,6 +8,7 @@ import {
   ArrowRightIcon,
   DocumentIcon
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import { WorkflowTask, WorkflowTaskStatus } from '@/types/workflow';
 import { useWorkflows } from '@/hooks/useWorkflows';
 
@@ -39,11 +40,11 @@ export default function WorkflowTaskCard({ task, onRefresh }: WorkflowTaskCardPr
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       
       <div className="p-6 relative">
-        <div className="flex items-start gap-4">
+        <Link href={`/dashboard/assets/${asset?.id}`} className="flex items-start gap-4 cursor-pointer">
           {/* Asset Preview Placeholder */}
-          <div className="w-20 h-20 rounded-2xl bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-blue-500/20 transition-all">
+          <div className="w-20 h-20 rounded-2xl bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-blue-500/20 transition-all shadow-inner">
              {asset?.thumbnail_url ? (
-               <img src={asset.thumbnail_url} className="w-full h-full object-cover" />
+               <img src={asset.thumbnail_url} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
              ) : (
                <DocumentIcon className="h-8 w-8 text-gray-600 group-hover:text-blue-500 transition-colors" />
              )}
@@ -61,14 +62,21 @@ export default function WorkflowTaskCard({ task, onRefresh }: WorkflowTaskCardPr
             </div>
             
             <h3 className="text-sm font-bold text-white truncate group-hover:text-blue-400 transition-colors">
-              {asset?.name || 'Untitled Asset'}
+              {asset?.original_name || 'Untitled Asset'}
             </h3>
             
-            <p className="text-[10px] text-gray-500 font-mono mt-1">
-                ID: {asset?.id?.split('-')[0]}...
-            </p>
+            <div className="flex flex-col gap-0.5 mt-1">
+                <p className="text-[10px] text-gray-500 font-mono">
+                    ID: {asset?.id?.split('-')[0]}...
+                </p>
+                {asset?.user && (
+                    <p className="text-[10px] text-gray-400 font-bold tracking-tight">
+                        Uploaded by {asset.user.name}
+                    </p>
+                )}
+            </div>
           </div>
-        </div>
+        </Link>
 
         <div className="mt-8 flex flex-col gap-4">
             {showComment ? (
