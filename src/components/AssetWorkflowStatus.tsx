@@ -75,8 +75,9 @@ export default function AssetWorkflowStatus({ workflow, onRefresh }: AssetWorkfl
       toast.success(status === WorkflowTaskStatus.APPROVED ? 'Stage approved' : 'Workflow rejected');
       setComment('');
       if (onRefresh) onRefresh();
-    } catch (err) {
-      toast.error('Action failed');
+    } catch (err: any) {
+      toast.error(err.message || 'Action failed');
+      if (onRefresh) onRefresh();
     }
   };
 

@@ -40,6 +40,7 @@ const ADMIN_NAV = [
   { name: 'Users', href: '/dashboard/admin/users', icon: UsersIcon },
   { name: 'Roles', href: '/dashboard/admin/roles', icon: ShieldCheckIcon },
   { name: 'Permissions', href: '/dashboard/admin/permissions', icon: KeyIcon },
+  { name: 'Webhooks', href: '/dashboard/admin/webhooks', icon: GlobeAltIcon },
 ];
 
 export default function Sidebar() {
@@ -57,6 +58,7 @@ export default function Sidebar() {
       if (item.name === 'Users') return can(Action.Read, 'User', activeWorkspace?.id);
       if (item.name === 'Roles') return can(Action.Read, 'Role', activeWorkspace?.id);
       if (item.name === 'Permissions') return can(Action.Read, 'Permission', activeWorkspace?.id);
+      if (item.name === 'Webhooks') return can(Action.Read, 'Webhook', activeWorkspace?.id);
       return false;
     });
   }, [can, activeWorkspace]);

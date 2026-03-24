@@ -11,6 +11,7 @@ import {
 import Link from 'next/link';
 import { WorkflowTask, WorkflowTaskStatus } from '@/types/workflow';
 import { useWorkflows } from '@/hooks/useWorkflows';
+import { toast } from 'sonner';
 
 interface WorkflowTaskCardProps {
   task: WorkflowTask;
@@ -26,8 +27,9 @@ export default function WorkflowTaskCard({ task, onRefresh }: WorkflowTaskCardPr
     try {
       await processTask(task.id, status, comment || undefined);
       onRefresh?.();
-    } catch (err) {
-      console.error('Failed to process task', err);
+    } catch (err: any) {
+      toast.error(err.message || 'Action failed');
+      onRefresh?.();
     }
   };
 
