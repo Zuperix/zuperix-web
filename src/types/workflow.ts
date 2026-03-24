@@ -15,6 +15,7 @@ export interface Workflow {
   name: string;
   description?: string;
   workspace_id: string;
+  conditions?: any;
   stages?: WorkflowStage[];
 }
 
@@ -25,6 +26,7 @@ export interface WorkflowStage {
   order: number;
   required_approvals: number;
   approver_role_id?: string;
+  conditions?: any;
 }
 
 export interface AssetWorkflow {

@@ -10,12 +10,15 @@ import {
   QueueListIcon,
   CheckIcon,
   XMarkIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { useWorkflows } from '@/hooks/useWorkflows';
+import { useCategories, Category } from '@/hooks/useCategories';
+import { useMetadataFields, MetadataField } from '@/hooks/useMetadataFields';
+import { useWorkspace } from '@/context/WorkspaceContext';
 import { Workflow, WorkflowStage } from '@/types/workflow';
 import { apiFetch } from '@/lib/api';
-import { useWorkspace } from '@/context/WorkspaceContext';
 import { toast } from 'sonner';
 
 interface Role {
@@ -24,32 +27,43 @@ interface Role {
 }
 
 export default function WorkflowTemplateManager() {
-  const { fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow, addStage, updateStage, deleteStage, loading } = useWorkflows();
+  const { activeWorkspace } = useWorkspace();
+  const { categories } = useCategories();
+  const { fields: metadataFields } = useMetadataFields(activeWorkspace?.id || '');
+  const { 
+    loading, 
+    fetchWorkflows,
+    createWorkflow, 
+    updateWorkflow, 
+    deleteWorkflow, 
+    addStage, 
+    updateStage, 
+    deleteStage 
+  } = useWorkflows();
+  
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [fetching, setFetching] = useState(true);
+  const [isFetching, setIsFetching] = useState(true);
   
   const [isCreating, setIsCreating] = useState(false);
   const [editingWf, setEditingWf] = useState<Workflow | null>(null);
   const [expandedWfId, setExpandedWfId] = useState<string | null>(null);
-  
-  const { activeWorkspace } = useWorkspace();
   const [newWf, setNewWf] = useState({ name: '', description: '' });
 
   const loadData = async () => {
     try {
-      setFetching(true);
+      setIsFetching(true);
       if (!activeWorkspace?.id) return [];
       const [wfData, roleData] = await Promise.all([
         fetchWorkflows(activeWorkspace.id),
         apiFetch<Role[]>('/roles')
       ]);
       setWorkflows(wfData);
-      setRoles(roleData);
+      setRoles(roleData || []);
     } catch (err) {
       toast.error('Failed to load data');
     } finally {
-      setFetching(false);
+      setIsFetching(false);
     }
   };
 
@@ -101,18 +115,29 @@ export default function WorkflowTemplateManager() {
     }
   };
 
+  const handleUpdateWorkflowConditions = (workflowId: string, conditions: any) => {
+    setWorkflows(prev => prev.map(w => w.id === workflowId ? { ...w, conditions } : w));
+  };
+
   const handleSaveAll = async (workflowId: string) => {
     const wf = workflows.find(w => w.id === workflowId);
-    if (!wf || !wf.stages) return;
+    if (!wf) return;
 
     try {
-      // In a real production app, we'd have a batch update endpoint.
-      // For now, we'll update all stages and then refresh once.
-      const updatePromises = wf.stages.map(stage => 
+      // Update workflow-level stuff first
+      await updateWorkflow(workflowId, {
+        name: wf.name,
+        description: wf.description,
+        conditions: wf.conditions
+      });
+
+      // Update all stages
+      const updatePromises = (wf.stages || []).map(stage => 
         updateStage(stage.id, {
           name: stage.name,
           approver_role_id: stage.approver_role_id,
-          required_approvals: stage.required_approvals
+          required_approvals: stage.required_approvals,
+          conditions: stage.conditions
         })
       );
       
@@ -133,7 +158,7 @@ export default function WorkflowTemplateManager() {
     }
   };
 
-  if (fetching) {
+  if (isFetching || loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <ArrowPathIcon className="h-10 w-10 text-blue-500 animate-spin" />
@@ -252,6 +277,20 @@ export default function WorkflowTemplateManager() {
                   </p>
                 </div>
 
+                {/* GLOBAL WORKFLOW TRIGGER CONDITIONS */}
+                <div className="mb-10">
+                  <ConditionBuilder 
+                    title="Workflow Trigger Conditions"
+                    conditions={wf.conditions}
+                    onChange={(newConds) => handleUpdateWorkflowConditions(wf.id, newConds)}
+                    metadataFields={metadataFields}
+                    categories={categories}
+                  />
+                  <p className="text-[10px] text-gray-500 mt-3 ml-2 italic">
+                    Assets matching these rules will automatically enter this workflow. If multiple workflows match, the first one created takes priority.
+                  </p>
+                </div>
+
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex flex-col gap-1">
                     <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Configured Pipeline Stages</h4>
@@ -346,6 +385,14 @@ export default function WorkflowTemplateManager() {
                                 />
                             </div>
 
+                            {/* Optional: Small indicator if stage has its own conditions */}
+                            {stage.conditions && (stage.conditions.all?.length > 0 || stage.conditions.any?.length > 0) && (
+                                <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                                    <ArrowPathIcon className="h-3 w-3 text-blue-400" />
+                                    <span className="text-[8px] font-bold text-blue-400 uppercase tracking-widest">Conditional Stage</span>
+                                </div>
+                            )}
+
                             <div className="flex items-center gap-2 ml-auto">
                                 <button 
                                     onClick={() => handleDeleteStage(stage.id)}
@@ -384,6 +431,202 @@ export default function WorkflowTemplateManager() {
                 <p className="text-xs text-gray-600 font-medium opacity-60">Begin by creating a new reusable workflow template.</p>
             </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+interface ConditionBuilderProps {
+  conditions: any;
+  onChange: (conditions: any) => void;
+  metadataFields: MetadataField[];
+  categories: Category[];
+  title?: string;
+}
+
+function ConditionBuilder({ conditions, onChange, metadataFields, categories, title = "Smart Routing Logic" }: ConditionBuilderProps) {
+  const rules = conditions?.all || conditions?.any || [];
+  const logicKey = conditions?.any ? 'any' : 'all';
+
+  const addRule = () => {
+    const newCond = { field: 'size', operator: 'eq', value: '' };
+    onChange({ [logicKey]: [...rules, newCond] });
+  };
+
+  const removeRule = (idx: number) => {
+    onChange({ [logicKey]: rules.filter((_: any, i: number) => i !== idx) });
+  };
+
+  const updateRule = (idx: number, updates: any) => {
+    onChange({ [logicKey]: rules.map((c: any, i: number) => i === idx ? { ...c, ...updates } : c) });
+  };
+
+  const toggleLogic = (key: 'all' | 'any') => {
+    onChange({ [key]: rules });
+  };
+
+  return (
+    <div className="flex flex-col gap-4 bg-gray-950/40 p-6 rounded-[32px] border border-gray-800/60 shadow-inner relative overflow-hidden group/smart">
+      <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover/smart:bg-blue-500/10 transition-all duration-700" />
+      
+      <div className="flex items-center justify-between mb-2 relative z-10">
+        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <ArrowPathIcon className="h-3.5 w-3.5 text-blue-400" />
+          </div>
+          {title}
+          <span className="text-[8px] font-black px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full border border-blue-500/20 ml-1 shadow-sm">BETA</span>
+        </label>
+
+        <div className="flex p-1 bg-gray-900/80 rounded-xl border border-gray-800 shadow-sm">
+          <button 
+            type="button"
+            onClick={() => toggleLogic('all')}
+            className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all ${
+              logicKey === 'all' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            AND
+          </button>
+          <button 
+            type="button"
+            onClick={() => toggleLogic('any')}
+            className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all ${
+              logicKey === 'any' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            OR
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-3 relative z-10">
+        {rules.length > 0 ? (
+          <div className="space-y-3">
+            {rules.map((cond: any, cidx: number) => (
+              <div key={cidx} className="bg-gray-900/50 backdrop-blur-md border border-gray-800 hover:border-blue-500/40 rounded-2xl p-4 transition-all group/rule relative shadow-sm">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-1.5 w-1.5 rounded-full ${logicKey === 'any' ? 'bg-orange-500' : 'bg-blue-500'}`} />
+                      <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Rule #{cidx + 1}</span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => removeRule(cidx)}
+                      className="p-1.5 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover/rule:opacity-100"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-12 gap-3 items-center">
+                    <div className="col-span-4 space-y-1.5">
+                      <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest ml-1">Factor</label>
+                      <select 
+                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-gray-300 focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
+                        value={cond.field}
+                        onChange={(e) => updateRule(cidx, { field: e.target.value, value: '' })}
+                      >
+                        <optgroup label="System Factors" className="text-gray-500 bg-gray-950">
+                          <option value="size">File Size</option>
+                          <option value="mime_type">Media Type</option>
+                          <option value="extension">Extension</option>
+                          <option value="category_ids">Category</option>
+                        </optgroup>
+                        {metadataFields.length > 0 && (
+                          <optgroup label="Metadata Fields" className="text-gray-500 bg-gray-950">
+                            {metadataFields.map(f => (
+                              <option key={f.id} value={`metadata.${f.key}`}>Meta: {f.label}</option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                    </div>
+
+                    <div className="col-span-3 space-y-1.5">
+                      <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest ml-1">Logic</label>
+                      <select 
+                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-blue-400 focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer text-center appearance-none"
+                        value="eq"
+                        disabled
+                      >
+                        <option value="eq">Matches</option>
+                      </select>
+                    </div>
+
+                    <div className="col-span-5 space-y-1.5">
+                      <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest ml-1">Expected Value</label>
+                      {cond.field === 'category_ids' ? (
+                        <select 
+                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
+                          value={cond.value}
+                          onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                        >
+                          <option value="">Select Category...</option>
+                          {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.path}</option>
+                          ))}
+                        </select>
+                      ) : cond.field === 'mime_type' ? (
+                        <select 
+                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
+                          value={cond.value}
+                          onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                        >
+                          <option value="">Select Media Type...</option>
+                          <option value="image/jpeg">JPEG Image</option>
+                          <option value="image/png">PNG Image</option>
+                          <option value="image/gif">GIF Image</option>
+                          <option value="video/mp4">MP4 Video</option>
+                          <option value="application/pdf">PDF Document</option>
+                        </select>
+                      ) : cond.field.startsWith('metadata.') && metadataFields.find(f => `metadata.${f.key}` === cond.field)?.options?.values ? (
+                        <select 
+                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
+                          value={cond.value}
+                          onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                        >
+                          <option value="">Select Option...</option>
+                          {metadataFields.find(f => `metadata.${f.key}` === cond.field)?.options.values.map((opt: string) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input 
+                          type="text"
+                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none placeholder:text-gray-800"
+                          value={cond.value}
+                          placeholder="e.g. .jpg, image/png, or 1048576"
+                          onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-8 flex flex-col items-center justify-center bg-gray-900 border-2 border-dashed border-gray-800 rounded-[28px] group-hover/smart:border-blue-500/20 transition-all">
+            <div className="p-3 rounded-2xl bg-gray-800/50 mb-3 border border-gray-700/50">
+              <ShieldCheckIcon className="h-6 w-6 text-gray-600" />
+            </div>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center px-6">
+              No routing rules defined.<br/>
+              <span className="text-[9px] font-medium opacity-60">This stage will run for every upload.</span>
+            </p>
+          </div>
+        )}
+        
+        <button 
+          type="button"
+          onClick={addRule}
+          className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-lg shadow-blue-900/40 active:scale-[0.98] border border-blue-400/20 flex items-center justify-center gap-2.5"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Add Condition Rule
+        </button>
       </div>
     </div>
   );

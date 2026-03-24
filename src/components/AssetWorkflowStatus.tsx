@@ -83,10 +83,20 @@ export default function AssetWorkflowStatus({ workflow, onRefresh }: AssetWorkfl
 
   const getStageStatus = (stageId: string, order: number) => {
     if (workflow.status === WorkflowStatus.REJECTED && stageId === workflow.current_stage_id) return 'rejected';
-    if (workflow.status === WorkflowStatus.COMPLETED) return 'completed';
+    if (workflow.status === WorkflowStatus.COMPLETED) {
+        // If completed but no task exists for this stage, it was skipped
+        if (!tasks.some(t => t.stage_id === stageId)) return 'skipped';
+        return 'completed';
+    }
 
     if (!currentStage) return 'pending';
-    if (order < currentStage.order) return 'completed';
+    
+    if (order < currentStage.order) {
+        // If past current stage but no task exists, it was skipped
+        if (!tasks.some(t => t.stage_id === stageId)) return 'skipped';
+        return 'completed';
+    }
+    
     if (order === currentStage.order) return 'active';
     return 'pending';
   };
@@ -136,11 +146,13 @@ export default function AssetWorkflowStatus({ workflow, onRefresh }: AssetWorkfl
                         <div className="relative z-10 flex flex-col items-center">
                             <div className={`w-10 h-10 rounded-2xl border-2 flex items-center justify-center transition-all duration-500 ${
                                 status === 'completed' ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/30' :
+                                status === 'skipped' ? 'bg-gray-800 border-gray-700 text-gray-400 opacity-60' :
                                 status === 'active' ? 'bg-blue-600 border-blue-400 text-white shadow-2xl shadow-blue-500/40 scale-110' :
                                 status === 'rejected' ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30' :
                                 'bg-gray-900 border-gray-800 text-gray-600'
                             }`}>
                                 {status === 'completed' ? <CheckCircleIcon className="h-6 w-6" /> :
+                                status === 'skipped' ? <ArrowPathIcon className="h-5 w-5 rotate-90" /> :
                                 status === 'rejected' ? <ExclamationCircleIcon className="h-6 w-6" /> :
                                 <span className="text-xs font-bold font-mono">{idx + 1}</span>}
                             </div>
@@ -162,6 +174,11 @@ export default function AssetWorkflowStatus({ workflow, onRefresh }: AssetWorkfl
                                     <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                                         <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest italic">Current</span>
+                                    </div>
+                                )}
+                                {status === 'skipped' && (
+                                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-800 border border-gray-700">
+                                        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest italic">Skipped</span>
                                     </div>
                                 )}
                             </div>
