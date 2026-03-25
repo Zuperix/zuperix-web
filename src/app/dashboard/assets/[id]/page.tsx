@@ -124,6 +124,13 @@ export default function AssetDetailPage() {
   const [activeWorkflow, setActiveWorkflow] = useState<AssetWorkflow | null>(null);
   const isLocked = activeWorkflow?.status === 'ACTIVE';
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
+  
+  // Annotation state
+  const [annotationMode, setAnnotationMode] = useState(false);
+  const [pendingAnnotation, setPendingAnnotation] = useState<{ type: string; coordinates: any } | null>(null);
+  const [assetComments, setAssetComments] = useState<any[]>([]);
+  const previewRef = useRef<HTMLDivElement>(null);
+
   const { fetchAssetWorkflow, processTask, loading: processingTask } = useWorkflows();
   const { user } = useAuth();
 
@@ -164,6 +171,16 @@ export default function AssetDetailPage() {
     }
   };
 
+  const fetchComments = useCallback(async () => {
+    if (!assetId) return;
+    try {
+      const data = await apiFetch<any[]>(`/assets/${assetId}/comments`);
+      setAssetComments(data);
+    } catch (err) {
+      console.error('Failed to fetch comments:', err);
+    }
+  }, [assetId]);
+
   const fetchData = useCallback(async () => {
     if (!activeWorkspace || !assetId) return;
     try {
@@ -178,7 +195,8 @@ export default function AssetDetailPage() {
       const [fieldDefs, currentValues, workflowData] = await Promise.all([
         apiFetch<Field[]>(`/workspaces/${activeWorkspace.id}/metadata/fields`),
         apiFetch<MetadataValue[]>(`/assets/${assetId}/metadata`),
-        fetchAssetWorkflow(assetId).catch(() => null)
+        fetchAssetWorkflow(assetId).catch(() => null),
+        fetchComments()
       ]);
 
       setFields(fieldDefs);
@@ -196,7 +214,7 @@ export default function AssetDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [assetId, activeWorkspace]);
+  }, [assetId, activeWorkspace, fetchComments]);
 
   useEffect(() => {
     fetchData();
@@ -472,6 +490,22 @@ export default function AssetDetailPage() {
     }
   };
 
+  const handleAssetClick = (e: React.MouseEvent) => {
+    if (!annotationMode || !previewRef.current) return;
+
+    const rect = previewRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setPendingAnnotation({
+      type: 'point',
+      coordinates: { x, y }
+    });
+    
+    // Switch to comments tab to focus the input
+    setActiveTab('comments');
+  };
+
   if (loading && !asset) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#f8f9fb] dark:bg-[#0f111a] gap-4">
@@ -621,19 +655,78 @@ export default function AssetDetailPage() {
                   <ShareIcon className="h-5 w-5" />
                   <div className="absolute right-full mr-3 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">Share Link</div>
                 </button>
+                <button 
+                  onClick={() => setAnnotationMode(!annotationMode)}
+                  className={`p-3.5 backdrop-blur-2xl border rounded-2xl shadow-2xl transition-all hover:scale-110 active:scale-95 group/btn ${annotationMode ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/90 dark:bg-gray-900/90 border-white dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:text-purple-600'}`}
+                >
+                  <ChatBubbleLeftIcon className="h-5 w-5" />
+                  <div className="absolute right-full mr-3 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">{annotationMode ? 'Exit Annotation Mode' : 'Add Annotation'}</div>
+                </button>
               </div>
+
+              <div 
+                ref={previewRef}
+                onClick={handleAssetClick}
+                className={`relative flex items-center justify-center w-full h-full ${annotationMode ? 'cursor-crosshair' : ''}`}
+              >
+                {/* Existing Annotation Markers */}
+                {assetComments.filter(c => c.coordinates).map((comment) => (
+                  <div 
+                    key={comment.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveTab('comments');
+                      setTimeout(() => {
+                        const element = document.getElementById(`comment-${comment.id}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          element.classList.add('ring-2', 'ring-purple-500', 'ring-offset-2', 'dark:ring-offset-[#0a0b10]');
+                          setTimeout(() => {
+                            element.classList.remove('ring-2', 'ring-purple-500', 'ring-offset-2', 'dark:ring-offset-[#0a0b10]');
+                          }, 2000);
+                        }
+                      }, 100);
+                    }}
+                    className="absolute group/marker cursor-pointer z-30 transform -translate-x-1/2 -translate-y-1/2"
+                    style={{ left: `${comment.coordinates.x}%`, top: `${comment.coordinates.y}%` }}
+                  >
+                    <div className="w-5 h-5 bg-purple-600 border-2 border-white rounded-full shadow-lg hover:scale-125 transition-all flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                    </div>
+                    
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900/95 backdrop-blur shadow-xl rounded-xl border border-gray-800 opacity-0 group-hover/marker:opacity-100 transition-opacity pointer-events-none z-50">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="w-4 h-4 rounded-full bg-purple-600 flex items-center justify-center text-[8px] font-bold text-white uppercase">
+                          {comment.user?.name?.[0] || 'U'}
+                        </div>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">{comment.user?.name || 'User'}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-200 line-clamp-2 leading-tight">{comment.content}</p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-gray-900/95" />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Pending Annotation Marker */}
+                {pendingAnnotation && (
+                  <div 
+                    className="absolute w-6 h-6 bg-yellow-400 border-2 border-white rounded-full shadow-xl transform -translate-x-1/2 -translate-y-1/2 z-40 animate-pulse"
+                    style={{ left: `${pendingAnnotation.coordinates.x}%`, top: `${pendingAnnotation.coordinates.y}%` }}
+                  />
+                )}
 
               {asset?.mime_type?.startsWith('image/') ? (
                 <img
                   src={`${BASE_URL}/assets/${assetId}/view`}
                   alt={asset?.original_name}
-                  className="max-w-full max-h-[70vh] object-contain transition-transform duration-700 group-hover:scale-[1.01]"
+                  className="max-w-full max-h-[70vh] object-contain transition-transform duration-700 group-hover:scale-[1.01] pointer-events-none"
                 />
               ) : asset?.mime_type?.startsWith('video/') ? (
                 <video
                   src={`${BASE_URL}/assets/${assetId}/view`}
-                  controls
-                  className="max-w-full max-h-[70vh] rounded-2xl"
+                  controls={!annotationMode}
+                  className="max-w-full max-h-[70vh] rounded-2xl pointer-events-none"
                 />
               ) : (
                 <div className="flex flex-col items-center gap-8 p-20">
@@ -652,6 +745,7 @@ export default function AssetDetailPage() {
                   </button>
                 </div>
               )}
+              </div>
             </div>
 
             {/* Quick Summary under Image */}
@@ -1325,7 +1419,16 @@ export default function AssetDetailPage() {
             )}
             {activeTab === 'comments' && (
               <div className="h-full animate-in fade-in slide-in-from-right-2 duration-300">
-                <CommentsSection assetId={assetId} workspaceId={activeWorkspace?.id} />
+                <CommentsSection 
+                  assetId={assetId} 
+                  workspaceId={activeWorkspace?.id} 
+                  pendingAnnotation={pendingAnnotation}
+                  onCommentPosted={() => {
+                    setPendingAnnotation(null);
+                    setAnnotationMode(false);
+                    fetchComments();
+                  }}
+                />
               </div>
             )}
             {activeTab === 'history' && (

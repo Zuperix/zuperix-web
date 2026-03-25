@@ -11,6 +11,9 @@ interface Comment {
   id: string;
   content: string;
   is_private: boolean;
+  type: string;
+  coordinates?: { x: number; y: number; width?: number; height?: number } | null;
+  timestamp?: number | null;
   user: {
     name: string;
     email: string;
@@ -27,7 +30,17 @@ interface Member {
   };
 }
 
-export default function CommentsSection({ assetId, workspaceId }: { assetId: string, workspaceId?: string | null }) {
+export default function CommentsSection({ 
+  assetId, 
+  workspaceId, 
+  pendingAnnotation, 
+  onCommentPosted 
+}: { 
+  assetId: string; 
+  workspaceId?: string | null; 
+  pendingAnnotation?: { type: string; coordinates?: any; timestamp?: number } | null;
+  onCommentPosted?: () => void;
+}) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [content, setContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
@@ -126,11 +139,15 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
         body: JSON.stringify({
           content,
           is_private: isPrivate,
+          type: pendingAnnotation?.type || 'comment',
+          coordinates: pendingAnnotation?.coordinates || null,
+          timestamp: pendingAnnotation?.timestamp || null,
         }),
       });
       setContent('');
       fetchComments();
-      toast.success('Comment posted');
+      if (onCommentPosted) onCommentPosted();
+      toast.success(pendingAnnotation ? 'Annotation posted' : 'Comment posted');
     } catch (error) {
       toast.error('Failed to post comment');
     } finally {
@@ -173,13 +190,27 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
           </div>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className="group relative bg-white/5 border border-white/5 rounded-xl p-3 hover:bg-white/10 transition-all">
+            <div 
+              key={comment.id} 
+              id={`comment-${comment.id}`}
+              className={`group relative border rounded-xl p-3 transition-all ${
+                comment.coordinates 
+                  ? 'bg-purple-500/5 border-purple-500/20 hover:bg-purple-500/10' 
+                  : 'bg-white/5 border-white/5 hover:bg-white/10'
+              }`}
+            >
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-xs font-bold text-purple-400">{comment.user?.name || 'Unknown User'}</span>
                   <span className="text-[10px] text-gray-500">
                     {new Date(comment.created_at).toLocaleDateString()} at {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
+                  {comment.coordinates && (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-[9px] font-bold rounded uppercase border border-purple-500/30">
+                      <ChatBubbleLeftIcon className="h-2.5 w-2.5" />
+                      Annotated
+                    </span>
+                  )}
                   {comment.is_private ? (
                     <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 text-[9px] font-bold rounded uppercase">
                       <LockClosedIcon className="h-2.5 w-2.5" />
