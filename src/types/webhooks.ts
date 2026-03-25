@@ -5,6 +5,7 @@ export interface Webhook {
   events: string[];
   secret: string;
   is_active: boolean;
+  type: 'generic' | 'slack' | 'discord';
   created_at: string;
   updated_at: string;
 }
