@@ -53,7 +53,10 @@ export default function PortalDetailPage() {
       ]);
       setPortal(p);
       setWidgets(p.settings?.layout || []);
-      setPortalConfig({ background_color: p.background_color || '#fafafa' });
+      setPortalConfig({ 
+        background_color: p.background_color || '#fafafa',
+        expires_at: p.expires_at
+      });
       setPortalAssets(assetsData.assets || []);
       useBuilderStore.getState().setPortalAssets(assetsData.assets || []);
       useBuilderStore.getState().setPortalCategories(assetsData.categories || []);
@@ -102,6 +105,7 @@ export default function PortalDetailPage() {
     
     const updates = {
       background_color: currentConfig?.background_color,
+      expires_at: currentConfig?.expires_at,
       settings: {
         ...(portal?.settings || {}),
         layout: currentWidgets

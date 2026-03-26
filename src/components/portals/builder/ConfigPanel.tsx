@@ -165,6 +165,32 @@ export default function ConfigPanel() {
               <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'logo_url')} />
             </div>
           </div>
+
+          {/* Expiration Date */}
+          <div className="w-full bg-gray-900/40 border border-gray-800/40 rounded-3xl p-5 hover:bg-gray-900/60 transition-all backdrop-blur-md flex flex-col gap-3">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">
+              Portal Expiration
+            </span>
+            <div className="flex flex-col gap-2">
+              <input
+                type="datetime-local"
+                className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-300 focus:border-blue-500 outline-none transition-all [color-scheme:dark]"
+                value={portalConfig?.expires_at ? new Date(portalConfig.expires_at).toISOString().slice(0, 16) : ''}
+                onChange={(e) => setPortalConfig({ expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
+              />
+              {portalConfig?.expires_at && (
+                <button 
+                  onClick={() => setPortalConfig({ expires_at: null })}
+                  className="text-[9px] text-red-500/70 hover:text-red-400 font-bold uppercase tracking-wider text-left transition-colors"
+                >
+                  Clear Expiration
+                </button>
+              )}
+              <p className="text-[9px] text-gray-600 px-1 leading-tight">
+                Portal will become inaccessible after this date. Leave blank for no expiration.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );

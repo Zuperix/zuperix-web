@@ -22,7 +22,8 @@ import {
   GlobeAltIcon,
   InboxIcon,
   QueueListIcon,
-  PaintBrushIcon
+  PaintBrushIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -43,6 +44,7 @@ const ADMIN_NAV = [
   { name: 'Roles', href: '/dashboard/admin/roles', icon: ShieldCheckIcon },
   { name: 'Permissions', href: '/dashboard/admin/permissions', icon: KeyIcon },
   { name: 'Webhooks', href: '/dashboard/admin/webhooks', icon: GlobeAltIcon },
+  { name: 'Analytics', href: '/dashboard/admin/analytics', icon: ChartBarIcon },
 ];
 
 export default function Sidebar() {
@@ -61,6 +63,7 @@ export default function Sidebar() {
       if (item.name === 'Roles') return can(Action.Read, 'Role', activeWorkspace?.id);
       if (item.name === 'Permissions') return can(Action.Read, 'Permission', activeWorkspace?.id);
       if (item.name === 'Webhooks') return can(Action.Read, 'Webhook', activeWorkspace?.id);
+      if (item.name === 'Analytics') return can(Action.Manage, 'Asset', activeWorkspace?.id);
       return false;
     });
   }, [can, activeWorkspace]);
