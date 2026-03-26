@@ -34,9 +34,10 @@ export default function SortableWidget({ widget }: { widget: PortalWidget }) {
         e.stopPropagation();
         setSelectedWidgetId(widget.id);
       }}
-      className={`relative group rounded-3xl border-2 transition-all duration-200 
-        ${isDragging ? 'opacity-40 z-50 scale-105 shadow-2xl' : ''} 
-        ${isSelected ? 'border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.15)] z-20' : 'border-transparent hover:border-gray-800'}
+      className={`relative group rounded-[32px] border-2 
+        ${isDragging ? 'opacity-40 z-50 scale-[1.02] shadow-2xl cursor-grabbing ring-4 ring-blue-500/20' : 'cursor-pointer'} 
+        ${!isDragging ? 'transition-all duration-500 ease-out' : ''}
+        ${isSelected ? 'border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.15)] z-20' : 'border-transparent hover:border-gray-800/50'}
         ${widget.type === 'search' && widget.config.sticky ? 'sticky top-0 z-40' : ''}`
       }
     >

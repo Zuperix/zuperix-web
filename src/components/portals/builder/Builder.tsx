@@ -112,6 +112,16 @@ export default function Builder() {
         <div className="flex-1 relative flex flex-col overflow-hidden">
           {/* Main Canvas Area */}
           <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-950/80 relative p-8 md:p-12 flex flex-col items-center">
+            {/* Preview Disclaimer */}
+            <div className="mb-6 flex items-center gap-2 px-4 py-1.5 bg-blue-500/5 border border-blue-500/10 rounded-full animate-pulse-slow">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+              </span>
+              <p className="text-[10px] font-bold text-blue-500/80 uppercase tracking-[0.1em]">
+                Live Preview: This might slightly differ from the final published site
+              </p>
+            </div>
             
             <div 
             className={`${previewMode === 'desktop' ? 'max-w-5xl w-full' : 'max-w-[375px] w-full mt-10'} mx-auto flex-1 rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-gray-800/60 flex flex-col overflow-hidden ring-1 ring-white/10 relative transition-all duration-500 ease-in-out`}
@@ -175,10 +185,23 @@ export default function Builder() {
         </div>
         <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
           {activeId ? (
-            <div className="p-4 bg-gray-800 border-2 border-blue-500 rounded-xl shadow-2xl opacity-80 backdrop-blur-md">
-              <span className="text-white font-bold uppercase tracking-widest text-xs">
-                 Moving {activeType || 'Widget'}...
-              </span>
+            <div className="w-[280px] bg-gray-950/90 border-2 border-blue-500 rounded-[32px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] opacity-95 backdrop-blur-2xl p-8 ring-8 ring-blue-500/5 scale-110 flex flex-col items-center justify-center group">
+               <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+               </div>
+               
+               <div className="text-center space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 block">{activeType}</span>
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest opacity-60">
+                    Dropping Widget...
+                  </p>
+               </div>
+
+               {/* Decorative corner dots */}
+               <div className="absolute top-4 left-4 w-1 h-1 rounded-full bg-blue-500/40" />
+               <div className="absolute top-4 right-4 w-1 h-1 rounded-full bg-blue-500/40" />
+               <div className="absolute bottom-4 left-4 w-1 h-1 rounded-full bg-blue-500/40" />
+               <div className="absolute bottom-4 right-4 w-1 h-1 rounded-full bg-blue-500/40" />
             </div>
           ) : null}
         </DragOverlay>
