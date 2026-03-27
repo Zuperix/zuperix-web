@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { BASE_URL } from '@/lib/api';
 import ShareAssetModal from './ShareAssetModal';
 import ThreeDPreview from './ThreeDPreview';
+import PdfPreview from './PdfPreview';
 
 type Asset = components['schemas']['MetadataEntryDto'] & { 
   id: string;
@@ -130,6 +131,8 @@ const AssetCard = ({
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-gray-950/50">
         {is3D(mimeType, originalName) ? (
           <ThreeDPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={originalName} />
+        ) : mimeType === 'application/pdf' ? (
+          <PdfPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={originalName} />
         ) : mimeType.startsWith('image/') && !imgError ? (
           <img 
             src={`${BASE_URL}/assets/${assetId}/view`} 

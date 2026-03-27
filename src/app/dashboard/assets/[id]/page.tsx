@@ -50,6 +50,7 @@ import { useAuth } from '@/context/AuthContext';
 import { AssetWorkflow, WorkflowTaskStatus } from '@/types/workflow';
 
 import ThreeDPreview from '@/components/ThreeDPreview';
+import PdfPreview from '@/components/PdfPreview';
 
 interface Field {
   id: string;
@@ -732,6 +733,8 @@ export default function AssetDetailPage() {
 
               {is3D(asset?.mime_type, asset?.original_name) ? (
                 <ThreeDPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={asset?.original_name} />
+              ) : asset?.mime_type === 'application/pdf' ? (
+                <PdfPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-[32px]" />
               ) : asset?.mime_type?.startsWith('image/') ? (
                 <img
                   src={`${BASE_URL}/assets/${assetId}/view`}
@@ -782,7 +785,9 @@ export default function AssetDetailPage() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Type</span>
-                  <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">Images</span>
+                  <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                    {asset?.mime_type?.startsWith('image/') ? 'Image' : asset?.mime_type === 'application/pdf' ? 'PDF Document' : 'Asset File'}
+                  </span>
                 </div>
               </div>
 

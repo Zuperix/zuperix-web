@@ -47,7 +47,6 @@ export default function ThreeDPreview({
       
       {/* 3D Badge Overlay */}
       <div className="absolute top-4 right-4 px-2 py-1 bg-indigo-600/80 backdrop-blur-md rounded-lg border border-white/20">
-        <span className="text-[10px] font-black text-white uppercase tracking-widest">3D VIEW</span>
       </div>
     </div>
   );
