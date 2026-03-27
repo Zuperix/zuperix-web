@@ -139,6 +139,12 @@ export default function AssetDetailPage() {
   const [activeWorkflow, setActiveWorkflow] = useState<AssetWorkflow | null>(null);
   const isLocked = activeWorkflow?.status === 'ACTIVE';
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
+
+  // Attachment state
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const attachmentFileInputRef = useRef<HTMLInputElement>(null);
+
   
   // Annotation state
   const [annotationMode, setAnnotationMode] = useState(false);
@@ -196,6 +202,17 @@ export default function AssetDetailPage() {
     }
   }, [assetId]);
 
+  const fetchAttachments = useCallback(async () => {
+    if (!assetId) return;
+    try {
+      const data = await apiFetch<any[]>(`/assets/${assetId}/attachments`);
+      setAttachments(data);
+    } catch (err) {
+      console.error('Failed to fetch attachments:', err);
+    }
+  }, [assetId]);
+
+
   const fetchData = useCallback(async () => {
     if (!activeWorkspace || !assetId) return;
     try {
@@ -211,8 +228,10 @@ export default function AssetDetailPage() {
         apiFetch<Field[]>(`/workspaces/${activeWorkspace.id}/metadata/fields`),
         apiFetch<MetadataValue[]>(`/assets/${assetId}/metadata`),
         fetchAssetWorkflow(assetId).catch(() => null),
-        fetchComments()
+        fetchComments(),
+        fetchAttachments()
       ]);
+
 
       setFields(fieldDefs);
       setActiveWorkflow(workflowData);
@@ -504,6 +523,45 @@ export default function AssetDetailPage() {
       setSaving(false);
     }
   };
+
+  const handleUploadAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !assetId) return;
+
+    setIsUploadingAttachment(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      await apiFetch(`/assets/${assetId}/attachments`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      toast.success('Attachment uploaded');
+      fetchAttachments();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload attachment');
+    } finally {
+      setIsUploadingAttachment(false);
+      if (attachmentFileInputRef.current) attachmentFileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!confirm('Are you sure you want to remove this attachment?')) return;
+
+    try {
+      await apiFetch(`/assets/attachments/${attachmentId}`, {
+        method: 'DELETE',
+      });
+      toast.success('Attachment removed');
+      fetchAttachments();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove attachment');
+    }
+  };
+
 
   const handleAssetClick = (e: React.MouseEvent) => {
     if (!annotationMode || !previewRef.current) return;
@@ -1291,14 +1349,99 @@ export default function AssetDetailPage() {
             )}
 
             {activeTab === 'attachments' && (
-              <div className="flex flex-col items-center justify-center h-64 text-center p-12 animate-in fade-in duration-300">
-                <div className="bg-gray-100 dark:bg-gray-800/50 p-6 rounded-3xl mb-6">
-                  <InboxIcon className="h-12 w-12 text-gray-300 dark:text-gray-700" />
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                      <Square3Stack3DIcon className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Linked Attachments</h2>
+                  </div>
+                  <button
+                    onClick={() => attachmentFileInputRef.current?.click()}
+                    disabled={isUploadingAttachment || isLocked}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                  >
+                    {isUploadingAttachment ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <PlusIcon className="h-4 w-4" />}
+                    {isUploadingAttachment ? 'Uploading...' : 'Link File'}
+                  </button>
+                  <input
+                    type="file"
+                    ref={attachmentFileInputRef}
+                    className="hidden"
+                    onChange={handleUploadAttachment}
+                  />
                 </div>
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Coming soon</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">This feature is part of our roadmap and will be available in a future update.</p>
+
+                <div className="space-y-4">
+                  {attachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className="group relative bg-white dark:bg-[#151720] border border-gray-100 dark:border-gray-800 rounded-2xl p-4 transition-all hover:shadow-xl hover:border-blue-200 dark:hover:border-blue-900/40"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="h-10 w-10 bg-gray-50 dark:bg-[#0a0b10] rounded-xl flex items-center justify-center border border-gray-100 dark:border-gray-800 transition-colors group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20">
+                            <DocumentIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-500" />
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate" title={attachment.original_name}>
+                              {attachment.original_name}
+                            </h4>
+                            <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500 font-medium">
+                              <span>{(attachment.size / 1024 / 1024).toFixed(2)} MB</span>
+                              <span className="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
+                              <span className="truncate">{attachment.mime_type}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <a
+                            href={`${BASE_URL}/assets/attachments/${attachment.id}/view`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all"
+                            title="Download attachment"
+                          >
+                            <ArrowDownTrayIcon className="h-4 w-4" />
+                          </a>
+                          <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                            <button
+                              onClick={() => handleDeleteAttachment(attachment.id)}
+                              disabled={isLocked}
+                              className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all disabled:opacity-50"
+                              title="Remove attachment"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </PermissionGate>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {attachments.length === 0 && (
+                    <div className="p-12 text-center bg-gray-50 dark:bg-[#0a0b10]/40 border border-dashed border-gray-200 dark:border-gray-800 rounded-[32px] animate-in fade-in duration-500">
+                      <div className="bg-white dark:bg-gray-800/50 p-6 rounded-3xl mb-6 w-fit mx-auto shadow-inner">
+                        <InboxIcon className="h-12 w-12 text-gray-200 dark:text-gray-700" />
+                      </div>
+                      <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">No attachments yet</h3>
+                      <p className="text-[10px] text-gray-500 font-medium max-w-[200px] mx-auto leading-relaxed">Need to store a creative brief, license, or source file? Link them right here.</p>
+                      <button
+                        onClick={() => attachmentFileInputRef.current?.click()}
+                        disabled={isLocked}
+                        className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20 flex items-center gap-2 mx-auto"
+                      >
+                        <PlusIcon className="h-4 w-4" />
+                        Link your first file
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
+
 
             {activeTab === 'versions' && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
