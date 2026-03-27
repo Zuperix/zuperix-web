@@ -3,7 +3,7 @@
 import React from 'react';
 import { PortalWidget } from '@/stores/builderStore';
 
-export default function SpacerWidget({ widget, isEditMode }: { widget: PortalWidget, isEditMode?: boolean }) {
+export default function SpacerWidget({ widget, isEditMode, context }: { widget: PortalWidget, isEditMode?: boolean, context?: any }) {
   const { height = 64 } = widget.config;
 
   return (

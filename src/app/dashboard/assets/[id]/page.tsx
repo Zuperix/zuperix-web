@@ -49,6 +49,8 @@ import { useWorkflows } from '@/hooks/useWorkflows';
 import { useAuth } from '@/context/AuthContext';
 import { AssetWorkflow, WorkflowTaskStatus } from '@/types/workflow';
 
+import ThreeDPreview from '@/components/ThreeDPreview';
+
 interface Field {
   id: string;
   label: string;
@@ -62,6 +64,18 @@ interface MetadataValue {
 }
 
 type Tab = 'file-info' | 'attachments' | 'versions' | 'comments' | 'history' | 'workflow';
+
+const is3D = (mime: string, filename: string) => {
+  const m = (mime || '').toLowerCase();
+  const f = (filename || '').toLowerCase();
+  return (
+    m === 'model/gltf-binary' || 
+    m === 'model/gltf+json' || 
+    m.includes('model/') ||
+    f.endsWith('.glb') || 
+    f.endsWith('.gltf')
+  );
+};
 
 const STATUS_STYLING: Record<string, string> = {
   draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
@@ -716,7 +730,9 @@ export default function AssetDetailPage() {
                   />
                 )}
 
-              {asset?.mime_type?.startsWith('image/') ? (
+              {is3D(asset?.mime_type, asset?.original_name) ? (
+                <ThreeDPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={asset?.original_name} />
+              ) : asset?.mime_type?.startsWith('image/') ? (
                 <img
                   src={`${BASE_URL}/assets/${assetId}/view`}
                   alt={asset?.original_name}

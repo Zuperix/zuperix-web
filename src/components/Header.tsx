@@ -297,8 +297,14 @@ export default function Header() {
             <span className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-none">
               {user?.name || 'User'}
             </span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-              Admin
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium capitalize">
+              {(() => {
+                if (user?.system_role === 'SUPER_ADMIN') return 'Super Admin';
+                const membership = user?.workspace_members?.find(
+                  (m) => m.workspace_id === activeWorkspace?.id
+                );
+                return membership?.role?.name?.toLowerCase() || 'Member';
+              })()}
             </span>
           </div>
         </button>

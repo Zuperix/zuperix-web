@@ -24,8 +24,18 @@ export async function apiFetch<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    let message = `HTTP error! status: ${response.status}`;
+    try {
+      const error = await response.json();
+      message = error.message || message;
+    } catch {
+      // If not JSON, try to get text or just stick with status
+      try {
+        const text = await response.text();
+        if (text && text.length < 100) message = text;
+      } catch {}
+    }
+    throw new Error(message);
   }
 
   const result = await response.json();

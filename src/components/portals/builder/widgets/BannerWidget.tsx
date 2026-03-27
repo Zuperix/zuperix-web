@@ -4,7 +4,7 @@ import React from 'react';
 import { PortalWidget } from '@/stores/builderStore';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 
-export default function BannerWidget({ widget, isEditMode }: { widget: PortalWidget, isEditMode?: boolean }) {
+export default function BannerWidget({ widget, isEditMode, context }: { widget: PortalWidget, isEditMode?: boolean, context?: any }) {
   const { image_url, title = 'Hero Banner', height = 400 } = widget.config;
 
   return (

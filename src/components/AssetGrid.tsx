@@ -19,6 +19,8 @@ import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { toast } from 'sonner';
 import { BASE_URL } from '@/lib/api';
+import ShareAssetModal from './ShareAssetModal';
+import ThreeDPreview from './ThreeDPreview';
 
 type Asset = components['schemas']['MetadataEntryDto'] & { 
   id: string;
@@ -29,6 +31,18 @@ type Asset = components['schemas']['MetadataEntryDto'] & {
   created_at: string;
   color_palette?: string[] | null;
   status?: string;
+};
+
+const is3D = (mime: string, filename: string) => {
+  const m = mime.toLowerCase();
+  const f = filename.toLowerCase();
+  return (
+    m === 'model/gltf-binary' || 
+    m === 'model/gltf+json' || 
+    m.includes('model/') ||
+    f.endsWith('.glb') || 
+    f.endsWith('.gltf')
+  );
 };
 
 const STATUS_STYLING: Record<string, string> = {
@@ -58,7 +72,8 @@ const AssetCard = ({
   onToggleSelect,
   isSelected,
   onDownload,
-  onRestore
+  onRestore,
+  onShare
 }: { 
   asset: Asset, 
   onDelete: (id: string) => void, 
@@ -66,7 +81,8 @@ const AssetCard = ({
   onToggleSelect?: (id: string, isShift: boolean) => void,
   isSelected: boolean,
   onDownload?: (asset: Asset) => void,
-  onRestore?: (id: string) => void
+  onRestore?: (id: string) => void,
+  onShare: (asset: Asset) => void
 }) => {
   const { activeWorkspace } = useWorkspace();
   const [imgError, setImgError] = useState(false);
@@ -87,9 +103,7 @@ const AssetCard = ({
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const shareUrl = `${window.location.origin}/dashboard/assets/${assetId}`;
-    navigator.clipboard.writeText(shareUrl);
-    toast.success('Detail link copied to clipboard!');
+    onShare(asset);
   };
 
   const handleDownload = (e: React.MouseEvent) => {
@@ -109,9 +123,11 @@ const AssetCard = ({
           : 'border-transparent hover:border-indigo-500/30 hover:shadow-2xl hover:bg-gray-800/40'
       }`}
     >
-      {/* Top Banner with Image/Preview */}
+      {/* Top Banner with Image/Preview/3D */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-gray-950/50">
-        {mimeType.startsWith('image/') && !imgError ? (
+        {is3D(mimeType, originalName) ? (
+          <ThreeDPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={originalName} />
+        ) : mimeType.startsWith('image/') && !imgError ? (
           <img 
             src={`${BASE_URL}/assets/${assetId}/view`} 
             alt={originalName}
@@ -184,7 +200,7 @@ const AssetCard = ({
           <button 
             onClick={handleShare}
             className="p-2.5 bg-gray-800/50 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl transition-all active:scale-95"
-            title="Share Link"
+            title="Secure Share Link"
           >
             <ShareIcon className="h-4 w-4" />
           </button>
@@ -245,6 +261,7 @@ export default function AssetGrid({
   onRestore?: (id: string) => void,
   selectedIds?: string[]
 }) {
+  const [sharingAsset, setSharingAsset] = useState<Asset | null>(null);
   const assetList = Array.isArray(assets) ? assets : [];
 
   if (assetList.length === 0) {
@@ -257,24 +274,34 @@ export default function AssetGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-      {assetList.map((asset) => {
-        const assetId = asset.id || (asset as any).asset_id;
-        const isSelected = selectedIds.includes(assetId);
-        
-        return (
-          <AssetCard 
-            key={assetId} 
-            asset={asset} 
-            onDelete={onDelete} 
-            onSelect={onSelect}
-            onToggleSelect={onToggleSelect}
-            onDownload={onDownload}
-            onRestore={onRestore}
-            isSelected={isSelected}
-          />
-        );
-      })}
-    </div>
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        {assetList.map((asset) => {
+          const assetId = asset.id || (asset as any).asset_id;
+          const isSelected = selectedIds.includes(assetId);
+          
+          return (
+            <AssetCard 
+              key={assetId} 
+              asset={asset} 
+              onDelete={onDelete} 
+              onSelect={onSelect}
+              onToggleSelect={onToggleSelect}
+              onDownload={onDownload}
+              onRestore={onRestore}
+              onShare={(a) => setSharingAsset(a)}
+              isSelected={isSelected}
+            />
+          );
+        })}
+      </div>
+
+      <ShareAssetModal 
+        isOpen={!!sharingAsset}
+        onClose={() => setSharingAsset(null)}
+        assetId={sharingAsset?.id || ''}
+        originalName={sharingAsset?.original_name || ''}
+      />
+    </>
   );
 }

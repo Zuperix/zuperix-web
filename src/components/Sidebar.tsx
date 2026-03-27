@@ -34,7 +34,7 @@ const NAV = [
   { name: 'My Tasks', href: '/dashboard/tasks', icon: InboxIcon },
   { name: 'Categories', href: '/dashboard/categories', icon: TagIcon },
   { name: 'Collections', href: '/dashboard/collections', icon: Square3Stack3DIcon },
-  { name: 'Brand kits', href: '/dashboard/brand', icon: PaintBrushIcon },
+  // { name: 'Brand kits', href: '/dashboard/brand', icon: PaintBrushIcon },
   { name: 'Portals', href: '/dashboard/portals', icon: GlobeAltIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 ];

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
 
 import { AuthProvider } from "@/context/AuthContext";
 
@@ -36,6 +37,11 @@ export default function RootLayout({
       >
         <AuthProvider>{children}</AuthProvider>
         <Toaster position="top-right" richColors expand={false} />
+        <Script
+          type="module"
+          src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

@@ -3,7 +3,7 @@
 import React from 'react';
 import { PortalWidget } from '@/stores/builderStore';
 
-export default function TextWidget({ widget, isEditMode }: { widget: PortalWidget, isEditMode?: boolean }) {
+export default function TextWidget({ widget, isEditMode, context }: { widget: PortalWidget, isEditMode?: boolean, context?: any }) {
   const { heading = 'Your Heading', body = 'Detailed description or body text goes here. You can edit this in the config panel.', align = 'left' } = widget.config;
 
   return (
