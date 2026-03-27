@@ -42,7 +42,7 @@ const NAV = [
 const ADMIN_NAV = [
   { name: 'Users', href: '/dashboard/admin/users', icon: UsersIcon },
   { name: 'Roles', href: '/dashboard/admin/roles', icon: ShieldCheckIcon },
-  { name: 'Permissions', href: '/dashboard/admin/permissions', icon: KeyIcon },
+  { name: 'API Keys', href: '/dashboard/admin/api-keys', icon: KeyIcon },
   { name: 'Webhooks', href: '/dashboard/admin/webhooks', icon: GlobeAltIcon },
   { name: 'Analytics', href: '/dashboard/admin/analytics', icon: ChartBarIcon },
 ];
@@ -57,11 +57,27 @@ export default function Sidebar() {
   const { sidebarCollapsed, setSidebarCollapsed } = useLayout();
   const [wsOpen, setWsOpen] = useState(false);
 
+  const filteredNav = useMemo(() => {
+    return NAV.filter(item => {
+      // Basic visibility rules:
+      if (item.name === 'Assets') return true; // Everyone sees assets, service handles filtering
+      if (item.name === 'My Tasks') return true; // Personalized
+      if (item.name === 'Settings') return true; // General settings
+      
+      // Permission-based:
+      if (item.name === 'Categories') return can(Action.Read, 'Category', activeWorkspace?.id);
+      if (item.name === 'Collections') return can(Action.Read, 'Collection', activeWorkspace?.id);
+      if (item.name === 'Portals') return can(Action.Read, 'Portal', activeWorkspace?.id);
+      
+      return true;
+    });
+  }, [can, activeWorkspace]);
+
   const filteredAdminNav = useMemo(() => {
     return ADMIN_NAV.filter(item => {
       if (item.name === 'Users') return can(Action.Read, 'User', activeWorkspace?.id);
       if (item.name === 'Roles') return can(Action.Read, 'Role', activeWorkspace?.id);
-      if (item.name === 'Permissions') return can(Action.Read, 'Permission', activeWorkspace?.id);
+      if (item.name === 'API Keys') return can(Action.Read, 'Role', activeWorkspace?.id); // Reuse Role read permission for API keys admin
       if (item.name === 'Webhooks') return can(Action.Read, 'Webhook', activeWorkspace?.id);
       if (item.name === 'Analytics') return can(Action.Manage, 'Asset', activeWorkspace?.id);
       return false;
@@ -158,7 +174,7 @@ export default function Sidebar() {
           )}
 
           <nav className={`flex flex-col gap-0.5 ${collapsed ? 'items-center px-2' : 'px-3'}`}>
-            {NAV.map((item) => {
+            {filteredNav.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link

@@ -136,7 +136,7 @@ export default function ApiKeysPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-6 animate-in fade-in duration-500">
+    <div className="max-w-5xl mx-auto py-10 px-6 animate-in fade-in duration-500 pb-20">
       <div className="flex justify-between items-center mb-10">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight mb-2">API Keys</h1>

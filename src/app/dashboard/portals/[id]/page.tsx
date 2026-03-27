@@ -24,6 +24,8 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DraggableAsset, DroppablePortalAssets } from '@/components/portals/DndComponents';
 import Builder from '@/components/portals/builder/Builder';
 import { useBuilderStore } from '@/stores/builderStore';
+import { PermissionGate } from '@/components/PermissionGate';
+import { Action } from '@/types/auth';
 
 import { toast } from 'sonner';
 
@@ -211,13 +213,15 @@ function PortalDetailContent({
           </div>
         </div>
         
-        <button 
-          onClick={() => setIsSearchingOpen(true)}
-          className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Add Assets
-        </button>
+        <PermissionGate action={Action.Update} subject="Portal" workspaceId={activeWorkspace?.id}>
+          <button 
+            onClick={() => setIsSearchingOpen(true)}
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Add Assets
+          </button>
+        </PermissionGate>
       </header>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
@@ -239,14 +243,16 @@ function PortalDetailContent({
         </div>
 
         {activeTab === 'builder' && (
-          <button 
-            onClick={() => handleUpdatePortal()}
-            disabled={isSaving}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95 mb-4 sm:mb-0"
-          >
-            {isSaving ? 'Saving...' : 'Save Layout'}
-            {!isSaving && <CheckIcon className="h-4 w-4" />}
-          </button>
+          <PermissionGate action={Action.Update} subject="Portal" workspaceId={activeWorkspace?.id}>
+            <button 
+              onClick={() => handleUpdatePortal()}
+              disabled={isSaving}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95 mb-4 sm:mb-0"
+            >
+              {isSaving ? 'Saving...' : 'Save Layout'}
+              {!isSaving && <CheckIcon className="h-4 w-4" />}
+            </button>
+          </PermissionGate>
         )}
       </div>
 

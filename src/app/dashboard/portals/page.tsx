@@ -17,9 +17,13 @@ import {
 import Link from 'next/link';
 import DeletePortalModal from '@/components/portals/DeletePortalModal';
 import { toast } from 'sonner';
+import { PermissionGate } from '@/components/PermissionGate';
+import { Action } from '@/types/auth';
+import { useWorkspace } from '@/context/WorkspaceContext';
 
 export default function PortalsPage() {
   const { portals, createPortal, deletePortal, loading, refresh } = usePortals();
+  const { activeWorkspace } = useWorkspace();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newSlug, setNewSlug] = useState('');
@@ -87,13 +91,15 @@ export default function PortalsPage() {
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
-          >
-            <PlusIcon className="h-4 w-4" />
-            New Portal
-          </button>
+          <PermissionGate action={Action.Create} subject="Portal" workspaceId={activeWorkspace?.id}>
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
+            >
+              <PlusIcon className="h-4 w-4" />
+              New Portal
+            </button>
+          </PermissionGate>
         </div>
       </header>
 
@@ -192,12 +198,14 @@ export default function PortalsPage() {
                 className="group flex flex-col p-6 rounded-[32px] bg-gray-900/40 border border-gray-800/60 hover:border-blue-500/30 hover:bg-gray-800/40 transition-all duration-300 relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                   <button 
-                    onClick={() => setPortalToDelete(portal)}
-                    className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                   >
-                      <TrashIcon className="h-4 w-4" />
-                   </button>
+                   <PermissionGate action={Action.Delete} subject="Portal" workspaceId={activeWorkspace?.id}>
+                     <button 
+                      onClick={() => setPortalToDelete(portal)}
+                      className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                     >
+                        <TrashIcon className="h-4 w-4" />
+                     </button>
+                   </PermissionGate>
                 </div>
 
                 <div className="flex items-center gap-4 mb-4">
