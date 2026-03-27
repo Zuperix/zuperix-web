@@ -13,7 +13,7 @@ import {
   UserIcon,
   CalendarIcon,
   ArrowRightIcon,
-  SparklesIcon,
+  BoltIcon,
   PencilSquareIcon,
   GlobeAmericasIcon
 } from '@heroicons/react/24/outline';
@@ -164,7 +164,7 @@ export default function CollectionsPage() {
           <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700">
             <label className="flex items-center gap-3 cursor-pointer group">
               <div className={`p-2 rounded-lg transition-all ${isSmart ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-gray-700 text-gray-400 group-hover:bg-gray-600'}`}>
-                <SparklesIcon className="h-4 w-4" />
+                <BoltIcon className="h-4 w-4" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-bold text-white tracking-tight">Smart Collection</p>
@@ -335,7 +335,7 @@ export default function CollectionsPage() {
                   <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700">
                     <label className="flex items-center gap-3 cursor-pointer group">
                       <div className={`p-2 rounded-lg transition-all ${isSmart ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-gray-700 text-gray-400 group-hover:bg-gray-600'}`}>
-                        <SparklesIcon className="h-4 w-4" />
+                        <BoltIcon className="h-4 w-4" />
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-bold text-white tracking-tight">Smart Collection</p>

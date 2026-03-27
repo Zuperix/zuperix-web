@@ -8,7 +8,7 @@ import MetadataPanel from '@/components/MetadataPanel';
 import { 
   TrashIcon, 
   ArrowPathIcon, 
-  SparklesIcon
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -115,7 +115,7 @@ export default function TrashSettingsPage() {
              <div className="relative mb-6">
                 <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full" />
                 <div className="relative p-6 bg-emerald-500/10 rounded-full border border-emerald-500/20 shadow-2xl">
-                   <SparklesIcon className="h-12 w-12 text-emerald-400" />
+                   <CheckCircleIcon className="h-12 w-12 text-emerald-400" />
                 </div>
              </div>
              <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">Trash is completely empty</h3>

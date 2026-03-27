@@ -282,6 +282,11 @@ export default function Header() {
                             OCR
                           </span>
                         )}
+                        {asset.is_text_extraction_match && (
+                          <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-[8px] font-extrabold uppercase rounded tracking-tighter shrink-0 ring-1 ring-purple-500/20">
+                            Text Match
+                          </span>
+                        )}
                       </div>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider mt-0.5">
                         {(asset.mime_type || 'file').split('/')[1]} • {formatSize(asset.size)}

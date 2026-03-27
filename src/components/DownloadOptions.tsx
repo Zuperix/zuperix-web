@@ -8,7 +8,6 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   PhotoIcon,
-  SparklesIcon,
   HandRaisedIcon,
   ScissorsIcon
 } from '@heroicons/react/24/outline';

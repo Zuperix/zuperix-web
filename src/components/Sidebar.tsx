@@ -23,7 +23,8 @@ import {
   InboxIcon,
   QueueListIcon,
   PaintBrushIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';

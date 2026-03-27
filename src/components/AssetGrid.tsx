@@ -31,6 +31,9 @@ type Asset = components['schemas']['MetadataEntryDto'] & {
   created_at: string;
   color_palette?: string[] | null;
   status?: string;
+  is_ocr_match?: boolean;
+  is_text_extraction_match?: boolean;
+  is_semantic_match?: boolean;
 };
 
 const is3D = (mime: string, filename: string) => {
@@ -164,12 +167,29 @@ const AssetCard = ({
             </div>
 
             {/* Status Badge */}
-            {asset.status && (
-              <div className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border backdrop-blur-xl flex items-center gap-1.5 ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
-                {asset.status === 'pending_review' && <LockClosedIcon className="h-3 w-3" />}
-                {STATUS_LABELS[asset.status] || asset.status}
-              </div>
-            )}
+            <div className="flex flex-col gap-1 items-end">
+              {asset.status && (
+                <div className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border backdrop-blur-xl flex items-center gap-1.5 ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                  {asset.status === 'pending_review' && <LockClosedIcon className="h-3 w-3" />}
+                  {STATUS_LABELS[asset.status] || asset.status}
+                </div>
+              )}
+              {asset.is_ocr_match && (
+                <div className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 text-amber-500 text-[8px] font-black uppercase tracking-tighter rounded-lg backdrop-blur-xl">
+                  OCR Match
+                </div>
+              )}
+              {asset.is_text_extraction_match && (
+                <div className="px-2 py-0.5 bg-purple-500/20 border border-purple-500/30 text-purple-500 text-[8px] font-black uppercase tracking-tighter rounded-lg backdrop-blur-xl">
+                  Text Match
+                </div>
+              )}
+              {asset.is_semantic_match && (
+                <div className="px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 text-blue-500 text-[8px] font-black uppercase tracking-tighter rounded-lg backdrop-blur-xl">
+                  Semantic Match
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Color Palette - Now more integrated */}

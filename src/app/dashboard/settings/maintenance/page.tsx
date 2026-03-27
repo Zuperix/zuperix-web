@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { 
-  SparklesIcon, 
+  CpuChipIcon, 
   ChevronLeftIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
@@ -34,7 +34,7 @@ export default function MaintenancePage() {
         </Link>
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-amber-500/10 rounded-xl">
-            <SparklesIcon className="h-6 w-6 text-amber-400" />
+            <CpuChipIcon className="h-6 w-6 text-amber-400" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Library Maintenance</h1>
         </div>
@@ -44,7 +44,7 @@ export default function MaintenancePage() {
       <div className="grid grid-cols-1 gap-6">
         <div className="group p-8 bg-gray-900/40 border border-gray-800 rounded-3xl hover:bg-gray-800/60 hover:border-gray-700 transition-all duration-300 flex flex-col md:flex-row items-center gap-8">
           <div className="p-5 bg-amber-500/10 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-            <SparklesIcon className="h-10 w-10 text-amber-400" />
+            <CpuChipIcon className="h-10 w-10 text-amber-400" />
           </div>
           
           <div className="flex-1 text-center md:text-left">

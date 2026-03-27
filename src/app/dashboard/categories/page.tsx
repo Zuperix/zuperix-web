@@ -15,7 +15,7 @@ import {
   ArrowRightIcon,
   CheckIcon,
   XMarkIcon,
-  SparklesIcon
+  BoltIcon
 } from '@heroicons/react/24/outline';
 import SmartFilterBuilder from '@/components/SmartFilterBuilder';
 import { PermissionGate } from '@/components/PermissionGate';
@@ -183,7 +183,7 @@ export default function CategoriesPage() {
               <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700">
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div className={`p-2 rounded-lg transition-all ${isSmart ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-gray-700 text-gray-400 group-hover:bg-gray-600'}`}>
-                    <SparklesIcon className="h-4 w-4" />
+                    <BoltIcon className="h-4 w-4" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-bold text-white tracking-tight">Smart Category</p>
