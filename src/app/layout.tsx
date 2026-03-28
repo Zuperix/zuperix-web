@@ -17,10 +17,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Open DAM",
-    template: "%s | Open DAM",
+    default: "Zuperix",
+    template: "%s | Zuperix",
   },
-  description: "Open source Digital Asset Management system",
+  description: "Zuperix - Digital Asset Management system",
   icons: {
     icon: "/logo_transparant.png",
   },

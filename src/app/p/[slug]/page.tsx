@@ -16,7 +16,7 @@ export async function generateMetadata(
       const { data } = await res.json();
       return {
         title: data?.welcome_title || data?.name || `Portal`,
-        description: data?.description || 'Shared assets from Open DAM',
+        description: data?.description || 'Shared assets from Zuperix',
         icons: data?.settings?.favicon_url ? {
           icon: data.settings.favicon_url,
           shortcut: data.settings.favicon_url,

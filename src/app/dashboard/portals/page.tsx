@@ -256,7 +256,7 @@ export default function PortalsPage() {
 
       <footer className="pt-20 flex flex-col items-center gap-4 text-center">
         <div className="h-[1px] w-32 bg-gradient-to-r from-transparent via-gray-800 to-transparent" />
-        <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em]">Open DAM Portal Manager</p>
+        <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em]">Zuperix Portal Manager</p>
       </footer>
 
       <DeletePortalModal 

@@ -394,11 +394,6 @@ export default function CollectionsPage() {
           ))
         )}
       </div>
-
-      <footer className="pt-20 flex flex-col items-center gap-4">
-        <div className="h-[1px] w-32 bg-gradient-to-r from-transparent via-gray-800 to-transparent" />
-        <p className="text-[10px] text-gray-600 font-bold uppercase tracking-[0.2em]">Open DAM Collection System</p>
-      </footer>
     </div>
   );
 }

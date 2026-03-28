@@ -107,14 +107,14 @@ export default function Sidebar() {
             className="h-9 w-9 flex items-center justify-center flex-shrink-0 cursor-pointer"
             onClick={() => router.push('/dashboard')}
           >
-            <img src="/logo_transparant.png" alt="Open DAM Logo" className="h-full w-full object-contain" />
+            <img src="/logo_transparant.png" alt="Zuperix Logo" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <span 
               className="text-sm font-semibold text-white tracking-wide cursor-pointer"
               onClick={() => router.push('/dashboard')}
             >
-              Open DAM
+              Zuperix
             </span>
           )}
         </div>

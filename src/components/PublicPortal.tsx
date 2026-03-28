@@ -303,7 +303,7 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
         {/* Footer */}
         <footer className="mt-24 pt-8 border-t border-gray-200 dark:border-gray-800 text-center">
           <p className="text-sm text-gray-500 dark:text-gray-600">
-            Powered by <span className="font-bold text-gray-900 dark:text-gray-400 tracking-tight">Open DAM</span>
+            Powered by <span className="font-bold text-gray-900 dark:text-gray-400 tracking-tight">Zuperix</span>
           </p>
         </footer>
       </div>
