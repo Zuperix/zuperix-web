@@ -150,6 +150,7 @@ export default function AssetDetailPage() {
   const [annotationMode, setAnnotationMode] = useState(false);
   const [pendingAnnotation, setPendingAnnotation] = useState<{ type: string; coordinates: any } | null>(null);
   const [assetComments, setAssetComments] = useState<any[]>([]);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const { fetchAssetWorkflow, processTask, loading: processingTask } = useWorkflows();
@@ -603,19 +604,19 @@ export default function AssetDetailPage() {
         </button>
       </div>
 
-      <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-[#0f111a] border-b border-gray-200 dark:border-gray-800/60 sticky top-0 z-20">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold truncate max-w-[600px] leading-tight text-blue-900 dark:text-gray-100">{asset?.original_name || 'Asset Details'}</h1>
+      <header className="flex flex-wrap items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-white dark:bg-[#0f111a] border-b border-gray-200 dark:border-gray-800/60 sticky top-0 z-20 gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 md:gap-3">
+            <h1 className="text-lg md:text-xl font-bold truncate max-w-full leading-tight text-blue-900 dark:text-gray-100">{asset?.original_name || 'Asset Details'}</h1>
             {asset?.status && (
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+              <span className={`px-2 py-0.5 shrink-0 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
                 {STATUS_LABELS[asset.status] || asset.status}
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3 ml-auto">
           <button
             onClick={handleShare}
             className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
@@ -643,75 +644,76 @@ export default function AssetDetailPage() {
             <button
               onClick={handleSaveMetadata}
               disabled={saving || isLocked}
-              className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${success
+              className={`px-3 md:px-6 py-2 md:py-2.5 rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${success
                   ? 'bg-green-500 text-white shadow-green-500/20'
                   : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20'
                 } disabled:opacity-50`}
               title={isLocked ? 'Asset is locked during active workflow' : 'Save Changes'}
             >
               {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : success ? <CheckIcon className="h-4 w-4" /> : null}
-              {saving ? 'Saving...' : success ? 'Saved' : 'Save Changes'}
+              <span className="hidden sm:inline">{saving ? 'Saving...' : success ? 'Saved' : 'Save Changes'}</span>
+              <span className="sm:hidden">{saving ? '...' : success ? 'OK' : 'Save'}</span>
             </button>
           </PermissionGate>
         </div>
       </header>
       
       {isLocked && (
-        <div className="bg-amber-50 dark:bg-amber-900/10 border-b border-amber-200 dark:border-amber-900/30 px-6 py-3 flex items-center justify-between animate-in slide-in-from-top duration-500 relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center relative overflow-hidden group">
+        <div className="bg-amber-50 dark:bg-amber-900/10 border-b border-amber-200 dark:border-amber-900/30 px-4 md:px-6 py-3 flex flex-col md:flex-row items-start md:items-center justify-between animate-in slide-in-from-top duration-500 relative z-10 gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="shrink-0 h-10 w-10 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center relative overflow-hidden group">
               <div className="absolute inset-0 bg-amber-400/20 animate-pulse" />
               <LockClosedIcon className="h-5 w-5 text-amber-600 dark:text-amber-500 relative z-10" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="text-[10px] font-extrabold text-amber-900 dark:text-amber-100 uppercase tracking-[0.2em] px-2 py-0.5 bg-amber-200 dark:bg-amber-800 rounded-md">Locked for Review</span>
-                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest">• Active Workflow</span>
+                <span className="hidden md:inline text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest">• Active Workflow</span>
               </div>
-              <p className="text-xs text-amber-800/80 dark:text-amber-400/80 font-medium">This asset is currently in a review process. All editing capabilities are restricted until the workflow is finalized.</p>
+              <p className="text-[10px] md:text-xs text-amber-800/80 dark:text-amber-400/80 font-medium">This asset is in review. Edits are restricted until finalized.</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
             {canApprove() ? (
               <>
                 <button 
                   onClick={() => handleQuickAction(WorkflowTaskStatus.APPROVED)}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 group"
+                  className="whitespace-nowrap px-4 md:px-6 py-2 md:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 group"
                 >
                   <CheckCircleIcon className="h-4 w-4" />
                   Approve Asset
                 </button>
                 <button 
                   onClick={() => handleQuickAction(WorkflowTaskStatus.REJECTED)}
-                  className="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2"
+                  className="whitespace-nowrap px-4 md:px-6 py-2 md:py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2"
                 >
                   <XMarkIcon className="h-4 w-4" />
                   Reject
                 </button>
-                <div className="w-px h-8 bg-amber-200 dark:bg-amber-800 mx-2" />
+                <div className="hidden md:block w-px h-8 bg-amber-200 dark:bg-amber-800 mx-2" />
               </>
             ) : (
-                <div className="px-4 py-2 bg-amber-100/50 dark:bg-amber-900/20 border border-amber-200/50 rounded-xl flex items-center gap-2 mr-4">
+                <div className="px-3 md:px-4 py-2 bg-amber-100/50 dark:bg-amber-900/20 border border-amber-200/50 rounded-xl flex items-center gap-2 mr-2 md:mr-4">
                     <ClockIcon className="h-4 w-4 text-amber-600" />
-                    <span className="text-[9px] font-bold text-amber-700 uppercase tracking-widest">Waiting for authorized reviewer</span>
+                    <span className="text-[8px] md:text-[9px] font-bold text-amber-700 uppercase tracking-widest leading-none">Awaiting reviewer</span>
                 </div>
             )}
             <button 
               onClick={() => setActiveTab('workflow')}
-              className="px-5 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 text-gray-700 dark:text-gray-200 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border border-gray-200 dark:border-gray-700 flex items-center gap-2 group"
+              className="whitespace-nowrap px-4 md:px-5 py-2 md:py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 text-gray-700 dark:text-gray-200 text-[9px] md:text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border border-gray-200 dark:border-gray-700 flex items-center gap-2 group"
             >
-              View Workflow Details
+              Details
               <ChevronRightIcon className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
         </div>
       )}
 
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Column: Preview and Summary */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#f8f9fb] dark:bg-[#090a0f] overflow-y-auto custom-scrollbar">
-          <div className="p-8 flex flex-col items-center">
-            <div className="relative group w-full max-w-4xl bg-white dark:bg-[#151720] rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 flex items-center justify-center min-h-[500px] border-4 border-white dark:border-gray-800/30">
+        <div className="flex-1 flex flex-col min-w-0 bg-[#f8f9fb] dark:bg-[#090a0f] overflow-y-auto custom-scrollbar pt-0 pb-12">
+          <div className="p-4 md:p-8 flex flex-col items-center">
+            <div className="relative group w-full max-w-4xl bg-white dark:bg-[#151720] rounded-3xl md:rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 flex items-center justify-center min-h-[300px] md:min-h-[500px] border-2 md:border-4 border-white dark:border-gray-800/30">
               {/* Interactive Action Overlay */}
               <div className="absolute top-8 right-8 flex flex-col gap-3 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
                 <button 
@@ -792,7 +794,7 @@ export default function AssetDetailPage() {
               {is3D(asset?.mime_type, asset?.original_name) ? (
                 <ThreeDPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={asset?.original_name} />
               ) : asset?.mime_type === 'application/pdf' ? (
-                <PdfPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-[32px]" />
+                <PdfPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-2xl md:rounded-[32px]" />
               ) : asset?.mime_type?.startsWith('image/') ? (
                 <img
                   src={`${BASE_URL}/assets/${assetId}/view`}
@@ -860,10 +862,10 @@ export default function AssetDetailPage() {
               </div>
             </div>
 
-            <div className="w-full max-w-4xl mt-12 mb-20 space-y-12">
+            <div className="w-full max-w-4xl mt-8 mb-20 space-y-8 md:space-y-12">
               {/* Categories & Collections Group */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <section className="space-y-4 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-6 rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                <section className="space-y-4 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
@@ -966,7 +968,7 @@ export default function AssetDetailPage() {
                   )}
                 </section>
 
-                <section className="space-y-4 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-6 rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
+                <section className="space-y-4 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
@@ -1057,8 +1059,8 @@ export default function AssetDetailPage() {
               </div>
 
               {/* Tags & Dates Group */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <section className="space-y-6 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-8 rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                <section className="space-y-4 md:space-y-6 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-8 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
                   <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800/60 pb-4">
                     <div className="h-8 w-8 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
                       <TagIcon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
@@ -1128,7 +1130,7 @@ export default function AssetDetailPage() {
                   </div>
                 </section>
 
-                <section className="space-y-4 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-6 rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
+                <section className="space-y-4 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="h-8 w-8 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
                       <ClockIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
@@ -1185,7 +1187,7 @@ export default function AssetDetailPage() {
               </div>
 
                 {/* Metadata Section */}
-                <section className="space-y-6 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-8 rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
+                <section className="space-y-4 md:space-y-6 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-8 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
                   <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/60 pb-4">
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
@@ -1280,14 +1282,206 @@ export default function AssetDetailPage() {
                   </div>
                 </section>
               )}
-              
+            
               <SimilarAssets assetId={assetId} />
             </div>
           </div>
         </div>
 
-        {/* Right Column: Tabbed Information Panel */}
-        <div className="w-2/5 flex flex-col bg-white dark:bg-[#0a0b10] border-l border-gray-200 dark:border-gray-800 shadow-2xl relative z-10">
+        {/* Floating Mobile Tabs (Mobile only) */}
+        <div className="md:hidden fixed bottom-8 left-4 right-4 z-[50]">
+          <div className="bg-gray-900/90 dark:bg-[#0a0b10]/95 backdrop-blur-2xl border border-white/10 dark:border-gray-800/50 p-2 rounded-[32px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] flex items-center gap-1">
+            {[
+              { id: 'file-info', label: 'Specs', icon: InboxIcon },
+              { id: 'workflow', label: 'Workflow', icon: QueueListIcon },
+              { id: 'history', label: 'Audit', icon: ClockIcon },
+              { id: 'attachments', label: 'Links', icon: Square3Stack3DIcon },
+              { id: 'versions', label: 'History', icon: ClockIcon },
+              { id: 'comments', label: 'Chat', icon: ChatBubbleLeftIcon },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id as Tab);
+                  setIsMobileDrawerOpen(true);
+                }}
+                className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl text-[9px] font-bold uppercase tracking-widest transition-all duration-300 relative z-10 ${activeTab === tab.id
+                    ? 'text-white'
+                    : 'text-gray-500 hover:text-gray-300'
+                  }`}
+              >
+                <tab.icon className={`h-4.5 w-4.5 shrink-0 transition-transform duration-300 ${activeTab === tab.id && isMobileDrawerOpen ? 'scale-110 text-blue-400' : 'text-gray-600 opacity-60'}`} />
+                <span className="truncate max-w-[45px] font-bold text-[9px] uppercase tracking-wider">{tab.label}</span>
+                {activeTab === tab.id && isMobileDrawerOpen && (
+                  <div className="absolute inset-0 bg-white/10 dark:bg-white/5 rounded-2xl -z-10 animate-in fade-in zoom-in-95 duration-200" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Content Drawer (Mobile only) */}
+        {isMobileDrawerOpen && (
+          <div className="md:hidden fixed inset-0 z-[100] flex flex-col justify-end">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsMobileDrawerOpen(false)} />
+            <div className="relative w-full h-[85vh] bg-white dark:bg-[#0f111a] rounded-t-[40px] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-500 border-t border-white/10">
+              <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800/60 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center">
+                    <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest leading-none mb-1">
+                      {activeTab === 'file-info' ? 'Specifications' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                    </h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Asset Metadata & Activity</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsMobileDrawerOpen(false)}
+                  className="p-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-gray-500 transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-40">
+                {activeTab === 'file-info' && (
+                  <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+                    <div className="flex items-center gap-3 mb-8">
+                      <div className="bg-emerald-50 dark:bg-emerald-900/20 p-2 rounded-lg">
+                        <PhotoIcon className="h-5 w-5 text-emerald-500" />
+                      </div>
+                      <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Technical specifications</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {[
+                        { label: 'Filename', value: asset?.original_name, icon: DocumentIcon, color: 'text-blue-500' },
+                        { label: 'Size', value: asset?.size ? `${(asset.size / 1024 / 1024).toFixed(2)} MB` : '0 MB', icon: Square3Stack3DIcon, color: 'text-indigo-500' },
+                        { label: 'Dimensions', value: asset?.width && asset?.height ? `${asset.width} × ${asset.height} px` : 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
+                        { label: 'Format', value: asset?.mime_type, icon: InformationCircleIcon, color: 'text-purple-500' },
+                        { label: 'Uploaded', value: asset?.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A', icon: ClockIcon, color: 'text-amber-500' },
+                      ].map((item, i) => (
+                        <div key={i} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center justify-between transition-all group/card border-b-2 hover:border-b-blue-500">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700/50`}>
+                             <item.icon className={`h-5 w-5 ${item.color}`} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{item.label}</span>
+                              <span className="text-xs font-bold text-gray-700 dark:text-gray-200 leading-tight break-all" title={item.value}>{item.value}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {activeTab === 'attachments' && (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
+                     <div className="flex items-center justify-between">
+                       <p className="text-xs text-gray-500 font-medium">Linked attachments and source files.</p>
+                       <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                         <button 
+                           onClick={() => attachmentFileInputRef.current?.click()}
+                           disabled={isUploadingAttachment || isLocked}
+                           className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
+                         >
+                           <PlusIcon className="h-4 w-4" />
+                         </button>
+                       </PermissionGate>
+                     </div>
+                     <div className="space-y-4">
+                       {attachments.map((attachment) => (
+                         <div key={attachment.id} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                           <div className="flex items-center gap-3 overflow-hidden">
+                             <DocumentIcon className="h-5 w-5 text-blue-500 shrink-0" />
+                             <div className="min-w-0">
+                               <p className="text-xs font-bold truncate">{attachment.original_name}</p>
+                               <p className="text-[10px] text-gray-400">{(attachment.size / 1024 / 1024).toFixed(2)} MB</p>
+                             </div>
+                           </div>
+                           <div className="flex items-center gap-1">
+                             <a href={`${BASE_URL}/assets/attachments/${attachment.id}/view`} target="_blank" className="p-2 text-gray-400 hover:text-blue-500"><ArrowDownTrayIcon className="h-4 w-4" /></a>
+                             <PermissionGate action={Action.Delete} subject="Asset" workspaceId={activeWorkspace?.id}>
+                               <button
+                                 onClick={() => handleDeleteAttachment(attachment.id)}
+                                 disabled={isLocked}
+                                 className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                                 title="Remove"
+                               >
+                                 <TrashIcon className="h-4 w-4" />
+                               </button>
+                             </PermissionGate>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                  </div>
+                )}
+                {activeTab === 'comments' && (
+                  <div className="h-full min-h-[500px]">
+                    <CommentsSection 
+                      assetId={assetId} 
+                      workspaceId={activeWorkspace?.id} 
+                      pendingAnnotation={pendingAnnotation}
+                      onCommentPosted={() => {
+                        setPendingAnnotation(null);
+                        setAnnotationMode(false);
+                        fetchComments();
+                      }}
+                    />
+                  </div>
+                )}
+                 {activeTab === 'workflow' && (
+                   <div className="h-full flex flex-col">
+                     {activeWorkflow ? (
+                       <div className="p-4 bg-gray-50 dark:bg-gray-900/60 rounded-3xl border border-gray-200 dark:border-gray-800">
+                         <AssetWorkflowStatus workflow={activeWorkflow} onRefresh={fetchData} />
+                       </div>
+                     ) : (
+                       <div className="flex-1 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-[32px] bg-gray-50/20 dark:bg-gray-900/10">
+                         <div className="bg-gray-100 dark:bg-gray-800/50 p-4 rounded-full mb-4">
+                           <QueueListIcon className="h-10 w-10 text-gray-300 dark:text-gray-700" />
+                         </div>
+                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">No Active Workflow</h3>
+                         <p className="text-[10px] text-gray-500 leading-relaxed max-w-[200px] mb-6">This asset is currently not enrolled in any approval process.</p>
+                         <button
+                           onClick={() => setIsWorkflowDialogOpen(true)}
+                           className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-500/20"
+                         >
+                           Initiate Workflow
+                         </button>
+                       </div>
+                     )}
+                   </div>
+                 )}
+                {activeTab === 'history' && (
+                  <AssetHistory assetId={assetId} />
+                )}
+                {activeTab === 'versions' && (
+                  <div className="space-y-4">
+                    {(asset?.versions || []).map((v: any) => (
+                      <div key={v.id} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <ClockIcon className="h-5 w-5 text-amber-500" />
+                          <div>
+                            <p className="text-xs font-bold">Version {v.version_number}</p>
+                            <p className="text-[10px] text-gray-400">{new Date(v.created_at).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Right Column: Tabbed Information Panel (Desktop Only) */}
+        <div className="hidden md:flex w-2/5 flex-col bg-white dark:bg-[#0a0b10] border-l border-gray-200 dark:border-gray-800 shadow-2xl relative z-10 h-full overflow-hidden">
           {/* Premium Segmented Tab Control */}
           <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-800/60 bg-gray-50/30 dark:bg-[#0a0b10] shrink-0">
             <div className="flex bg-gray-100/80 dark:bg-gray-800/40 p-1 rounded-2xl relative overflow-hidden">
@@ -1318,7 +1512,6 @@ export default function AssetDetailPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-
             {activeTab === 'file-info' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
                 <div className="flex items-center gap-3 mb-8">
@@ -1348,75 +1541,85 @@ export default function AssetDetailPage() {
               </div>
             )}
 
+            {activeTab === 'workflow' && activeWorkflow && (
+              <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+                <AssetWorkflowStatus workflow={activeWorkflow} onRefresh={fetchData} />
+              </div>
+            )}
+
+            {activeTab === 'history' && (
+              <div className="animate-in fade-in slide-in-from-right-2 duration-300 h-full">
+                <AssetHistory assetId={assetId} />
+              </div>
+            )}
+
             {activeTab === 'attachments' && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
-                      <Square3Stack3DIcon className="h-5 w-5 text-blue-500" />
+                    <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-xl">
+                      <Square3Stack3DIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Linked Attachments</h2>
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">Linked Assets</h3>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Attachments & Source Files</p>
+                    </div>
                   </div>
-                  <button
+                  <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                  <button 
                     onClick={() => attachmentFileInputRef.current?.click()}
                     disabled={isUploadingAttachment || isLocked}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                    className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
                   >
-                    {isUploadingAttachment ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <PlusIcon className="h-4 w-4" />}
-                    {isUploadingAttachment ? 'Uploading...' : 'Link File'}
+                    <PlusIcon className="h-4 w-4" />
                   </button>
-                  <input
-                    type="file"
-                    ref={attachmentFileInputRef}
-                    className="hidden"
-                    onChange={handleUploadAttachment}
-                  />
+                  </PermissionGate>
                 </div>
 
-                <div className="space-y-4">
-                  {attachments.map((attachment) => (
-                    <div
-                      key={attachment.id}
-                      className="group relative bg-white dark:bg-[#151720] border border-gray-100 dark:border-gray-800 rounded-2xl p-4 transition-all hover:shadow-xl hover:border-blue-200 dark:hover:border-blue-900/40"
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div className="h-10 w-10 bg-gray-50 dark:bg-[#0a0b10] rounded-xl flex items-center justify-center border border-gray-100 dark:border-gray-800 transition-colors group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20">
-                            <DocumentIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-500" />
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate" title={attachment.original_name}>
-                              {attachment.original_name}
-                            </h4>
-                            <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500 font-medium">
-                              <span>{(attachment.size / 1024 / 1024).toFixed(2)} MB</span>
-                              <span className="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
-                              <span className="truncate">{attachment.mime_type}</span>
-                            </div>
-                          </div>
-                        </div>
+                <input
+                  type="file"
+                  ref={attachmentFileInputRef}
+                  className="hidden"
+                  onChange={handleUploadAttachment}
+                  disabled={isUploadingAttachment || isLocked}
+                />
 
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <a
-                            href={`${BASE_URL}/assets/attachments/${attachment.id}/view`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all"
-                            title="Download attachment"
-                          >
-                            <ArrowDownTrayIcon className="h-4 w-4" />
-                          </a>
-                          <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
-                            <button
-                              onClick={() => handleDeleteAttachment(attachment.id)}
-                              disabled={isLocked}
-                              className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all disabled:opacity-50"
-                              title="Remove attachment"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </PermissionGate>
+                <div className="space-y-3">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="group relative bg-gray-50/50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl flex items-center justify-between transition-all hover:bg-white dark:hover:bg-gray-800 hover:shadow-md">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="h-10 w-10 bg-white dark:bg-gray-900 rounded-xl flex items-center justify-center shadow-sm border border-gray-100 dark:border-gray-800">
+                          <DocumentIcon className="h-5 w-5 text-blue-500" />
                         </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-gray-900 dark:text-white truncate" title={attachment.original_name}>
+                            {attachment.original_name}
+                          </p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
+                            {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={`${BASE_URL}/assets/attachments/${attachment.id}/view`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Download"
+                        >
+                          <ArrowDownTrayIcon className="h-4 w-4" />
+                        </a>
+                        <PermissionGate action={Action.Delete} subject="Asset" workspaceId={activeWorkspace?.id}>
+                        <button
+                          onClick={() => handleDeleteAttachment(attachment.id)}
+                          disabled={isLocked}
+                          className="p-2 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Remove"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                        </PermissionGate>
                       </div>
                     </div>
                   ))}
@@ -1444,62 +1647,52 @@ export default function AssetDetailPage() {
 
 
             {activeTab === 'versions' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-300">
-                <div className="flex items-center justify-between mb-2">
+              <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
-                      <ClockIcon className="h-5 w-5 text-blue-500" />
+                    <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-xl">
+                      <ClockIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Version history</h2>
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">History</h3>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Version Timeline</p>
+                    </div>
                   </div>
-                  <button
+                  <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                  <button 
                     onClick={() => setShowVersionUpload(!showVersionUpload)}
                     disabled={isLocked}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
-                    title={isLocked ? 'Locked during workflow' : ''}
+                    className={`p-2 rounded-xl shadow-lg transition-all ${showVersionUpload ? 'bg-gray-100 dark:bg-gray-800 text-gray-400' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/20'}`}
                   >
-                    <PlusIcon className="h-4 w-4" />
-                    New Version
+                    <PlusIcon className={`h-4 w-4 transition-transform duration-300 ${showVersionUpload ? 'rotate-45' : ''}`} />
                   </button>
+                  </PermissionGate>
                 </div>
 
                 {showVersionUpload && (
-                  <div className="bg-gray-50 dark:bg-gray-900/40 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 space-y-4 animate-in slide-in-from-top-2 duration-300 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-2">
-                      <button onClick={() => setShowVersionUpload(false)} className="text-gray-400 hover:text-gray-600">
-                        <XMarkIcon className="h-4 w-4" />
-                      </button>
+                  <div className="p-6 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-3xl space-y-4 animate-in slide-in-from-top-4 duration-300">
+                    <div 
+                      onClick={() => versionFileInputRef.current?.click()}
+                      className="border-2 border-dashed border-amber-200 dark:border-amber-900/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-all"
+                    >
+                      <CloudArrowUpIcon className="h-8 w-8 text-amber-500" />
+                      <div className="text-center">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">Choose a new file</p>
+                        <p className="text-[10px] text-gray-500 font-medium">Max 50MB per version</p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Version notes</label>
-                      <textarea
-                        rows={2}
-                        className="w-full px-4 py-3 bg-white dark:bg-[#1a1c26] border border-gray-200 dark:border-gray-800 rounded-xl focus:border-blue-500/50 outline-none text-xs transition-all resize-none"
-                        placeholder="What changed in this version?"
-                        value={versionNotes}
-                        onChange={(e) => setVersionNotes(e.target.value)}
-                      />
-                    </div>
-                    <input
-                      type="file"
-                      ref={versionFileInputRef}
-                      className="hidden"
+                    <input 
+                      type="file" 
+                      ref={versionFileInputRef} 
+                      className="hidden" 
                       onChange={handleUploadNewVersion}
                     />
-                    <button
-                      onClick={() => versionFileInputRef.current?.click()}
-                      disabled={isUploadingVersion}
-                      className="w-full py-3 border-2 border-dashed border-blue-200 dark:border-blue-900/30 rounded-xl flex flex-col items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all group"
-                    >
-                      {isUploadingVersion ? (
-                        <ArrowPathIcon className="h-6 w-6 text-blue-500 animate-spin" />
-                      ) : (
-                        <CloudArrowUpIcon className="h-6 w-6 text-blue-400 group-hover:text-blue-600 transition-colors" />
-                      )}
-                      <span className="text-[10px] font-bold text-gray-400 group-hover:text-blue-600 uppercase tracking-wider">
-                        {isUploadingVersion ? 'Uploading...' : 'Click to select file'}
-                      </span>
-                    </button>
+                    <textarea 
+                      placeholder="What's changed in this version? (Optional)"
+                      value={versionNotes}
+                      onChange={(e) => setVersionNotes(e.target.value)}
+                      className="w-full bg-white dark:bg-[#0a0b10] border border-amber-100 dark:border-amber-900/30 rounded-2xl p-4 text-xs outline-none focus:ring-2 focus:ring-amber-500/20 min-h-[100px] transition-all"
+                    />
                   </div>
                 )}
 

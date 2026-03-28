@@ -104,15 +104,10 @@ export default function Sidebar() {
         {/* Logo */}
         <div className={`flex items-center h-14 border-b border-gray-800/60 flex-shrink-0 ${collapsed ? 'justify-center' : 'px-4 gap-2.5'}`}>
           <div 
-            className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg cursor-pointer"
+            className="h-9 w-9 flex items-center justify-center flex-shrink-0 cursor-pointer"
             onClick={() => router.push('/dashboard')}
           >
-            <svg viewBox="0 0 16 16" fill="white" className="h-4 w-4">
-              <rect x="1" y="1" width="6" height="6" rx="1.5" />
-              <rect x="9" y="1" width="6" height="6" rx="1.5" />
-              <rect x="1" y="9" width="6" height="6" rx="1.5" />
-              <rect x="9" y="9" width="6" height="6" rx="1.5" />
-            </svg>
+            <img src="/logo_transparant.png" alt="Open DAM Logo" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <span 

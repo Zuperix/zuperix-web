@@ -27,6 +27,9 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+        <div className="flex justify-center">
+          <img src="/logo_transparant.png" alt="Open DAM Logo" className="h-16 w-auto" />
+        </div>
         <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white">Sign In</h1>
         <p className="text-center text-gray-600 dark:text-gray-400">Welcome back to Open DAM</p>
         

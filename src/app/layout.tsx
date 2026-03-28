@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     template: "%s | Open DAM",
   },
   description: "Open source Digital Asset Management system",
+  icons: {
+    icon: "/logo_transparant.png",
+  },
 };
 
 import { Toaster } from 'sonner';
