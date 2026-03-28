@@ -34,7 +34,9 @@ import {
   LockClosedIcon,
   ExclamationTriangleIcon,
   ChevronRightIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  XCircleIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import DownloadModal from '@/components/DownloadModal';
 import { useCategories, Category } from '@/hooks/useCategories';
@@ -51,6 +53,7 @@ import { AssetWorkflow, WorkflowTaskStatus } from '@/types/workflow';
 
 import ThreeDPreview from '@/components/ThreeDPreview';
 import PdfPreview from '@/components/PdfPreview';
+import { splitFileName, joinFileName } from '@/lib/naming';
 
 interface Field {
   id: string;
@@ -139,8 +142,9 @@ export default function AssetDetailPage() {
   const [activeWorkflow, setActiveWorkflow] = useState<AssetWorkflow | null>(null);
   const isLocked = activeWorkflow?.status === 'ACTIVE';
   const [isWorkflowDialogOpen, setIsWorkflowDialogOpen] = useState(false);
-
-  // Attachment state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const attachmentFileInputRef = useRef<HTMLInputElement>(null);
@@ -335,7 +339,7 @@ export default function AssetDetailPage() {
       setSaving(false);
     }
   };
-  const handleUpdateAsset = async (updates: { status?: string; release_date?: string | null; expiration_date?: string | null }) => {
+  const handleUpdateAsset = async (updates: { original_name?: string; status?: string; release_date?: string | null; expiration_date?: string | null }) => {
     if (!assetId) return;
     try {
       setSaving(true);
@@ -353,6 +357,42 @@ export default function AssetDetailPage() {
       toast.error(err.message || 'Failed to update asset details');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleStartNameEdit = () => {
+    if (isLocked) {
+      toast.error('Asset is locked during active workflow');
+      return;
+    }
+    const { basename } = splitFileName(asset?.original_name || '');
+    setTempName(basename);
+    setIsEditingName(true);
+  };
+
+  const handleCancelNameEdit = () => {
+    setIsEditingName(false);
+    setTempName('');
+  };
+
+  const handleSaveNameEdit = async () => {
+    const { basename, extension } = splitFileName(asset?.original_name || '');
+    
+    if (!tempName.trim() || tempName === basename) {
+      handleCancelNameEdit();
+      return;
+    }
+
+    try {
+      setIsSavingName(true);
+      const newFullName = joinFileName(tempName.trim(), extension);
+      await handleUpdateAsset({ original_name: newFullName });
+      setIsEditingName(false);
+      toast.success('Asset renamed successfully');
+    } catch (err) {
+      toast.error('Failed to rename asset');
+    } finally {
+      setIsSavingName(false);
     }
   };
 
@@ -604,10 +644,51 @@ export default function AssetDetailPage() {
         </button>
       </div>
 
-      <header className="flex flex-wrap items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-white dark:bg-[#0f111a] border-b border-gray-200 dark:border-gray-800/60 sticky top-0 z-20 gap-3">
+      <header className="flex flex-wrap items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-white dark:bg-[#0f111a] border-b border-gray-200 dark:border-gray-800/60 sticky top-16 z-[40] gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 md:gap-3">
-            <h1 className="text-lg md:text-xl font-bold truncate max-w-full leading-tight text-blue-900 dark:text-gray-100">{asset?.original_name || 'Asset Details'}</h1>
+          <div className="flex items-center gap-2 md:gap-3 group/title">
+            {isEditingName ? (
+              <div className="flex items-center gap-2 bg-blue-50/50 dark:bg-blue-900/10 p-1 px-2 rounded-xl ring-2 ring-blue-500/50 flex-1 max-w-2xl animate-in slide-in-from-left-2 duration-200">
+                <input
+                  autoFocus
+                  type="text"
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveNameEdit();
+                    if (e.key === 'Escape') handleCancelNameEdit();
+                  }}
+                  onBlur={handleSaveNameEdit}
+                  disabled={isSavingName}
+                  className="bg-transparent border-none outline-none text-lg md:text-xl font-bold text-blue-900 dark:text-blue-100 flex-1 min-w-0"
+                  placeholder="Filename"
+                />
+                <span className="text-lg md:text-xl font-bold text-blue-400 dark:text-blue-500 opacity-60 flex-none px-1">
+                  {splitFileName(asset?.original_name || '').extension}
+                </span>
+                {isSavingName && (
+                   <ArrowPathIcon className="h-5 w-5 text-blue-500 animate-spin flex-none" />
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 md:gap-3 group/title flex-1 min-w-0">
+                <h1 
+                  onClick={handleStartNameEdit}
+                  className="text-lg md:text-xl font-extrabold truncate leading-tight text-blue-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  title="Click to rename"
+                >
+                  {asset?.original_name || 'Asset Details'}
+                </h1>
+                <button 
+                  onClick={handleStartNameEdit}
+                  className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-all"
+                  title="Rename Asset"
+                >
+                  <PencilIcon className="h-4 w-4" strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
+            
             {asset?.status && (
               <span className={`px-2 py-0.5 shrink-0 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
                 {STATUS_LABELS[asset.status] || asset.status}
@@ -659,16 +740,16 @@ export default function AssetDetailPage() {
       </header>
       
       {isLocked && (
-        <div className="bg-amber-50 dark:bg-amber-900/10 border-b border-amber-200 dark:border-amber-900/30 px-4 md:px-6 py-3 flex flex-col md:flex-row items-start md:items-center justify-between animate-in slide-in-from-top duration-500 relative z-10 gap-4">
+        <div className="sticky top-[112px] md:top-[128px] z-30 bg-white/80 dark:bg-[#0f111a]/80 backdrop-blur-xl border-b border-amber-500/20 px-4 md:px-6 py-3 flex flex-col md:flex-row items-start md:items-center justify-between animate-in slide-in-from-top duration-500 gap-4 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.15)] dark:shadow-[0_4px_20px_-4px_rgba(245,158,11,0.05)]">
           <div className="flex items-center gap-3 md:gap-4">
-            <div className="shrink-0 h-10 w-10 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center relative overflow-hidden group">
-              <div className="absolute inset-0 bg-amber-400/20 animate-pulse" />
+            <div className="shrink-0 h-10 w-10 bg-amber-500/10 dark:bg-amber-500/5 rounded-2xl flex items-center justify-center relative overflow-hidden group border border-amber-500/20">
+              <div className="absolute inset-0 bg-amber-400/10 animate-pulse" />
               <LockClosedIcon className="h-5 w-5 text-amber-600 dark:text-amber-500 relative z-10" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[10px] font-extrabold text-amber-900 dark:text-amber-100 uppercase tracking-[0.2em] px-2 py-0.5 bg-amber-200 dark:bg-amber-800 rounded-md">Locked for Review</span>
-                <span className="hidden md:inline text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest">• Active Workflow</span>
+                <span className="text-[10px] font-bold text-amber-900 dark:text-amber-100 uppercase tracking-[0.2em] px-2 py-0.5 bg-amber-500/20 dark:bg-amber-500/30 rounded-md border border-amber-500/20">Locked for Review</span>
+                <span className="hidden md:inline text-[10px] font-bold text-amber-600/70 dark:text-amber-500/50 uppercase tracking-widest">• Active Workflow</span>
               </div>
               <p className="text-[10px] md:text-xs text-amber-800/80 dark:text-amber-400/80 font-medium">This asset is in review. Edits are restricted until finalized.</p>
             </div>
@@ -678,32 +759,32 @@ export default function AssetDetailPage() {
               <>
                 <button 
                   onClick={() => handleQuickAction(WorkflowTaskStatus.APPROVED)}
-                  className="whitespace-nowrap px-4 md:px-6 py-2 md:py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 group"
+                  className="whitespace-nowrap px-4 md:px-6 py-2 md:py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 group hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <CheckCircleIcon className="h-4 w-4" />
                   Approve Asset
                 </button>
                 <button 
                   onClick={() => handleQuickAction(WorkflowTaskStatus.REJECTED)}
-                  className="whitespace-nowrap px-4 md:px-6 py-2 md:py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2"
+                  className="whitespace-nowrap px-4 md:px-6 py-2 md:py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  <XMarkIcon className="h-4 w-4" />
+                  <XCircleIcon className="h-4 w-4" />
                   Reject
                 </button>
-                <div className="hidden md:block w-px h-8 bg-amber-200 dark:bg-amber-800 mx-2" />
+                <div className="hidden md:block w-px h-8 bg-gradient-to-b from-transparent via-amber-500/20 to-transparent mx-2" />
               </>
             ) : (
-                <div className="px-3 md:px-4 py-2 bg-amber-100/50 dark:bg-amber-900/20 border border-amber-200/50 rounded-xl flex items-center gap-2 mr-2 md:mr-4">
-                    <ClockIcon className="h-4 w-4 text-amber-600" />
-                    <span className="text-[8px] md:text-[9px] font-bold text-amber-700 uppercase tracking-widest leading-none">Awaiting reviewer</span>
+                <div className="px-3 md:px-4 py-2 bg-amber-100/30 dark:bg-amber-900/10 border border-amber-500/10 rounded-xl flex items-center gap-2 mr-2 md:mr-4">
+                    <ClockIcon className="h-4 w-4 text-amber-500/60 animate-pulse" />
+                    <span className="text-[8px] md:text-[9px] font-bold text-amber-700/80 dark:text-amber-400/80 uppercase tracking-widest leading-none">Awaiting reviewer</span>
                 </div>
             )}
             <button 
               onClick={() => setActiveTab('workflow')}
-              className="whitespace-nowrap px-4 md:px-5 py-2 md:py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 text-gray-700 dark:text-gray-200 text-[9px] md:text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border border-gray-200 dark:border-gray-700 flex items-center gap-2 group"
+              className="whitespace-nowrap px-4 md:px-5 py-2 md:py-2.5 bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 text-[9px] md:text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all border border-gray-200 dark:border-white/10 flex items-center gap-2 group hover:scale-[1.02] active:scale-[0.98]"
             >
               Details
-              <ChevronRightIcon className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <ChevronRightIcon className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         </div>

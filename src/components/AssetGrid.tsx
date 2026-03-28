@@ -13,11 +13,9 @@ import {
   LockClosedIcon,
   ArrowUturnLeftIcon
 } from '@heroicons/react/24/outline';
-import { useRouter } from 'next/navigation';
 import { PermissionGate } from './PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { toast } from 'sonner';
 import { BASE_URL } from '@/lib/api';
 import ShareAssetModal from './ShareAssetModal';
 import ThreeDPreview from './ThreeDPreview';
@@ -274,6 +272,7 @@ export default function AssetGrid({
   onToggleSelect,
   onDownload,
   onRestore,
+  onSuccess,
   selectedIds = []
 }: {
   assets: Asset[],
@@ -282,6 +281,7 @@ export default function AssetGrid({
   onToggleSelect?: (id: string, isShift: boolean) => void,
   onDownload?: (asset: Asset) => void,
   onRestore?: (id: string) => void,
+  onSuccess?: () => void,
   selectedIds?: string[]
 }) {
   const [sharingAsset, setSharingAsset] = useState<Asset | null>(null);

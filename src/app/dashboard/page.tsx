@@ -554,6 +554,7 @@ function DashboardContent() {
                 onSelect={(id) => router.push(`/dashboard/assets/${id}`)}
                 onToggleSelect={handleToggleSelect}
                 onDownload={(asset) => setDownloadAsset(asset)}
+                onSuccess={fetchAssets}
                 selectedIds={Array.from(new Set([...selectedIds, ...marqueeIds]))}
               />
               
