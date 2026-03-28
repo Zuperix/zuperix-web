@@ -8,6 +8,8 @@ interface DeleteConfirmationModalProps {
   onConfirm: () => void;
   title?: string;
   message?: string;
+  confirmText?: string;
+  cancelText?: string;
   isDeleting?: boolean;
 }
 
@@ -17,6 +19,8 @@ export default function DeleteConfirmationModal({
   onConfirm,
   title = 'Delete Asset',
   message = 'Are you sure you want to delete this asset? This action cannot be undone.',
+  confirmText = 'Delete permanently',
+  cancelText = 'Cancel',
   isDeleting = false,
 }: DeleteConfirmationModalProps) {
   if (!isOpen) return null;
@@ -61,7 +65,7 @@ export default function DeleteConfirmationModal({
               ) : (
                 <>
                   <TrashIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                  <span>Delete permanently</span>
+                  <span>{confirmText}</span>
                 </>
               )}
             </button>
@@ -71,7 +75,7 @@ export default function DeleteConfirmationModal({
               disabled={isDeleting}
               className="w-full py-3.5 bg-gray-100 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50"
             >
-              Cancel
+              {cancelText}
             </button>
           </div>
         </div>
