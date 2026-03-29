@@ -36,6 +36,11 @@ export interface User {
   name: string;
   system_role: string;
   customer_id: string;
+  customer?: {
+    id: string;
+    name: string;
+    is_onboarding_completed: boolean;
+  };
   roles?: Role[];
   workspace_members?: WorkspaceMember[];
 }
