@@ -103,10 +103,13 @@ export default function CommentsSection({
     setMentionFilter(null);
   };
 
-  const insertMention = (user: { name: string }) => {
+  const getHandle = (email: string) => email.split('@')[0];
+
+  const insertMention = (user: { name: string; email: string }) => {
     const before = content.substring(0, mentionIndex);
     const after = content.substring(mentionIndex + (mentionFilter?.length || 0) + 1);
-    const newContent = `${before}@${user.name} ${after}`;
+    const handle = getHandle(user.email);
+    const newContent = `${before}@${handle} ${after}`;
     setContent(newContent);
     setMentionFilter(null);
   };
@@ -122,15 +125,27 @@ export default function CommentsSection({
   };
 
   const filteredMembers = mentionFilter !== null
-    ? members.filter(m => 
-        m.user.name.toLowerCase().includes(mentionFilter.toLowerCase()) ||
-        m.user.email.toLowerCase().includes(mentionFilter.toLowerCase())
-      )
+    ? members.filter(m => {
+        const handle = getHandle(m.user.email).toLowerCase();
+        const search = mentionFilter.toLowerCase();
+        return (
+          handle.includes(search) ||
+          m.user.name.toLowerCase().includes(search) ||
+          m.user.email.toLowerCase().includes(search)
+        );
+      })
     : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
+
+    // Robust mention detection: Resolve handles to user IDs
+    const mentionRegex = /@(\S+)/g;
+    const mentions = [...content.matchAll(mentionRegex)].map(match => match[1].toLowerCase());
+    const mentioned_ids = members
+      .filter(m => mentions.includes(getHandle(m.user.email).toLowerCase()))
+      .map(m => m.user.id);
 
     try {
       setSubmitting(true);
@@ -142,6 +157,7 @@ export default function CommentsSection({
           type: pendingAnnotation?.type || 'comment',
           coordinates: pendingAnnotation?.coordinates || null,
           timestamp: pendingAnnotation?.timestamp || null,
+          mentioned_ids,
         }),
       });
       setContent('');
@@ -257,20 +273,27 @@ export default function CommentsSection({
                   <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Mention User</span>
                 </div>
                 <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                  {filteredMembers.map((member, idx) => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => insertMention(member.user)}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                      className={`w-full text-left px-4 py-2 text-sm flex flex-col transition-all ${
-                        idx === selectedIndex ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-white/5'
-                      }`}
-                    >
-                      <span className="font-bold">{member.user.name}</span>
-                      <span className={`text-[10px] ${idx === selectedIndex ? 'text-purple-200' : 'text-gray-500'}`}>{member.user.email}</span>
-                    </button>
-                  ))}
+                    {filteredMembers.map((member, idx) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => insertMention(member.user)}
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                        className={`w-full text-left px-4 py-2 text-sm flex flex-col transition-all ${
+                          idx === selectedIndex ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold">{member.user.name}</span>
+                          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                            idx === selectedIndex ? 'bg-purple-500 text-white' : 'bg-white/10 text-purple-400'
+                          }`}>
+                            @{getHandle(member.user.email)}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] ${idx === selectedIndex ? 'text-purple-200' : 'text-gray-500'}`}>{member.user.email}</span>
+                      </button>
+                    ))}
                 </div>
               </div>
             )}

@@ -1562,9 +1562,9 @@ export default function AssetDetailPage() {
         )}
 
         {/* Right Column: Tabbed Information Panel (Desktop Only) */}
-        <div className="hidden md:flex w-2/5 flex-col bg-white dark:bg-[#0a0b10] border-l border-gray-200 dark:border-gray-800 shadow-2xl relative z-10 h-full overflow-hidden">
+        <div className="hidden md:flex w-4/11 flex-col bg-white dark:bg-[#0a0b10] border-l border-gray-200 dark:border-gray-800 shadow-2xl relative z-10 h-full overflow-hidden">
           {/* Premium Segmented Tab Control */}
-          <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-800/60 bg-gray-50/30 dark:bg-[#0a0b10] shrink-0">
+          <div className="px-6 py-8 border-b border-gray-200 dark:border-gray-800/60 bg-gray-50/30 dark:bg-[#0a0b10] shrink-0">
             <div className="flex bg-gray-100/80 dark:bg-gray-800/40 p-1 rounded-2xl relative overflow-hidden">
               {[
                 { id: 'file-info', label: 'Specs', icon: InboxIcon },
