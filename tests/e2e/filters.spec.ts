@@ -63,6 +63,10 @@ test('dashboard filters update results', async ({ page }) => {
   await expectShowing(page, 1, 1);
 
   await clearAllFilters(page);
+  await clickFilterOption(page, /^Brand/i, /^Sony\b/i);
+  await expectShowing(page, 1, 1);
+
+  await clearAllFilters(page);
   await setUploadDateRange(page, '2025-01-28', '2026-04-28');
   await expectShowing(page, 20, 535);
 

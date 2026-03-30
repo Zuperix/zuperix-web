@@ -164,3 +164,174 @@ test('asset comment flow and audit history show recent activity', async ({ page 
   // const parsed = new Date(`${today.toLocaleDateString()} ${timeText}`);
   // expect(Math.abs(parsed.getTime() - Date.now())).toBeLessThanOrEqual(5 * 60 * 1000);
 });
+
+test('asset download modal opens and displays presets and customization options', async ({ page }) => {
+  await page.goto(ASSET_URL);
+
+  await expect(page.getByRole('heading', { level: 1, name: ORIGINAL_FILE_NAME })).toBeVisible();
+
+  await page.getByTitle('Download').click();
+
+  const downloadModal = page.locator('div').filter({ hasText: 'Download Options' }).first();
+  await expect(downloadModal).toBeVisible({ timeout: 10000 });
+
+  await expect(page.getByRole('heading', { name: 'Download Options' })).toBeVisible();
+
+  await expect(page.getByText('Presets')).toBeVisible();
+  await expect(page.getByText('Small').first()).toBeVisible();
+  await expect(page.getByText('WebP • Mobile')).toBeVisible();
+  await expect(page.getByText('Large').first()).toBeVisible();
+  await expect(page.getByText('WebP • Desktop')).toBeVisible();
+  await expect(page.getByText('Transparent').first()).toBeVisible();
+  await expect(page.getByText('Lossless')).toBeVisible();
+  await expect(page.getByText('Archival').first()).toBeVisible();
+  await expect(page.getByText('TIFF • Original')).toBeVisible();
+
+  await expect(page.getByText('Customize')).toBeVisible();
+  await expect(page.getByText('Format', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Aspect Ratio').first()).toBeVisible();
+  await expect(page.getByText('Output Dimensions')).toBeVisible();
+  await expect(page.getByText('Image Quality')).toBeVisible();
+
+  await expect(page.getByRole('button', { name: /Cancel/i })).toBeVisible();
+
+  await page.getByRole('button', { name: /Cancel/i }).click();
+  await expect(downloadModal).toBeHidden({ timeout: 5000 });
+});
+
+test('asset download presets apply correct settings', async ({ page }) => {
+  await page.goto(ASSET_URL);
+  await page.getByTitle('Download').click();
+  await expect(page.getByRole('heading', { name: 'Download Options' })).toBeVisible({ timeout: 10000 });
+
+  const formatSelect = page.locator('select').filter({ has: page.locator('option[value="webp"]') });
+  const qualitySlider = page.locator('input[type="range"]');
+
+  // Test Small preset
+  await page.getByText('Small').first().click();
+  await expect(formatSelect).toHaveValue('webp');
+  await expect(qualitySlider).toHaveValue('80');
+
+  // Test Large preset
+  await page.getByText('Large').first().click();
+  await expect(formatSelect).toHaveValue('webp');
+  await expect(qualitySlider).toHaveValue('90');
+
+  // Test Transparent preset
+  await page.getByText('Transparent').first().click();
+  await expect(formatSelect).toHaveValue('png');
+
+  // Test Archival preset
+  await page.getByText('Archival').first().click();
+  await expect(formatSelect).toHaveValue('tiff');
+  await expect(qualitySlider).toHaveValue('100');
+
+  await page.getByRole('button', { name: /Cancel/i }).click();
+});
+
+test('asset download custom settings can be modified', async ({ page }) => {
+  await page.goto(ASSET_URL);
+  await page.getByTitle('Download').click();
+  await expect(page.getByRole('heading', { name: 'Download Options' })).toBeVisible({ timeout: 10000 });
+
+  const formatSelect = page.locator('select').filter({ has: page.locator('option[value="webp"]') });
+  await formatSelect.selectOption('jpg');
+  await expect(formatSelect).toHaveValue('jpg');
+
+  await formatSelect.selectOption('png');
+  await expect(formatSelect).toHaveValue('png');
+
+  const aspectRatioSelect = page.locator('select').filter({ has: page.locator('option[value="none"]') });
+  await aspectRatioSelect.selectOption('1');
+  await expect(aspectRatioSelect).toHaveValue('1');
+
+  await aspectRatioSelect.selectOption(String(16/9));
+  await expect(aspectRatioSelect).toHaveValue(String(16/9));
+
+  const qualitySlider = page.locator('input[type="range"]');
+  await qualitySlider.fill('75');
+  await expect(qualitySlider).toHaveValue('75');
+
+  const emailInput = page.getByPlaceholder('Email to send asset...');
+  await emailInput.fill('test@example.com');
+  await expect(emailInput).toHaveValue('test@example.com');
+
+  await page.getByRole('button', { name: /Cancel/i }).click();
+});
+
+test('asset download triggers file download for various presets', async ({ page }) => {
+  await page.goto(ASSET_URL);
+  await page.getByTitle('Download').click();
+  await expect(page.getByRole('heading', { name: 'Download Options' })).toBeVisible({ timeout: 10000 });
+
+  // Test download with Small preset
+  await page.getByText('Small').first().click();
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Download Custom/i }).click(),
+  ]);
+
+  const filename = download.suggestedFilename();
+  expect(filename).toContain('_custom');
+  expect(filename).toMatch(/\.(webp|jpg|png|tiff)$/i);
+
+  await page.getByRole('button', { name: /Cancel/i }).click();
+});
+
+test('asset download works with Large preset', async ({ page }) => {
+  await page.goto(ASSET_URL);
+  await page.getByTitle('Download').click();
+  await expect(page.getByRole('heading', { name: 'Download Options' })).toBeVisible({ timeout: 10000 });
+
+  await page.getByText('Large').first().click();
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Download Custom/i }).click(),
+  ]);
+
+  const filename = download.suggestedFilename();
+  expect(filename).toContain('_custom');
+  expect(filename).toMatch(/\.webp$/i);
+
+  await page.getByRole('button', { name: /Cancel/i }).click();
+});
+
+test('asset download works with Transparent (PNG) preset', async ({ page }) => {
+  await page.goto(ASSET_URL);
+  await page.getByTitle('Download').click();
+  await expect(page.getByRole('heading', { name: 'Download Options' })).toBeVisible({ timeout: 10000 });
+
+  await page.getByText('Transparent').first().click();
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Download Custom/i }).click(),
+  ]);
+
+  const filename = download.suggestedFilename();
+  expect(filename).toContain('_custom');
+  expect(filename).toMatch(/\.png$/i);
+
+  await page.getByRole('button', { name: /Cancel/i }).click();
+});
+
+test('asset download works with Archival (TIFF) preset', async ({ page }) => {
+  await page.goto(ASSET_URL);
+  await page.getByTitle('Download').click();
+  await expect(page.getByRole('heading', { name: 'Download Options' })).toBeVisible({ timeout: 10000 });
+
+  await page.getByText('Archival').first().click();
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Download Custom/i }).click(),
+  ]);
+
+  const filename = download.suggestedFilename();
+  expect(filename).toContain('_custom');
+  expect(filename).toMatch(/\.tiff$/i);
+
+  await page.getByRole('button', { name: /Cancel/i }).click();
+});

@@ -31,10 +31,10 @@ export function DraggableAsset({ asset, onAdd, isAlreadyInPortal }: any) {
       className={`group bg-gray-900/60 rounded-2xl border border-gray-800/60 p-3 hover:border-blue-500/40 transition-all flex flex-col gap-3 ${isDragging ? 'opacity-40 scale-95' : 'opacity-100'} ${isAlreadyInPortal ? 'cursor-not-allowed grayscale-[0.5]' : 'cursor-grab active:cursor-grabbing'}`}
     >
       <div className="aspect-video bg-gray-950 rounded-xl overflow-hidden relative">
-         {asset.mime_type?.startsWith('image/') ? (
+         {asset.mime_type?.startsWith('image/') || asset.type?.startsWith('image/') ? (
            <img 
             src={`${BASE_URL}/assets/${asset.id}/view`} 
-            alt={asset.original_name}
+            alt={asset.original_name || asset.name}
             className="w-full h-full object-cover"
            />
          ) : (
@@ -49,7 +49,7 @@ export function DraggableAsset({ asset, onAdd, isAlreadyInPortal }: any) {
          )}
       </div>
       <div className="flex flex-col gap-2">
-         <p className="text-xs font-bold text-white truncate px-1">{asset.original_name}</p>
+         <p className="text-xs font-bold text-white truncate px-1">{asset.original_name || asset.name}</p>
          {isAlreadyInPortal ? (
            <button disabled className="w-full py-2 bg-gray-800/50 text-gray-500 text-[10px] font-bold uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-not-allowed">
              <CheckIcon className="h-3 w-3" />
@@ -115,10 +115,10 @@ export function DroppablePortalAssets({ assets, onDrop, onOpenSearch }: any) {
             {assets.map((asset: any) => (
               <div key={asset.id} className="group relative bg-gray-950 rounded-2xl border border-gray-800 overflow-hidden hover:border-blue-500/30 transition-all shadow-lg">
                 <div className="aspect-square bg-gray-900 flex items-center justify-center relative">
-                  {asset.type.startsWith('image/') ? (
+                  {(asset.type?.startsWith('image/') || asset.mime_type?.startsWith('image/')) ? (
                     <img 
                       src={`${BASE_URL}/assets/${asset.id}/view`} 
-                      alt={asset.name}
+                      alt={asset.name || asset.original_name}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                     />
                   ) : (
@@ -131,7 +131,7 @@ export function DroppablePortalAssets({ assets, onDrop, onOpenSearch }: any) {
                   </div>
                 </div>
                 <div className="p-4 bg-gray-900/40">
-                  <p className="text-[11px] font-bold text-gray-300 truncate">{asset.name}</p>
+                  <p className="text-[11px] font-bold text-gray-300 truncate">{asset.name || asset.original_name}</p>
                 </div>
               </div>
             ))}

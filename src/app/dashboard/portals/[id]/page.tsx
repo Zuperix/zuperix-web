@@ -59,10 +59,11 @@ export default function PortalDetailPage() {
         background_color: p.background_color || '#fafafa',
         expires_at: p.expires_at
       });
-      setPortalAssets(assetsData.assets || []);
-      useBuilderStore.getState().setPortalAssets(assetsData.assets || []);
-      useBuilderStore.getState().setPortalCategories(assetsData.categories || []);
-      useBuilderStore.getState().setPortalCollections(assetsData.collections || []);
+      const assets = assetsData?.assets || assetsData || [];
+      setPortalAssets(assets);
+      useBuilderStore.getState().setPortalAssets(assets);
+      useBuilderStore.getState().setPortalCategories(assetsData?.categories || []);
+      useBuilderStore.getState().setPortalCollections(assetsData?.collections || []);
     } catch (err) {
       console.error('Failed to load portal detail:', err);
     } finally {
