@@ -248,6 +248,8 @@ export default function CollectionsPage() {
                    <PermissionGate action={Action.Update} subject="Collection" workspaceId={activeWorkspace?.id}>
                      <button 
                        onClick={() => startEdit(col)}
+                       aria-label={`Edit ${col.name}`}
+                       title="Edit"
                        className="p-2 text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all"
                      >
                         <PencilSquareIcon className="h-4 w-4" />
@@ -256,6 +258,8 @@ export default function CollectionsPage() {
                    <PermissionGate action={Action.Delete} subject="Collection" workspaceId={activeWorkspace?.id}>
                      <button 
                        onClick={() => handleDelete(col.id)}
+                       aria-label={`Delete ${col.name}`}
+                       title="Delete"
                        className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
                      >
                         <TrashIcon className="h-4 w-4" />

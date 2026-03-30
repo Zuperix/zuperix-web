@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 
 interface Tag {
   id: string;
@@ -33,6 +34,9 @@ export default function TagsManagementPage() {
   const [success, setSuccess] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [tagToDelete, setTagToDelete] = useState<Tag | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchTags = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -51,20 +55,27 @@ export default function TagsManagementPage() {
     fetchTags();
   }, [fetchTags]);
 
-  const handleDelete = async (tagId: string) => {
-    if (!activeWorkspace || !confirm('Are you sure you want to delete this tag? It will be removed from all associated assets.')) return;
+  const handleDeleteRequest = (tag: Tag) => {
+    setTagToDelete(tag);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!activeWorkspace || !tagToDelete) return;
     
+    setIsDeleting(true);
     try {
-      setDeletingId(tagId);
-      await apiFetch(`/workspaces/${activeWorkspace.id}/tags/${tagId}`, {
+      await apiFetch(`/workspaces/${activeWorkspace.id}/tags/${tagToDelete.id}`, {
         method: 'DELETE',
       });
       setSuccess('Tag deleted successfully');
+      setIsDeleteModalOpen(false);
+      setTagToDelete(null);
       fetchTags();
     } catch (err: any) {
       setError('Failed to delete tag');
     } finally {
-      setDeletingId(null);
+      setIsDeleting(false);
     }
   };
 
@@ -176,7 +187,7 @@ export default function TagsManagementPage() {
                     <PermissionGate action={Action.Delete} subject="Tag" workspaceId={activeWorkspace.id}>
                         <button 
                             disabled={deletingId === tag.id}
-                            onClick={() => handleDelete(tag.id)}
+                            onClick={() => handleDeleteRequest(tag)}
                             className="p-3 text-gray-700 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
                             title="Purge Tag"
                         >
@@ -192,6 +203,16 @@ export default function TagsManagementPage() {
             </div>
           )}
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => { setIsDeleteModalOpen(false); setTagToDelete(null); }}
+        onConfirm={confirmDelete}
+        title="Purge Tag"
+        message={`Are you sure you want to delete "${tagToDelete?.name}"? It will be removed from all associated assets. This action cannot be undone.`}
+        confirmText="Purge Tag"
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

@@ -34,12 +34,14 @@ function FilterChips({
   activeFilters, 
   filters,
   onRemove, 
-  onClearAll 
+  onClearAll,
+  disabled = false,
 }: { 
   activeFilters: Record<string, any>, 
   filters: any,
   onRemove: (key: string, value?: any) => void, 
-  onClearAll: () => void 
+  onClearAll: () => void,
+  disabled?: boolean,
 }) {
   const filterLabels: Record<string, string> = {
     mime_type: 'File Type',
@@ -164,6 +166,8 @@ function FilterChips({
         </div>
       ))}
       <button 
+        type="button"
+        disabled={disabled}
         onClick={onClearAll}
         className="px-3 py-1.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors uppercase tracking-tight"
       >
@@ -193,6 +197,7 @@ function DashboardContent() {
   const [filters, setFilters] = useState<any>({});
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [isClearingAllFilters, setIsClearingAllFilters] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const { sidebarCollapsed, setSidebarCollapsed, isFilterOpen, setIsFilterOpen } = useLayout();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -238,7 +243,11 @@ function DashboardContent() {
       by: searchParams.get('sort_by') || 'created_at',
       order: (searchParams.get('sort_order') as 'asc' | 'desc') || 'desc'
     });
-  }, [searchParams]);
+
+    if (isClearingAllFilters && searchParams.toString() === '') {
+      setIsClearingAllFilters(false);
+    }
+  }, [isClearingAllFilters, searchParams]);
 
   const fetchAssets = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -317,6 +326,10 @@ function DashboardContent() {
   };
 
   const handleClearAll = () => {
+    setIsClearingAllFilters(true);
+    setActiveFilters({});
+    setSelectedIds([]);
+    setLastSelectedId(null);
     router.replace('/dashboard');
   };
 
@@ -436,6 +449,7 @@ function DashboardContent() {
         activeFilters={activeFilters} 
         onFilterChange={handleFilterChange} 
         onClearAll={handleClearAll}
+        disabled={isClearingAllFilters}
       />
 
       <div 
@@ -522,7 +536,8 @@ function DashboardContent() {
               activeFilters={activeFilters} 
               filters={filters}
               onRemove={removeFilter} 
-              onClearAll={handleClearAll} 
+              onClearAll={handleClearAll}
+              disabled={isClearingAllFilters}
             />
           </div>
 

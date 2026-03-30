@@ -126,6 +126,7 @@ export default function CommentsSection({
 
   const filteredMembers = mentionFilter !== null
     ? members.filter(m => {
+        if (!m.user?.email) return false;
         const handle = getHandle(m.user.email).toLowerCase();
         const search = mentionFilter.toLowerCase();
         return (
@@ -144,7 +145,7 @@ export default function CommentsSection({
     const mentionRegex = /@(\S+)/g;
     const mentions = [...content.matchAll(mentionRegex)].map(match => match[1].toLowerCase());
     const mentioned_ids = members
-      .filter(m => mentions.includes(getHandle(m.user.email).toLowerCase()))
+      .filter(m => m.user?.email && mentions.includes(getHandle(m.user.email).toLowerCase()))
       .map(m => m.user.id);
 
     try {

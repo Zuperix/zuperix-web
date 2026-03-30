@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { ShieldCheckIcon, PlusIcon, TrashIcon, CheckIcon, KeyIcon } from '@heroicons/react/24/outline';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import { toast } from 'sonner';
 
 interface Permission {
   id: string;
@@ -27,6 +29,9 @@ export default function RolesPage() {
   const [newRole, setNewRole] = useState({ name: '', type: 'WORKSPACE' as const, permissionIds: [] as string[] });
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'roles' | 'permissions'>('roles');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
+  const [isDeletingRole, setIsDeletingRole] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -58,8 +63,10 @@ export default function RolesPage() {
       setShowCreate(false);
       setNewRole({ name: '', type: 'WORKSPACE', permissionIds: [] });
       fetchData();
+      toast.success('Role created successfully');
     } catch (error) {
       console.error('Failed to create role:', error);
+      toast.error('Failed to create role');
     } finally {
       setSubmitting(false);
     }
@@ -74,13 +81,25 @@ export default function RolesPage() {
     }));
   };
 
-  const handleDeleteRole = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this role?')) return;
+  const handleDeleteRoleRequest = (id: string) => {
+    setRoleToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteRole = async () => {
+    if (!roleToDelete) return;
+    setIsDeletingRole(true);
     try {
-      await apiFetch(`/roles/${id}`, { method: 'DELETE' });
+      await apiFetch(`/roles/${roleToDelete}`, { method: 'DELETE' });
+      setIsDeleteModalOpen(false);
+      setRoleToDelete(null);
       fetchData();
+      toast.success('Role deleted successfully');
     } catch (error) {
       console.error('Failed to delete role:', error);
+      toast.error('Failed to delete role');
+    } finally {
+      setIsDeletingRole(false);
     }
   };
 
@@ -265,7 +284,9 @@ export default function RolesPage() {
                       <div className="flex justify-end gap-2">
                         {!role.isSystem && (
                           <button
-                            onClick={() => handleDeleteRole(role.id)}
+                            onClick={() => handleDeleteRoleRequest(role.id)}
+                            aria-label={`Delete ${role.name}`}
+                            title="Delete"
                             className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
                           >
                             <TrashIcon className="h-4 w-4" />
@@ -312,6 +333,15 @@ export default function RolesPage() {
           </table>
         </div>
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => { setIsDeleteModalOpen(false); setRoleToDelete(null); }}
+        onConfirm={confirmDeleteRole}
+        title="Delete Role"
+        message="Are you sure you want to delete this role? Users assigned to this role may lose access to critical features."
+        isDeleting={isDeletingRole}
+      />
     </div>
   );
 }

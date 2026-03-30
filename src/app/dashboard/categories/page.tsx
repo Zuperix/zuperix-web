@@ -21,6 +21,7 @@ import SmartFilterBuilder from '@/components/SmartFilterBuilder';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 
 export default function CategoriesPage() {
   const { categories, updateCategory, deleteCategory, refresh } = useCategories();
@@ -31,6 +32,9 @@ export default function CategoriesPage() {
   const [isSmart, setIsSmart] = useState(false);
   const [smartFilter, setSmartFilter] = useState<any>({});
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const toggleExpand = (id: string) => {
     const next = new Set(expandedIds);
@@ -89,12 +93,22 @@ export default function CategoriesPage() {
     setSmartFilter(cat.smart_filter || {});
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure? This will delete the category and all its children.')) return;
+  const handleDeleteRequest = (cat: Category) => {
+    setCategoryToDelete(cat);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!categoryToDelete) return;
+    setIsDeleting(true);
     try {
-      await deleteCategory(id);
+      await deleteCategory(categoryToDelete.id);
+      setIsDeleteModalOpen(false);
+      setCategoryToDelete(null);
     } catch (err) {
       console.error('Failed to delete category');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -157,7 +171,7 @@ export default function CategoriesPage() {
             {cat.name !== 'Global' && (
               <PermissionGate action={Action.Delete} subject="Category" workspaceId={activeWorkspace?.id}>
                 <button 
-                  onClick={() => handleDelete(cat.id)}
+                  onClick={() => handleDeleteRequest(cat)}
                   className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-xl transition-all"
                   title="Delete"
                 >
@@ -326,6 +340,16 @@ export default function CategoriesPage() {
           </p>
         </div>
       </footer>
+
+      <DeleteConfirmationModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => { setIsDeleteModalOpen(false); setCategoryToDelete(null); }}
+        onConfirm={confirmDelete}
+        title="Delete Category"
+        message={`Are you sure you want to delete "${categoryToDelete?.name}"? All sub-categories and their associations will be removed. This action cannot be undone.`}
+        confirmText="Delete Category"
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

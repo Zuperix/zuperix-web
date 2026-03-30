@@ -278,97 +278,137 @@ export default function WebhooksPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-xl shadow-2xl animate-in zoom-in-95 duration-200">
             <form onSubmit={handleCreate}>
-              <div className="p-6 border-b border-gray-800 flex justify-between items-center">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <div className="p-1.5 bg-indigo-500/10 rounded-lg"><PlusIcon className="h-5 w-5 text-indigo-400" /></div>
-                  Create Webhook
-                </h2>
-                <button type="button" onClick={() => setShowCreate(false)} className="text-gray-500 hover:text-white">×</button>
+              <div className="p-8 border-b border-gray-800/60 flex justify-between items-center bg-gray-900/40">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center ring-8 ring-indigo-500/5">
+                    <PlusIcon className="h-6 w-6 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white tracking-tight">Create Webhook</h2>
+                    <p className="text-xs text-gray-500 mt-0.5 font-medium">Configure real-time event delivery.</p>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setShowCreate(false)} 
+                  className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all"
+                >
+                  <XCircleIcon className="h-6 w-6" />
+                </button>
               </div>
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                    <GlobeAltIcon className="h-3 w-3" /> Payload URL
-                  </label>
-                  <input
-                    type="url" required value={newWebhook.url}
-                    onChange={e => setNewWebhook({ ...newWebhook, url: e.target.value })}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500/40 outline-none"
-                    placeholder="https://your-app.com/webhook"
-                  />
-                  <p className="mt-1.5 text-[10px] text-gray-500">Only HTTPS URLs are allowed for security.</p>
+              <div className="p-8 h-[60vh] overflow-y-auto custom-scrollbar space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                      <GlobeAltIcon className="h-3.5 w-3.5 text-indigo-400" /> Payload URL
+                    </label>
+                    <input
+                      type="url" required value={newWebhook.url}
+                      onChange={e => setNewWebhook({ ...newWebhook, url: e.target.value })}
+                      className="w-full bg-gray-950/50 border border-gray-800 rounded-2xl px-5 py-3 text-sm text-white focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 outline-none transition-all placeholder:text-gray-700"
+                      placeholder="https://your-app.com/webhook"
+                    />
+                    <p className="text-[10px] text-gray-600 px-1 font-medium italic">HTTPS Recommended</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                      <KeyIcon className="h-3.5 w-3.5 text-indigo-400" /> Secret Token
+                    </label>
+                    <input
+                      type="text" value={newWebhook.secret}
+                      onChange={e => setNewWebhook({ ...newWebhook, secret: e.target.value })}
+                      className="w-full bg-gray-950/50 border border-gray-800 rounded-2xl px-5 py-3 text-sm text-white focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 outline-none transition-all placeholder:text-gray-700 font-mono"
+                      placeholder="Auto-generate"
+                    />
+                    <p className="text-[10px] text-gray-600 px-1 font-medium italic">Payload Authentication</p>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                    <KeyIcon className="h-3 w-3" /> Secret Token (Optional)
+
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                    <ArrowsRightLeftIcon className="h-3.5 w-3.5 text-indigo-400" /> Choose Destination
                   </label>
-                  <input
-                    type="text" value={newWebhook.secret}
-                    onChange={e => setNewWebhook({ ...newWebhook, secret: e.target.value })}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500/40 outline-none"
-                    placeholder="Leave empty to auto-generate"
-                  />
-                  <p className="mt-1.5 text-[10px] text-gray-500">Used to sign the payload header (X-Webhook-Signature).</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <ArrowsRightLeftIcon className="h-3 w-3" /> Webhook Type
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-4">
                     {[
-                      { id: 'generic', name: 'Generic', icon: GlobeAltIcon, color: 'text-gray-400', activeBg: 'bg-gray-500/10' },
-                      { id: 'slack', name: 'Slack', icon: SlackIcon, color: 'text-orange-400', activeBg: 'bg-orange-500/10' },
-                      { id: 'discord', name: 'Discord', icon: DiscordIcon, color: 'text-indigo-400', activeBg: 'bg-indigo-500/10' }
+                      { id: 'generic', name: 'Generic', icon: GlobeAltIcon, color: 'text-gray-400', activeBg: 'bg-gray-100/5', activeBorder: 'border-white/20' },
+                      { id: 'slack', name: 'Slack', icon: SlackIcon, color: 'text-orange-400', activeBg: 'bg-orange-500/5', activeBorder: 'border-orange-500/40' },
+                      { id: 'discord', name: 'Discord', icon: DiscordIcon, color: 'text-indigo-400', activeBg: 'bg-indigo-500/5', activeBorder: 'border-indigo-500/40' }
                     ].map(type => (
                       <button
                         key={type.id}
                         type="button"
                         onClick={() => setNewWebhook({ ...newWebhook, type: type.id as any })}
-                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-200 ${
+                        className={`flex flex-col items-center gap-3 p-5 rounded-3xl border transition-all duration-300 relative group overflow-hidden ${
                           newWebhook.type === type.id 
-                            ? `border-indigo-500/50 ${type.activeBg} ring-1 ring-indigo-500/20` 
-                            : 'border-gray-800 bg-gray-800/20 hover:border-gray-700'
+                            ? `${type.activeBorder} ${type.activeBg} shadow-2xl` 
+                            : 'border-gray-800 bg-gray-900/30 hover:border-gray-700 hover:bg-gray-800/50'
                         }`}
                       >
-                        <type.icon className={`h-6 w-6 ${newWebhook.type === type.id ? type.color : 'text-gray-500'}`} />
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${newWebhook.type === type.id ? 'text-white' : 'text-gray-500'}`}>
+                        {newWebhook.type === type.id && (
+                          <div className="absolute top-0 right-0 p-1.5 bg-indigo-500 rounded-bl-xl text-white">
+                            <CheckCircleIcon className="h-3 w-3" />
+                          </div>
+                        )}
+                        <type.icon className={`h-8 w-8 transition-transform group-hover:scale-110 ${newWebhook.type === type.id ? type.color : 'text-gray-600 grayscale'}`} />
+                        <span className={`text-[10px] font-bold uppercase tracking-widest ${newWebhook.type === type.id ? 'text-white' : 'text-gray-500'}`}>
                           {type.name}
                         </span>
                       </button>
                     ))}
                   </div>
-                  <p className="mt-3 text-[10px] text-gray-500 flex items-center gap-1.5">
-                    <InformationCircleIcon className="h-3.5 w-3.5" />
-                    {newWebhook.type === 'slack' && 'Receive beautifully formatted Block Kit notifications in Slack.'}
-                    {newWebhook.type === 'discord' && 'Send rich embeds to your Discord channels.'}
-                    {newWebhook.type === 'generic' && 'Send standard JSON payloads to your custom API endpoint.'}
-                  </p>
+                  <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl">
+                    <p className="text-[11px] text-gray-500 flex items-center gap-2.5 font-medium leading-relaxed">
+                      <InformationCircleIcon className="h-4 w-4 text-indigo-400 flex-shrink-0" />
+                      {newWebhook.type === 'slack' && 'Payloads will be beautifully formatted for Slack channels using Block Kit embeds.'}
+                      {newWebhook.type === 'discord' && 'Send rich color-coded embeds with metadata directly to your Discord webhooks.'}
+                      {newWebhook.type === 'generic' && 'Standard JSON payloads compatible with any API endpoint. Includes full metadata.'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <ArrowsRightLeftIcon className="h-3 w-3" /> Events to Subscribe
+
+                <div className="space-y-4 pt-2">
+                  <p className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                    <ArrowsRightLeftIcon className="h-3.5 w-3.5 text-indigo-400" /> Event Subscriptions
                   </p>
-                  <div className="space-y-2">
-                    {['asset.uploaded', 'asset.updated', 'asset.deleted', 'asset.restored'].map(ev => (
-                      <label key={ev} className="flex items-center gap-3 p-3 bg-gray-800/40 border border-gray-800 rounded-xl cursor-pointer hover:border-gray-700 transition-colors">
-                        <input 
-                          type="checkbox" 
-                          checked={newWebhook.events.includes(ev)} 
-                          onChange={(e) => {
-                            const events = e.target.checked 
-                              ? [...newWebhook.events, ev]
-                              : newWebhook.events.filter(x => x !== ev);
-                            setNewWebhook({ ...newWebhook, events });
-                          }}
-                          className="h-4 w-4 bg-gray-800 border-gray-700 rounded text-indigo-600 focus:ring-offset-gray-900" 
-                        />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      { id: 'asset.uploaded', label: 'Uploaded', desc: 'When a new asset enters the system' },
+                      { id: 'asset.updated', label: 'Updated', desc: 'When metadata or state changes' },
+                      { id: 'asset.deleted', label: 'Deleted', desc: 'When assets are purged or trashed' },
+                      { id: 'asset.restored', label: 'Restored', desc: 'When assets return from trash' }
+                    ].map(ev => (
+                      <label 
+                        key={ev.id} 
+                        className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-200 group ${
+                          newWebhook.events.includes(ev.id)
+                            ? 'bg-indigo-600/10 border-indigo-500/40 shadow-xl shadow-indigo-500/5'
+                            : 'bg-gray-900/30 border-gray-800 hover:border-gray-700 hover:bg-gray-800/50'
+                        }`}
+                      >
+                        <div className="relative flex items-center mt-0.5">
+                          <input 
+                            type="checkbox" 
+                            checked={newWebhook.events.includes(ev.id)} 
+                            onChange={(e) => {
+                              const events = e.target.checked 
+                                ? [...newWebhook.events, ev.id]
+                                : newWebhook.events.filter(x => x !== ev.id);
+                              setNewWebhook({ ...newWebhook, events });
+                            }}
+                            className="peer h-5 w-5 bg-gray-950 border-gray-800 rounded-lg text-indigo-600 focus:ring-offset-gray-950 transition-all cursor-pointer opacity-0 absolute" 
+                          />
+                          <div className={`h-5 w-5 rounded-lg border flex items-center justify-center transition-all ${
+                            newWebhook.events.includes(ev.id) ? 'bg-indigo-600 border-indigo-500' : 'bg-gray-950 border-gray-700 group-hover:border-gray-500'
+                          }`}>
+                            <CheckCircleIcon className={`h-3.5 w-3.5 text-white transition-opacity ${newWebhook.events.includes(ev.id) ? 'opacity-100' : 'opacity-0'}`} />
+                          </div>
+                        </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-200">{ev}</p>
-                          <p className="text-[10px] text-gray-500">
-                            {ev === 'asset.uploaded' && 'Triggered when a new asset is successfully uploaded.'}
-                            {ev === 'asset.updated' && 'Triggered when metadata or organization of an asset is changed.'}
-                            {ev === 'asset.deleted' && 'Triggered when an asset is soft-deleted or permanently purged.'}
-                            {ev === 'asset.restored' && 'Triggered when an asset is restored from the trash.'}
+                          <p className={`text-xs font-bold leading-none ${newWebhook.events.includes(ev.id) ? 'text-white' : 'text-gray-300'}`}>
+                            {ev.id}
+                          </p>
+                          <p className="text-[10px] text-gray-500 mt-1 font-medium leading-tight line-clamp-1">
+                            {ev.desc}
                           </p>
                         </div>
                       </label>
@@ -376,10 +416,27 @@ export default function WebhooksPage() {
                   </div>
                 </div>
               </div>
-              <div className="p-6 bg-gray-800/30 flex justify-end gap-3 rounded-b-2xl">
-                <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
-                <button type="submit" disabled={submitting} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl shadow-lg active:scale-95 disabled:opacity-50">
-                  {submitting ? 'Creating...' : 'Create Webhook'}
+              <div className="p-8 bg-gray-900/40 border-t border-gray-800/60 flex items-center justify-end gap-5 rounded-b-2xl">
+                <button 
+                  type="button" 
+                  onClick={() => setShowCreate(false)} 
+                  className="text-xs font-bold text-gray-500 hover:text-gray-200 transition-all uppercase tracking-widest"
+                >
+                  Discard Changes
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={submitting} 
+                  className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-bold rounded-2xl shadow-xl shadow-indigo-600/20 active:scale-95 disabled:opacity-50 transition-all flex items-center gap-2 group"
+                >
+                  {submitting ? (
+                    <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Register Webhook</span>
+                      <ArrowsRightLeftIcon className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                    </>
+                  )}
                 </button>
               </div>
             </form>

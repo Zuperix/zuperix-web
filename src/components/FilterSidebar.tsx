@@ -142,6 +142,7 @@ interface FilterSidebarProps {
   activeFilters: Record<string, any>;
   onFilterChange: (keyOrUpdates: string | Record<string, any>, value?: any) => void;
   onClearAll: () => void;
+  disabled?: boolean;
 }
 
 function DateRangePicker({ 
@@ -170,7 +171,13 @@ function DateRangePicker({
   return (
     <div className="space-y-4 px-1 pt-1">
       <div className="flex flex-col gap-3">
-        <div className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all">
+        <div 
+          onClick={(e) => {
+            const input = e.currentTarget.querySelector('input');
+            if (input) (input as any).showPicker?.();
+          }}
+          className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all cursor-pointer"
+        >
           <CalendarIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
           <div className="flex-1 flex flex-col min-w-0">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">From</span>
@@ -186,8 +193,14 @@ function DateRangePicker({
           </div>
         </div>
 
-        <div className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all">
-          <ClockIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
+        <div 
+          onClick={(e) => {
+            const input = e.currentTarget.querySelector('input');
+            if (input) (input as any).showPicker?.();
+          }}
+          className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all cursor-pointer"
+        >
+          <CalendarIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
           <div className="flex-1 flex flex-col min-w-0">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">To</span>
             <input 
@@ -304,7 +317,7 @@ function RangeSlider({
   );
 }
 
-export default function FilterSidebar({ filters, activeFilters, onFilterChange, onClearAll }: FilterSidebarProps) {
+export default function FilterSidebar({ filters, activeFilters, onFilterChange, onClearAll, disabled = false }: FilterSidebarProps) {
   const { isFilterOpen, setIsFilterOpen } = useLayout();
   // ... rest of component
   const filterConfig: Record<string, { label: string; icon: any }> = {
@@ -406,6 +419,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
         fixed inset-y-0 right-0 z-50 w-80 max-w-[90%] bg-white dark:bg-[#0f111a] border-l border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0 lg:w-72 lg:border-r lg:border-l-0 lg:z-0 lg:flex
         ${isFilterOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        ${disabled ? 'pointer-events-none opacity-60' : ''}
         flex flex-col h-full overflow-hidden shrink-0 shadow-2xl lg:shadow-none
       `}>
         <div className="flex flex-col h-full overflow-y-auto px-5 py-6 space-y-6">
@@ -422,6 +436,8 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
               </div>
               {hasActiveFilters && (
                 <button 
+                  type="button"
+                  disabled={disabled}
                   onClick={clearAll}
                   className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                 >
