@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, DragEvent } from 'react';
+import { useState, useRef, useCallback, DragEvent, useEffect } from 'react';
 import {
   XMarkIcon,
   CloudArrowUpIcon,
@@ -10,8 +10,17 @@ import {
   DocumentIcon,
   PhotoIcon,
   VideoCameraIcon,
+  FolderIcon,
+  MagnifyingGlassIcon,
+  TagIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ArrowTopRightOnSquareIcon,
+  CubeTransparentIcon,
 } from '@heroicons/react/24/outline';
 import { BASE_URL } from '@/lib/api';
+import { useCategories, Category } from '@/hooks/useCategories';
+import { useMetadataFields, MetadataField } from '@/hooks/useMetadataFields';
 
 const CONCURRENCY = 5;
 const MAX_FILES = 500;
@@ -35,6 +44,7 @@ interface FileEntry {
 function fileIcon(file: File) {
   if (file.type.startsWith('image/')) return PhotoIcon;
   if (file.type.startsWith('video/')) return VideoCameraIcon;
+  if (file.name.endsWith('.glb') || file.name.endsWith('.gltf')) return CubeTransparentIcon;
   return DocumentIcon;
 }
 
@@ -51,13 +61,23 @@ function uploadFileXHR(
   workspaceId: string,
   token: string | null,
   onProgress: (pct: number) => void,
-  force: boolean = false
+  categoryIds: string[] = [],
+  force: boolean = false,
+  metadata: Record<string, any> = {}
 ): Promise<void | { id: string; original_name: string }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
     formData.append('file', file);
     formData.append('workspace_id', workspaceId);
+    
+    if (categoryIds.length > 0) {
+      categoryIds.forEach(id => formData.append('category_ids[]', id));
+    }
+
+    if (Object.keys(metadata).length > 0) {
+      formData.append('metadata', JSON.stringify(metadata));
+    }
 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -85,7 +105,7 @@ function uploadFileXHR(
     xhr.ontimeout = () => reject(new Error('Request timed out'));
     xhr.timeout = 120_000;
 
-    xhr.open('POST', `http://localhost:3000/api/v1/assets/upload${force ? '?force=true' : ''}`);
+    xhr.open('POST', `${BASE_URL}/assets/upload?workspace_id=${workspaceId}${force ? '&force=true' : ''}`);
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.send(formData);
   });
@@ -121,6 +141,16 @@ export default function UploadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
 
+  // Category selection state
+  const { categories } = useCategories();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+
+  // Metadata state
+  const { fields: metadataFields } = useMetadataFields(workspaceId);
+  const [initialMetadata, setInitialMetadata] = useState<Record<string, any>>({});
+  const [showMetadata, setShowMetadata] = useState(false);
+  const [metadataSearch, setMetadataSearch] = useState('');
+
   const addFiles = useCallback((files: FileList | File[]) => {
     const arr = Array.from(files).slice(0, MAX_FILES - entries.length);
     const valid = arr.filter((f) => {
@@ -155,6 +185,8 @@ export default function UploadModal({
     const pending = entries.filter((e) => e.status === 'pending' || e.status === 'error' || (e.status === 'duplicate' && e.force));
     let i = 0;
 
+    const categoryIds = selectedCategoryId ? [selectedCategoryId] : [];
+
     const next = async (): Promise<void> => {
       if (abortRef.current) return;
       const entry = pending[i++];
@@ -165,7 +197,7 @@ export default function UploadModal({
       try {
         await uploadFileXHR(entry.file, workspaceId, token, (pct) => {
           updateEntry(entry.id, { progress: pct });
-        }, entry.force);
+        }, categoryIds, entry.force, initialMetadata);
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: any) {
         if (err instanceof DuplicateError) {
@@ -227,6 +259,20 @@ export default function UploadModal({
             counts.total,
         );
 
+  // Helper to flatten categories for the select dropdown
+  const flattenCategories = (cats: Category[], depth = 0): { id: string, name: string, depth: number }[] => {
+    let result: { id: string, name: string, depth: number }[] = [];
+    cats.forEach(cat => {
+      result.push({ id: cat.id, name: cat.name, depth });
+      if (cat.children && cat.children.length > 0) {
+        result = result.concat(flattenCategories(cat.children, depth + 1));
+      }
+    });
+    return result;
+  };
+
+  const flatCategories = flattenCategories(categories);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm">
       <div className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-all">
@@ -240,6 +286,125 @@ export default function UploadModal({
             <XMarkIcon className="h-5 w-5 text-gray-500" />
           </button>
         </div>
+
+        {/* Category Selector */}
+        <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/20 border-b dark:border-gray-800 flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Target Category</label>
+              <div className="relative">
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value)}
+                  disabled={running}
+                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none disabled:opacity-50"
+                >
+                  <option value="">Default (Global Workspace)</option>
+                  {flatCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {'\u00A0'.repeat(cat.depth * 3)}{cat.name}
+                    </option>
+                  ))}
+                </select>
+                <FolderIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Metadata Toggle & Fields */}
+        {metadataFields.length > 0 && (
+          <div className="flex-shrink-0 border-b dark:border-gray-800">
+            <button
+              onClick={() => setShowMetadata(!showMetadata)}
+              className="w-full px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <TagIcon className={`h-4 w-4 ${showMetadata ? 'text-blue-500' : 'text-gray-400'}`} />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Initial Metadata (Apply to all)
+                </span>
+                {Object.keys(initialMetadata).length > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] font-bold rounded-md">
+                    {Object.keys(initialMetadata).length} fields set
+                  </span>
+                )}
+              </div>
+              {showMetadata ? (
+                <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              )}
+            </button>
+
+            {showMetadata && (
+              <div className="px-6 pb-6 bg-gray-50/30 dark:bg-gray-900/40 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* Search Fields */}
+                {metadataFields.length > 6 && (
+                  <div className="relative mb-4">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Search metadata fields..."
+                      value={metadataSearch}
+                      onChange={(e) => setMetadataSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-1.5 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-[11px] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 max-h-[300px] overflow-y-auto px-1 pt-1 custom-scrollbar">
+                  {metadataFields
+                    .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase()))
+                    .map((field) => (
+                    <div key={field.id} className="space-y-1 group">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide group-focus-within:text-blue-500 transition-colors truncate">
+                          {field.label}
+                        </label>
+                        <span className="text-[8px] font-medium text-gray-600 dark:text-gray-500 uppercase tracking-tighter">
+                          {field.field_type}
+                        </span>
+                      </div>
+                      
+                      {field.field_type === 'boolean' ? (
+                        <div className="flex items-center h-9 px-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl">
+                          <label className="flex items-center gap-2 cursor-pointer w-full">
+                            <input
+                              type="checkbox"
+                              checked={initialMetadata[field.key] || false}
+                              onChange={(e) => setInitialMetadata(prev => ({ ...prev, [field.key]: e.target.checked }))}
+                              className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 transition-all"
+                            />
+                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Enabled</span>
+                          </label>
+                        </div>
+                      ) : (
+                        <input
+                          type={field.field_type === 'integer' || field.field_type === 'float' ? 'number' : 'text'}
+                          value={initialMetadata[field.key] || ''}
+                          onChange={(e) => setInitialMetadata(prev => ({ ...prev, [field.key]: e.target.value }))}
+                          placeholder={`Enter ${field.label.toLowerCase()}...`}
+                          className="w-full px-3 py-2 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-gray-600"
+                        />
+                      )}
+                    </div>
+                  ))}
+                  {metadataFields.filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
+                    <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
+                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching "{metadataSearch}"</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Summary bar */}
         {counts.total > 0 && (
@@ -287,13 +452,13 @@ export default function UploadModal({
                 {dragging ? 'Drop files here' : 'Click or drag & drop files'}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {entries.length > 0 ? `${entries.length} selected · Add more` : `Images, Videos, PDFs up to ${MAX_FILE_SIZE_MB} MB each`}
+                {entries.length > 0 ? `${entries.length} selected · Add more` : `Images, Videos, 3D Models, PDFs up to ${MAX_FILE_SIZE_MB} MB each`}
               </p>
               <input
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.svg"
+                accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.svg,.glb,.gltf"
                 className="hidden"
                 onChange={(e) => e.target.files && addFiles(e.target.files)}
               />
@@ -400,6 +565,16 @@ export default function UploadModal({
                               >
                                 Skip and upload anyway
                               </button>
+                              <span className="text-gray-300 dark:text-gray-700">|</span>
+                              <a
+                                href={`/dashboard/assets/${entry.duplicateAsset.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-[10px] font-extrabold text-amber-600 dark:text-amber-500 hover:text-amber-700 underline uppercase tracking-widest"
+                              >
+                                <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                                View in Library
+                              </a>
                             </div>
                           )}
                         </div>

@@ -73,13 +73,15 @@ export default function NotificationCenter() {
   };
 
   const handleNotificationClick = async (n: Notification) => {
+    console.log('Notification clicked:', n);
     if (!n.is_read) {
       markAsRead(n.id);
     }
     setIsOpen(false);
 
-    if (n.data?.assetId) {
-      router.push(`/dashboard/assets/${n.data.assetId}`);
+    const assetId = n.data?.assetId || n.data?.asset_id;
+    if (assetId) {
+      router.push(`/dashboard/assets/${assetId}`);
     }
   };
 

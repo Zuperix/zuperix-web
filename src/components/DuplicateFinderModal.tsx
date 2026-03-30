@@ -6,7 +6,7 @@ import {
   TrashIcon, 
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  SparklesIcon,
+  CpuChipIcon,
   PhotoIcon,
   DocumentIcon
 } from '@heroicons/react/24/outline';
@@ -82,7 +82,7 @@ export default function DuplicateFinderModal({
         <div className="flex items-center justify-between px-6 py-5 border-b dark:border-gray-800 flex-shrink-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-              <SparklesIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <CpuChipIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <h2 className="text-xl font-bold dark:text-white">Workspace Duplicate Scanner</h2>

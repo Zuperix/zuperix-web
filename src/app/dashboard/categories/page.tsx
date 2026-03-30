@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCategories, Category } from '@/hooks/useCategories';
+import { apiFetch } from '@/lib/api';
 import { 
   PlusIcon, 
   TagIcon, 
@@ -13,18 +14,27 @@ import {
   FolderOpenIcon,
   ArrowRightIcon,
   CheckIcon,
-  XMarkIcon
+  XMarkIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
+import SmartFilterBuilder from '@/components/SmartFilterBuilder';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 
 export default function CategoriesPage() {
-  const { categories, createCategory, deleteCategory, refresh } = useCategories();
+  const { categories, updateCategory, deleteCategory, refresh } = useCategories();
   const { activeWorkspace } = useWorkspace();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isAddingTo, setIsAddingTo] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
+  const [isSmart, setIsSmart] = useState(false);
+  const [smartFilter, setSmartFilter] = useState<any>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const toggleExpand = (id: string) => {
     const next = new Set(expandedIds);
@@ -36,10 +46,23 @@ export default function CategoriesPage() {
   const handleCreate = async (parentId?: string) => {
     if (!newName.trim()) return;
     try {
-      await createCategory(newName, parentId);
+      await apiFetch('/categories', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newName,
+          parent_id: parentId === 'root' ? undefined : parentId,
+          workspace_id: activeWorkspace?.id,
+          customer_id: (activeWorkspace as any).customer_id,
+          is_smart: isSmart,
+          smart_filter: isSmart ? smartFilter : null,
+        }),
+      });
       setNewName('');
+      setIsSmart(false);
+      setSmartFilter({});
       setIsAddingTo(null);
-      if (parentId) {
+      refresh();
+      if (parentId && parentId !== 'root') {
         setExpandedIds(prev => new Set(prev).add(parentId));
       }
     } catch (err) {
@@ -47,12 +70,45 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure? This will delete the category and all its children.')) return;
+  const handleUpdate = async (id: string) => {
     try {
-      await deleteCategory(id);
+      await updateCategory(id, {
+        name: newName,
+        is_smart: isSmart,
+        smart_filter: isSmart ? smartFilter : null,
+      });
+      setEditingId(null);
+      setNewName('');
+      setIsSmart(false);
+      setSmartFilter({});
+    } catch (err) {
+      console.error('Failed to update category');
+    }
+  };
+
+  const startEdit = (cat: Category) => {
+    setEditingId(cat.id);
+    setNewName(cat.name);
+    setIsSmart(cat.is_smart);
+    setSmartFilter(cat.smart_filter || {});
+  };
+
+  const handleDeleteRequest = (cat: Category) => {
+    setCategoryToDelete(cat);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!categoryToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteCategory(categoryToDelete.id);
+      setIsDeleteModalOpen(false);
+      setCategoryToDelete(null);
     } catch (err) {
       console.error('Failed to delete category');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -102,9 +158,20 @@ export default function CategoriesPage() {
               </button>
             </PermissionGate>
             {cat.name !== 'Global' && (
+              <PermissionGate action={Action.Update} subject="Category" workspaceId={activeWorkspace?.id}>
+              <button 
+                onClick={() => startEdit(cat)}
+                className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all"
+                title="Edit"
+              >
+                <PencilSquareIcon className="h-4 w-4" />
+              </button>
+            </PermissionGate>
+            )}
+            {cat.name !== 'Global' && (
               <PermissionGate action={Action.Delete} subject="Category" workspaceId={activeWorkspace?.id}>
                 <button 
-                  onClick={() => handleDelete(cat.id)}
+                  onClick={() => handleDeleteRequest(cat)}
                   className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-xl transition-all"
                   title="Delete"
                 >
@@ -114,6 +181,60 @@ export default function CategoriesPage() {
             )}
           </div>
         </div>
+
+        {editingId === cat.id && (
+          <div className="p-6 bg-gray-900/60 border border-blue-500/30 rounded-3xl mt-2 space-y-4 animate-in zoom-in-95 duration-200" style={{ marginLeft: `${depth * 24}px` }}>
+            <div className="space-y-4">
+              <input 
+                autoFocus
+                type="text"
+                placeholder="Category Name"
+                className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-3 text-sm text-white focus:border-blue-500 outline-none transition-all shadow-inner"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+              />
+              
+              <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className={`p-2 rounded-lg transition-all ${isSmart ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-gray-700 text-gray-400 group-hover:bg-gray-600'}`}>
+                    <BoltIcon className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-white tracking-tight">Smart Category</p>
+                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Automatically associate assets via rules</p>
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    checked={isSmart} 
+                    onChange={e => setIsSmart(e.target.checked)} 
+                    className="h-5 w-5 rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500/20"
+                  />
+                </label>
+                
+                {isSmart && (
+                  <div className="mt-4 pt-4 border-t border-gray-700 animate-in slide-in-from-top-2 duration-300">
+                    <SmartFilterBuilder filter={smartFilter} onChange={setSmartFilter} />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => handleUpdate(cat.id)}
+                  className="flex-[2] py-3 bg-blue-600 text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                >
+                  Save Changes
+                </button>
+                <button 
+                  onClick={() => { setEditingId(null); setNewName(''); setIsSmart(false); setSmartFilter({}); }}
+                  className="flex-1 py-3 bg-gray-800 text-gray-400 hover:text-white rounded-2xl text-xs font-bold uppercase tracking-widest transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {isAddingTo === cat.id && (
           <div 
@@ -219,6 +340,16 @@ export default function CategoriesPage() {
           </p>
         </div>
       </footer>
+
+      <DeleteConfirmationModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => { setIsDeleteModalOpen(false); setCategoryToDelete(null); }}
+        onConfirm={confirmDelete}
+        title="Delete Category"
+        message={`Are you sure you want to delete "${categoryToDelete?.name}"? All sub-categories and their associations will be removed. This action cannot be undone.`}
+        confirmText="Delete Category"
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

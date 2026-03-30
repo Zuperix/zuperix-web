@@ -1,6 +1,6 @@
 'use client';
 
-import { MagnifyingGlassIcon, Bars3Icon, BellIcon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, Bars3Icon, BellIcon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -21,6 +21,7 @@ export default function Header() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [isSemantic, setIsSemantic] = useState(false);
+  const [showSearchInfo, setShowSearchInfo] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -190,13 +191,44 @@ export default function Header() {
                   <div className={`h-1.5 w-1.5 rounded-full ${isSemantic ? 'bg-blue-500 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'}`} />
                   <span className="text-[10px] font-bold tracking-tight uppercase">AI</span>
                 </button>
-                <div 
-                  className="group relative"
-                  title="Natural language search aka AI search uses CLIP embeddings to find assets based on visual concepts rather than just keywords. AI can make mistakes, please verify results."
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-gray-400 hover:text-blue-500 cursor-help transition-colors">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-                  </svg>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSearchInfo(!showSearchInfo);
+                    }}
+                    onBlur={() => setTimeout(() => setShowSearchInfo(false), 200)}
+                    className="p-1 rounded-md text-gray-400 hover:text-blue-500 hover:bg-blue-500/5 transition-all"
+                    aria-label="AI Search Information"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                    </svg>
+                  </button>
+
+                  {showSearchInfo && (
+                    <div className="absolute top-full right-0 mt-3 w-72 p-4 bg-gray-900/95 backdrop-blur-md border border-gray-700/50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[60] animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                          <SparklesIcon className="h-4 w-4 text-blue-500" />
+                        </div>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">About AI Search</span>
+                      </div>
+                      <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
+                        Natural language search (Semantic Search) uses CLIP embeddings to find assets based on <span className="text-blue-400">visual concepts</span> rather than just keywords. 
+                        AI analysis can occasionally vary, so please verify results for critical workflows.
+                      </p>
+                      <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between">
+                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Powered by OpenDAM AI</span>
+                        <div className="flex gap-1">
+                          <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
+                          <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse delay-75" />
+                          <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse delay-150" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -250,6 +282,11 @@ export default function Header() {
                             OCR
                           </span>
                         )}
+                        {asset.is_text_extraction_match && (
+                          <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-[8px] font-extrabold uppercase rounded tracking-tighter shrink-0 ring-1 ring-purple-500/20">
+                            Text Match
+                          </span>
+                        )}
                       </div>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider mt-0.5">
                         {(asset.mime_type || 'file').split('/')[1]} • {formatSize(asset.size)}
@@ -297,8 +334,14 @@ export default function Header() {
             <span className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-none">
               {user?.name || 'User'}
             </span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
-              Admin
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium capitalize">
+              {(() => {
+                if (user?.system_role === 'SUPER_ADMIN') return 'Super Admin';
+                const membership = user?.workspace_members?.find(
+                  (m) => m.workspace_id === activeWorkspace?.id
+                );
+                return membership?.role?.name?.toLowerCase() || 'Member';
+              })()}
             </span>
           </div>
         </button>

@@ -22,6 +22,10 @@ import Link from 'next/link';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DraggableAsset, DroppablePortalAssets } from '@/components/portals/DndComponents';
+import Builder from '@/components/portals/builder/Builder';
+import { useBuilderStore } from '@/stores/builderStore';
+import { PermissionGate } from '@/components/PermissionGate';
+import { Action } from '@/types/auth';
 
 import { toast } from 'sonner';
 
@@ -37,8 +41,9 @@ export default function PortalDetailPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [isSearchingOpen, setIsSearchingOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'assets' | 'design'>('assets');
+  const [activeTab, setActiveTab] = useState<'assets' | 'builder'>('builder');
   const [isSaving, setIsSaving] = useState(false);
+  const { setWidgets, widgets, portalConfig, setPortalConfig } = useBuilderStore();
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -49,7 +54,15 @@ export default function PortalDetailPage() {
         getPortalAssets(id as string)
       ]);
       setPortal(p);
+      setWidgets(p.settings?.layout || []);
+      setPortalConfig({ 
+        background_color: p.background_color || '#fafafa',
+        expires_at: p.expires_at
+      });
       setPortalAssets(assetsData.assets || []);
+      useBuilderStore.getState().setPortalAssets(assetsData.assets || []);
+      useBuilderStore.getState().setPortalCategories(assetsData.categories || []);
+      useBuilderStore.getState().setPortalCollections(assetsData.collections || []);
     } catch (err) {
       console.error('Failed to load portal detail:', err);
     } finally {
@@ -84,17 +97,21 @@ export default function PortalDetailPage() {
     }
   };
 
-  const handleUpdatePortal = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+  const handleUpdatePortal = async (e?: React.FormEvent<HTMLFormElement>) => {
+    if (e) e.preventDefault();
+    
+    // Use getState() to ensure we have the absolute latest state from the store
+    // This prevents potential race conditions or stale closures during save
+    const currentWidgets = useBuilderStore.getState().widgets;
+    const currentConfig = useBuilderStore.getState().portalConfig;
+    
     const updates = {
-      welcome_title: formData.get('welcome_title') as string,
-      description: formData.get('description') as string,
-      cta_text: formData.get('cta_text') as string,
-      cta_url: formData.get('cta_url') as string,
-      banner_image_url: formData.get('banner_image_url') as string,
-      background_color: formData.get('background_color') as string,
-      cta_button_color: formData.get('cta_button_color') as string,
+      background_color: currentConfig?.background_color,
+      expires_at: currentConfig?.expires_at,
+      settings: {
+        ...(portal?.settings || {}),
+        layout: currentWidgets
+      }
     };
 
     try {
@@ -196,32 +213,54 @@ function PortalDetailContent({
           </div>
         </div>
         
-        <button 
-          onClick={() => setIsSearchingOpen(true)}
-          className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Add Assets
-        </button>
+        <PermissionGate action={Action.Update} subject="Portal" workspaceId={activeWorkspace?.id}>
+          <button 
+            onClick={() => setIsSearchingOpen(true)}
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Add Assets
+          </button>
+        </PermissionGate>
       </header>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-8 border-b border-gray-800">
-        <button 
-          onClick={() => setActiveTab('assets')}
-          className={`pb-4 text-xs font-bold uppercase tracking-[0.2em] transition-all relative ${activeTab === 'assets' ? 'text-blue-500' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-          Assets
-          {activeTab === 'assets' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />}
-        </button>
-        <button 
-          onClick={() => setActiveTab('design')}
-          className={`pb-4 text-xs font-bold uppercase tracking-[0.2em] transition-all relative ${activeTab === 'design' ? 'text-blue-500' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-          Design & Customization
-          {activeTab === 'design' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />}
-        </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+        <div className="flex items-center gap-8">
+          <button 
+            onClick={() => setActiveTab('builder')}
+            className={`pb-4 text-xs font-bold uppercase tracking-[0.2em] transition-all relative ${activeTab === 'builder' ? 'text-blue-500' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            Page Builder
+            {activeTab === 'builder' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />}
+          </button>
+          <button 
+            onClick={() => setActiveTab('assets')}
+            className={`pb-4 text-xs font-bold uppercase tracking-[0.2em] transition-all relative ${activeTab === 'assets' ? 'text-blue-500' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            Raw Assets
+            {activeTab === 'assets' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-full" />}
+          </button>
+        </div>
+
+        {activeTab === 'builder' && (
+          <PermissionGate action={Action.Update} subject="Portal" workspaceId={activeWorkspace?.id}>
+            <button 
+              onClick={() => handleUpdatePortal()}
+              disabled={isSaving}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95 mb-4 sm:mb-0"
+            >
+              {isSaving ? 'Saving...' : 'Save Layout'}
+              {!isSaving && <CheckIcon className="h-4 w-4" />}
+            </button>
+          </PermissionGate>
+        )}
       </div>
+
+      {activeTab === 'builder' && (
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 -mt-6">
+           <Builder />
+        </section>
+      )}
 
       {activeTab === 'assets' && (
         <section className="space-y-6">
@@ -235,137 +274,6 @@ function PortalDetailContent({
             onDrop={handleAddAsset} 
             onOpenSearch={() => setIsSearchingOpen(true)} 
           />
-        </section>
-      )}
-
-      {activeTab === 'design' && (
-        <section className="animate-in fade-in slide-in-from-right-4 duration-500">
-          <form onSubmit={handleUpdatePortal} className="max-w-4xl space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-6">
-                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 decoration-blue-500/30 underline underline-offset-8">Header & Content</h3>
-                
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Welcome Title</label>
-                  <input 
-                    name="welcome_title"
-                    defaultValue={portal.welcome_title || ''}
-                    placeholder="e.g., Brand Assets Portal"
-                    className="w-full bg-gray-900/50 border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-700"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Portal Description</label>
-                  <textarea 
-                    name="description"
-                    rows={4}
-                    defaultValue={portal.description || ''}
-                    placeholder="Describe the purpose of this portal..."
-                    className="w-full bg-gray-900/50 border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-700 resize-none"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 decoration-blue-500/30 underline underline-offset-8">Call to Action</h3>
-                
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">CTA Button Text</label>
-                  <input 
-                    name="cta_text"
-                    defaultValue={portal.cta_text || ''}
-                    placeholder="e.g., Contact Support"
-                    className="w-full bg-gray-900/50 border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-700"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">CTA Button URL</label>
-                  <input 
-                    name="cta_url"
-                    defaultValue={portal.cta_url || ''}
-                    placeholder="https://..."
-                    className="w-full bg-gray-900/50 border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-700"
-                  />
-                </div>
-
-                {/* CTA Button Color */}
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">CTA Button Color (HEX)</label>
-                  <div className="flex gap-4">
-                    <input 
-                      type="color"
-                      className="h-12 w-12 bg-gray-900 border border-gray-800 rounded-xl cursor-pointer"
-                      value={portal.cta_button_color || '#3b82f6'}
-                      onChange={(e) => {
-                        const input = e.target.form?.elements.namedItem('cta_button_color') as HTMLInputElement;
-                        if (input) input.value = e.target.value;
-                      }}
-                    />
-                    <input 
-                      name="cta_button_color"
-                      defaultValue={portal.cta_button_color || '#3b82f6'}
-                      placeholder="#3b82f6"
-                      className="flex-1 bg-gray-900/50 border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-700 font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-4">
-              <div className="space-y-6">
-                <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-500 decoration-blue-500/30 underline underline-offset-8">Aesthetics</h3>
-                
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Banner Image URL</label>
-                  <input 
-                    name="banner_image_url"
-                    defaultValue={portal.banner_image_url || ''}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full bg-gray-900/50 border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-700"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-500">Background Color (HEX)</label>
-                  <div className="flex gap-4">
-                    <input 
-                      type="color"
-                      className="h-12 w-12 bg-gray-900 border border-gray-800 rounded-xl cursor-pointer"
-                      value={portal.background_color || '#000000'}
-                      onChange={(e) => {
-                        const input = e.target.form?.elements.namedItem('background_color') as HTMLInputElement;
-                        if (input) input.value = e.target.value;
-                      }}
-                    />
-                    <input 
-                      name="background_color"
-                      defaultValue={portal.background_color || '#000000'}
-                      placeholder="#000000"
-                      className="flex-1 bg-gray-900/50 border border-gray-800 rounded-2xl px-5 py-3.5 text-sm text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-700 font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-end pb-1">
-                 <button 
-                  disabled={isSaving}
-                  type="submit"
-                  className="w-full h-14 bg-white hover:bg-blue-50 text-black rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-white/5 disabled:opacity-50 disabled:cursor-not-allowed group active:translate-y-1"
-                >
-                  {isSaving ? 'Synchronizing Changes...' : (
-                    <span className="flex items-center justify-center gap-2">
-                       Apply Customizations
-                       <CheckIcon className="h-4 w-4 text-blue-600 group-hover:scale-125 transition-transform" />
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
-          </form>
         </section>
       )}
 

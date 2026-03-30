@@ -1,0 +1,48 @@
+import { test, expect } from '@playwright/test';
+import fs from 'fs';
+import { expectShowing } from './helpers';
+
+test.describe.configure({ mode: 'serial' });
+
+test('upload and delete asset (cleanup)', async ({ page }, testInfo) => {
+  await page.goto('/dashboard');
+
+  await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
+
+  const fileName = `e2e-upload-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`;
+  const filePath = testInfo.outputPath(fileName);
+  fs.writeFileSync(filePath, 'e2e upload test');
+
+  await page.getByRole('button', { name: /^Upload$/i }).click();
+  const modalHeader = page.getByText('Bulk Upload');
+  await expect(modalHeader).toBeVisible();
+  const modal = page
+    .getByRole('heading', { name: /Bulk Upload/i })
+    .locator('xpath=ancestor::div[contains(@class, "fixed")][1]');
+
+  await page.setInputFiles('input[type="file"]', filePath);
+  await expect(modal.getByText(fileName, { exact: true })).toBeVisible();
+
+  await modal.getByRole('button', { name: /^Upload \d+ file(s)?$/i }).click();
+  await expect(modal.getByText(/1\s*\/\s*1 complete/i)).toBeVisible({ timeout: 20000 });
+
+  await modal.getByRole('button', { name: /Close|Cancel/i }).click();
+  await expect(modal).toBeHidden();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
+
+
+  await expectShowing(page, 20, 536);
+
+  const assetTitle = page.getByRole('heading', { level: 3 }).first();
+  await expect(assetTitle).toHaveText(/^e2e-upload-/i, { timeout: 20000 });
+  const card = assetTitle.locator('xpath=ancestor::div[contains(@class, "cursor-pointer")][1]');
+
+  await card.getByRole('button', { name: /Delete/i }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /Delete permanently/i }).click();
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
+  await expectShowing(page, 20, 535);
+
+});

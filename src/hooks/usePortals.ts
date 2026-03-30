@@ -14,6 +14,7 @@ export interface Portal {
   cta_url?: string;
   banner_image_url?: string;
   background_color?: string;
+  expires_at?: string;
   settings?: any;
   created_at: string;
 }

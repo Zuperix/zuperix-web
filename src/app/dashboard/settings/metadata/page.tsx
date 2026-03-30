@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { BulkImport } from './BulkImport';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 
 type Field = { 
   id: string; 
@@ -66,6 +67,8 @@ export default function MetadataManagementPage() {
 
   const [activeTab, setActiveTab] = useState<'fields' | 'bulk'>('fields');
   const [showReindexWarning, setShowReindexWarning] = useState(false);
+  const [fieldToDelete, setFieldToDelete] = useState<Field | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchFields = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -165,17 +168,25 @@ export default function MetadataManagementPage() {
     setShowReindexWarning(false);
   };
 
-  const handleDelete = async (fieldId: string) => {
-    if (!activeWorkspace || !confirm('Are you sure you want to delete this field? This will remove all associated data from assets.')) return;
+  const handleDelete = (field: Field) => {
+    setFieldToDelete(field);
+  };
+
+  const confirmDelete = async () => {
+    if (!activeWorkspace || !fieldToDelete) return;
     
+    setIsDeleting(true);
     try {
-      await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields/${fieldId}`, {
+      await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields/${fieldToDelete.id}`, {
         method: 'DELETE',
       });
       setSuccess('Field deleted');
+      setFieldToDelete(null);
       fetchFields();
     } catch (err: any) {
       setError('Failed to delete field');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -453,7 +464,7 @@ export default function MetadataManagementPage() {
 
                     <PermissionGate action={Action.Delete} subject="MetadataField" workspaceId={activeWorkspace.id}>
                       <button 
-                        onClick={() => handleDelete(field.id)}
+                        onClick={() => handleDelete(field)}
                         className="p-2.5 text-gray-600 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
                         title="Delete Field"
                       >
@@ -468,6 +479,16 @@ export default function MetadataManagementPage() {
         </div>
       </div>
       )}
+      
+      <DeleteConfirmationModal
+        isOpen={!!fieldToDelete}
+        onClose={() => setFieldToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Field"
+        message={`Are you sure you want to delete "${fieldToDelete?.label}"? This will remove all associated data from assets.`}
+        confirmText="Delete Field"
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }

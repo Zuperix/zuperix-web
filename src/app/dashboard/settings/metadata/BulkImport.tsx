@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiDownload } from '@/lib/api';
 import { 
   CloudArrowUpIcon, 
   DocumentArrowDownIcon, 
@@ -24,13 +24,7 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'}/workspaces/${workspaceId}/metadata/bulk/template`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      const blob = await response.blob();
+      const blob = await apiDownload(`/workspaces/${workspaceId}/metadata/bulk/template`);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -39,8 +33,8 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
-    } catch (err) {
-      setError('Failed to download template');
+    } catch (err: any) {
+      setError(err.message || 'Failed to download template');
     }
   };
 
@@ -68,25 +62,19 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Using fetch directly because apiFetch might not handle FormData correctly depending on its implementation
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'}/workspaces/${workspaceId}/metadata/bulk/csv`, {
+      // Using apiFetch which correctly handles auth_token and FormData
+      const result = await apiFetch<any>(`/workspaces/${workspaceId}/metadata/bulk/csv`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
         body: formData,
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to upload CSV');
-      }
-
-      setSuccess({ jobId: result.data.job_id });
+      // apiFetch automatically unwraps the 'data' envelope
+      setSuccess({ jobId: result.job_id });
       setFile(null);
+      toast.success('Bulk import started');
     } catch (err: any) {
       setError(err.message || 'Failed to upload CSV');
+      toast.error(err.message || 'Failed to upload CSV');
     } finally {
       setUploading(false);
     }
@@ -162,43 +150,6 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
         </div>
       </div>
 
-      <div className="bg-gray-900/40 border border-gray-800 rounded-3xl p-8 hover:bg-gray-900/60 transition-all group">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 bg-purple-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-              <ArrowPathIcon className="h-6 w-6 text-purple-400" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-white">System Sync</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Ensure all asset data is correctly indexed and searchable.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={async () => {
-              if (!confirm('This will refresh the entire search index for this workspace. It may take a few minutes for thousands of assets. Continue?')) return;
-              try {
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'}/workspaces/${workspaceId}/search/reindex`, {
-                  method: 'POST',
-                  headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                });
-                toast.success('Sync started in the background.');
-              } catch (err) {
-                toast.error('Failed to start sync.');
-              }
-            }}
-            className="flex items-center gap-2 px-6 py-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 border border-purple-500/30 rounded-xl font-bold transition-all"
-          >
-            <ArrowPathIcon className="h-5 w-5" />
-            Sync Search Index
-          </button>
-        </div>
-        <div className="p-4 bg-purple-500/5 border border-purple-500/10 rounded-2xl flex gap-4 text-xs text-purple-300/70">
-          <InformationCircleIcon className="h-5 w-5 shrink-0" />
-          <p>This is recommended after large manual database updates or when you notice search results are out of sync with your metadata.</p>
-        </div>
-      </div>
 
       {error && (
         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 text-red-400 text-sm animate-in slide-in-from-top duration-300">

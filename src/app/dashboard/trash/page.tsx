@@ -25,7 +25,7 @@ export default function TrashPage() {
       // For now, let's assume the list assets endpoint supports a include_deleted or similar,
       // or we use a separate endpoint if we implemented one.
       // In the implementation plan, we added soft deletes.
-      const data = await apiFetch(`/assets?workspace_id=${activeWorkspace.id}&deleted=true`);
+      const data = await apiFetch<any[]>(`/assets?workspace_id=${activeWorkspace.id}&deleted=true`);
       setAssets(data);
     } catch (err) {
       console.error('Failed to fetch trash:', err);
@@ -79,7 +79,7 @@ export default function TrashPage() {
               assets={assets} 
               onDelete={(id) => {/* Handle permanent delete */}} 
               onSelect={(id) => setSelectedAssetId(id === selectedAssetId ? null : id)}
-              selectedId={selectedAssetId || undefined}
+              selectedIds={selectedAssetId ? [selectedAssetId] : []}
             />
           )}
         </div>

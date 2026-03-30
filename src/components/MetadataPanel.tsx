@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, BASE_URL } from '@/lib/api';
 import { components } from '@/types/api';
 import { 
   XMarkIcon, 
@@ -12,7 +12,10 @@ import {
   DocumentDuplicateIcon,
   PhotoIcon,
   VideoCameraIcon,
-  DocumentIcon
+  DocumentIcon,
+  InboxIcon,
+  QueueListIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 
 type Field = components['schemas']['CreateMetadataFieldDto'] & { id: string };
@@ -38,8 +41,14 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 import AssetOrganizationDialog from './AssetOrganizationDialog';
+import WorkflowStartDialog from './WorkflowStartDialog';
+import AssetWorkflowStatus from './AssetWorkflowStatus';
+import { useWorkflows } from '@/hooks/useWorkflows';
+import { AssetWorkflow } from '@/types/workflow';
 import { PermissionGate } from './PermissionGate';
 import { Action } from '@/types/auth';
+import { splitFileName, joinFileName } from '@/lib/naming';
+import { toast } from 'sonner';
 
 export default function MetadataPanel({ 
   assetId, 
@@ -58,20 +67,28 @@ export default function MetadataPanel({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isOrganizeOpen, setIsOrganizeOpen] = useState(false);
+  const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
+  const [activeWorkflow, setActiveWorkflow] = useState<AssetWorkflow | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
+  const { fetchAssetWorkflow } = useWorkflows();
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
       
-      const [fieldDefs, currentValues, assetData] = await Promise.all([
+      const [fieldDefs, currentValues, assetData, workflowData] = await Promise.all([
         apiFetch<Field[]>(`/workspaces/${workspaceId}/metadata/fields`),
         apiFetch<MetadataValue[]>(`/assets/${assetId}/metadata`),
-        apiFetch<AssetDetails>(`/assets/${assetId}`)
+        apiFetch<AssetDetails>(`/assets/${assetId}`),
+        fetchAssetWorkflow(assetId).catch(() => null)
       ]);
 
       setFields(fieldDefs);
       setAsset(assetData);
+      setActiveWorkflow(workflowData);
 
       const valueMap: Record<string, any> = {
         _status: assetData.status,
@@ -79,7 +96,7 @@ export default function MetadataPanel({
         _expiration_date: assetData.expiration_date ? assetData.expiration_date.split('T')[0] : '',
       };
       
-      currentValues.forEach(v => {
+      currentValues.forEach((v: MetadataValue) => {
         if (v.field_id && v.field_id !== 'undefined') {
           valueMap[v.field_id] = v.value;
         }
@@ -127,6 +144,7 @@ export default function MetadataPanel({
       
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      fetchData(); // Refresh to ensure data sync
     } catch (err: any) {
       setError(err.message || 'Failed to save metadata');
     } finally {
@@ -136,6 +154,46 @@ export default function MetadataPanel({
 
   const updateValue = (fieldId: string, value: any) => {
     setValues(prev => ({ ...prev, [fieldId]: value }));
+  };
+
+  const handleStartNameEdit = () => {
+    if (activeWorkflow) {
+      toast.error('Asset is locked during active workflow');
+      return;
+    }
+    const { basename } = splitFileName(asset?.original_name || '');
+    setTempName(basename);
+    setIsEditingName(true);
+  };
+
+  const handleCancelNameEdit = () => {
+    setIsEditingName(false);
+    setTempName('');
+  };
+
+  const handleSaveNameEdit = async () => {
+    const { basename, extension } = splitFileName(asset?.original_name || '');
+    
+    if (!tempName.trim() || tempName === basename) {
+      handleCancelNameEdit();
+      return;
+    }
+
+    try {
+      setIsSavingName(true);
+      const newFullName = joinFileName(tempName.trim(), extension);
+      await apiFetch(`/assets/${assetId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ original_name: newFullName })
+      });
+      setIsEditingName(false);
+      fetchData(); // Refresh to get updated name
+      toast.success('Asset renamed successfully');
+    } catch (err) {
+      toast.error('Failed to rename asset');
+    } finally {
+      setIsSavingName(false);
+    }
   };
 
   return (
@@ -156,7 +214,7 @@ export default function MetadataPanel({
         <div className="p-4 bg-gray-950/20 border-b border-gray-800/50">
           <div className="aspect-video rounded-xl overflow-hidden bg-gray-800 border border-gray-700/50 relative group">
             <img 
-              src={`http://localhost:3000/api/v1/assets/${assetId}/view`} 
+              src={`${BASE_URL}/assets/${assetId}/view`} 
               className="w-full h-full object-contain"
               alt="Asset preview"
               onError={(e) => {
@@ -178,13 +236,30 @@ export default function MetadataPanel({
           
           <div className="mt-4">
             <PermissionGate action={Action.Update} subject="Asset" workspaceId={workspaceId}>
-              <button 
-                onClick={() => setIsOrganizeOpen(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700/60 rounded-2xl text-xs font-bold text-white uppercase tracking-widest transition-all group"
-              >
-                <TagIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
-                Organize
-              </button>
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => setIsOrganizeOpen(true)}
+                  disabled={!!activeWorkflow}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700/60 rounded-2xl text-xs font-bold text-white uppercase tracking-widest transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <TagIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
+                  Organize
+                </button>
+                
+                {!activeWorkflow ? (
+                  <button 
+                    onClick={() => setIsWorkflowOpen(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 rounded-2xl text-xs font-bold text-blue-400 uppercase tracking-widest transition-all group"
+                  >
+                    <QueueListIcon className="h-4 w-4" />
+                    Start Approval
+                  </button>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-gray-950/40 border border-gray-800/60">
+                    <AssetWorkflowStatus workflow={activeWorkflow} />
+                  </div>
+                )}
+              </div>
             </PermissionGate>
           </div>
         </div>
@@ -208,7 +283,57 @@ export default function MetadataPanel({
               <div className="space-y-5">
                 <div className="flex items-center gap-2 mb-2">
                   <ArrowPathIcon className="h-4 w-4 text-gray-500" />
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lifecycle</h3>
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Metadata</h3>
+                </div>
+
+                <div className="space-y-2 group">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest transition-colors">
+                      File Name
+                    </label>
+                    {!isEditingName && (
+                      <button 
+                        onClick={handleStartNameEdit}
+                        className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-md transition-all flex items-center gap-1 group/rename"
+                      >
+                        <PencilIcon className="h-3 w-3" />
+                        <span className="text-[9px] font-bold uppercase tracking-wider">Rename</span>
+                      </button>
+                    )}
+                  </div>
+                  
+                  {isEditingName ? (
+                    <div className="flex items-center gap-2 bg-blue-500/5 dark:bg-blue-400/5 p-1 px-2 rounded-lg ring-1 ring-blue-500/50 animate-in fade-in duration-200">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={tempName}
+                        onChange={(e) => setTempName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveNameEdit();
+                          if (e.key === 'Escape') handleCancelNameEdit();
+                        }}
+                        onBlur={handleSaveNameEdit}
+                        disabled={isSavingName}
+                        className="bg-transparent border-none outline-none text-sm font-medium text-gray-200 flex-1 min-w-0"
+                        placeholder="Filename"
+                      />
+                      <span className="text-[11px] font-bold text-gray-500 flex-none px-1">
+                        {splitFileName(asset?.original_name || '').extension}
+                      </span>
+                      {isSavingName && (
+                        <ArrowPathIcon className="h-3 w-3 text-blue-400 animate-spin flex-none" />
+                      )}
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={handleStartNameEdit}
+                      className="w-full px-3 py-2 text-sm bg-gray-800/20 border border-gray-700/30 rounded-lg text-gray-400 font-medium truncate cursor-pointer hover:bg-gray-800/40 hover:border-gray-700/60 transition-all"
+                      title="Click to rename"
+                    >
+                      {asset?.original_name}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2 group">
@@ -371,6 +496,14 @@ export default function MetadataPanel({
         assetId={assetId} 
         isOpen={isOrganizeOpen} 
         onClose={() => setIsOrganizeOpen(false)} 
+        onSuccess={fetchData}
+      />
+
+      <WorkflowStartDialog
+        assetId={assetId}
+        isOpen={isWorkflowOpen}
+        onClose={() => setIsWorkflowOpen(false)}
+        onSuccess={fetchData}
       />
 
       <style jsx>{`

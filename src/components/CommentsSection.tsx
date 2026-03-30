@@ -11,6 +11,9 @@ interface Comment {
   id: string;
   content: string;
   is_private: boolean;
+  type: string;
+  coordinates?: { x: number; y: number; width?: number; height?: number } | null;
+  timestamp?: number | null;
   user: {
     name: string;
     email: string;
@@ -27,7 +30,17 @@ interface Member {
   };
 }
 
-export default function CommentsSection({ assetId, workspaceId }: { assetId: string, workspaceId?: string | null }) {
+export default function CommentsSection({ 
+  assetId, 
+  workspaceId, 
+  pendingAnnotation, 
+  onCommentPosted 
+}: { 
+  assetId: string; 
+  workspaceId?: string | null; 
+  pendingAnnotation?: { type: string; coordinates?: any; timestamp?: number } | null;
+  onCommentPosted?: () => void;
+}) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [content, setContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
@@ -90,10 +103,13 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
     setMentionFilter(null);
   };
 
-  const insertMention = (user: { name: string }) => {
+  const getHandle = (email: string) => email.split('@')[0];
+
+  const insertMention = (user: { name: string; email: string }) => {
     const before = content.substring(0, mentionIndex);
     const after = content.substring(mentionIndex + (mentionFilter?.length || 0) + 1);
-    const newContent = `${before}@${user.name} ${after}`;
+    const handle = getHandle(user.email);
+    const newContent = `${before}@${handle} ${after}`;
     setContent(newContent);
     setMentionFilter(null);
   };
@@ -109,15 +125,28 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
   };
 
   const filteredMembers = mentionFilter !== null
-    ? members.filter(m => 
-        m.user.name.toLowerCase().includes(mentionFilter.toLowerCase()) ||
-        m.user.email.toLowerCase().includes(mentionFilter.toLowerCase())
-      )
+    ? members.filter(m => {
+        if (!m.user?.email) return false;
+        const handle = getHandle(m.user.email).toLowerCase();
+        const search = mentionFilter.toLowerCase();
+        return (
+          handle.includes(search) ||
+          m.user.name.toLowerCase().includes(search) ||
+          m.user.email.toLowerCase().includes(search)
+        );
+      })
     : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
+
+    // Robust mention detection: Resolve handles to user IDs
+    const mentionRegex = /@(\S+)/g;
+    const mentions = [...content.matchAll(mentionRegex)].map(match => match[1].toLowerCase());
+    const mentioned_ids = members
+      .filter(m => m.user?.email && mentions.includes(getHandle(m.user.email).toLowerCase()))
+      .map(m => m.user.id);
 
     try {
       setSubmitting(true);
@@ -126,11 +155,16 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
         body: JSON.stringify({
           content,
           is_private: isPrivate,
+          type: pendingAnnotation?.type || 'comment',
+          coordinates: pendingAnnotation?.coordinates || null,
+          timestamp: pendingAnnotation?.timestamp || null,
+          mentioned_ids,
         }),
       });
       setContent('');
       fetchComments();
-      toast.success('Comment posted');
+      if (onCommentPosted) onCommentPosted();
+      toast.success(pendingAnnotation ? 'Annotation posted' : 'Comment posted');
     } catch (error) {
       toast.error('Failed to post comment');
     } finally {
@@ -173,13 +207,27 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
           </div>
         ) : (
           comments.map((comment) => (
-            <div key={comment.id} className="group relative bg-white/5 border border-white/5 rounded-xl p-3 hover:bg-white/10 transition-all">
+            <div 
+              key={comment.id} 
+              id={`comment-${comment.id}`}
+              className={`group relative border rounded-xl p-3 transition-all ${
+                comment.coordinates 
+                  ? 'bg-purple-500/5 border-purple-500/20 hover:bg-purple-500/10' 
+                  : 'bg-white/5 border-white/5 hover:bg-white/10'
+              }`}
+            >
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-xs font-bold text-purple-400">{comment.user?.name || 'Unknown User'}</span>
                   <span className="text-[10px] text-gray-500">
                     {new Date(comment.created_at).toLocaleDateString()} at {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
+                  {comment.coordinates && (
+                    <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-[9px] font-bold rounded uppercase border border-purple-500/30">
+                      <ChatBubbleLeftIcon className="h-2.5 w-2.5" />
+                      Annotated
+                    </span>
+                  )}
                   {comment.is_private ? (
                     <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 text-amber-500 text-[9px] font-bold rounded uppercase">
                       <LockClosedIcon className="h-2.5 w-2.5" />
@@ -226,20 +274,27 @@ export default function CommentsSection({ assetId, workspaceId }: { assetId: str
                   <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Mention User</span>
                 </div>
                 <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                  {filteredMembers.map((member, idx) => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => insertMention(member.user)}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                      className={`w-full text-left px-4 py-2 text-sm flex flex-col transition-all ${
-                        idx === selectedIndex ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-white/5'
-                      }`}
-                    >
-                      <span className="font-bold">{member.user.name}</span>
-                      <span className={`text-[10px] ${idx === selectedIndex ? 'text-purple-200' : 'text-gray-500'}`}>{member.user.email}</span>
-                    </button>
-                  ))}
+                    {filteredMembers.map((member, idx) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => insertMention(member.user)}
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                        className={`w-full text-left px-4 py-2 text-sm flex flex-col transition-all ${
+                          idx === selectedIndex ? 'bg-purple-600 text-white' : 'text-gray-300 hover:bg-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold">{member.user.name}</span>
+                          <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                            idx === selectedIndex ? 'bg-purple-500 text-white' : 'bg-white/10 text-purple-400'
+                          }`}>
+                            @{getHandle(member.user.email)}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] ${idx === selectedIndex ? 'text-purple-200' : 'text-gray-500'}`}>{member.user.email}</span>
+                      </button>
+                    ))}
                 </div>
               </div>
             )}

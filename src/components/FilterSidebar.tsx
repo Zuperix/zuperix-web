@@ -27,11 +27,122 @@ interface FilterBucket {
   hexes?: string[];
 }
 
+interface TreeBucket extends FilterBucket {
+  children: TreeBucket[];
+}
+
+function buildTree(buckets: FilterBucket[]): TreeBucket[] {
+  const map: Record<string, TreeBucket> = {};
+  const roots: TreeBucket[] = [];
+
+  const sortedBuckets = [...buckets].sort((a, b) => String(a.value).localeCompare(String(b.value)));
+
+  sortedBuckets.forEach(bucket => {
+    const path = String(bucket.value);
+    const parts = path.split('/');
+    const label = parts[parts.length - 1];
+    
+    const node: TreeBucket = {
+      ...bucket,
+      label: label,
+      children: []
+    };
+    
+    map[path] = node;
+
+    if (parts.length === 1) {
+      roots.push(node);
+    } else {
+      const parentPath = parts.slice(0, -1).join('/');
+      if (map[parentPath]) {
+        map[parentPath].children.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+  });
+
+  const sortByCountRecursive = (nodes: TreeBucket[]) => {
+    nodes.sort((a, b) => (b.count || 0) - (a.count || 0));
+    nodes.forEach(node => {
+      if (node.children.length > 0) {
+        sortByCountRecursive(node.children);
+      }
+    });
+  };
+
+  sortByCountRecursive(roots);
+  return roots;
+}
+
+function RenderCategoryNode({ 
+  bucket, 
+  depth = 0, 
+  activeFilters, 
+  handleCheckboxChange,
+  groupKey 
+}: { 
+  bucket: TreeBucket; 
+  depth?: number; 
+  activeFilters: any; 
+  handleCheckboxChange: any;
+  groupKey: string;
+}) {
+  const rawActive = activeFilters[groupKey];
+  const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
+  const isExplicitlySelected = activeList.includes(bucket.value);
+
+  // Recursive check for any selected descendant
+  const hasSelectedDescendant = (node: TreeBucket): boolean => {
+    return node.children.some(child => 
+      activeList.includes(child.value) || hasSelectedDescendant(child)
+    );
+  };
+
+  const showTick = isExplicitlySelected || hasSelectedDescendant(bucket);
+  
+  return (
+    <div key={String(bucket.value)} className="space-y-1.5">
+      <label className="flex items-center group cursor-pointer justify-between">
+        <div className="flex items-center overflow-hidden pr-2" style={{ paddingLeft: `${depth * 1.25}rem` }}>
+          <input
+            type="checkbox"
+            checked={showTick}
+            onChange={(e) => handleCheckboxChange(groupKey, bucket.value, e.target.checked)}
+            className={`h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none ${!isExplicitlySelected && showTick ? 'opacity-60' : ''}`}
+          />
+          <span className={`ml-3 text-sm group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors ${showTick ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-300'}`}>
+            {bucket.label}
+          </span>
+        </div>
+        <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+          {bucket.count}
+        </span>
+      </label>
+      {bucket.children.length > 0 && (
+        <div className="space-y-1.5">
+          {bucket.children.map(child => (
+            <RenderCategoryNode 
+              key={String(child.value)} 
+              bucket={child} 
+              depth={depth + 1} 
+              activeFilters={activeFilters} 
+              handleCheckboxChange={handleCheckboxChange}
+              groupKey={groupKey}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface FilterSidebarProps {
   filters: Record<string, FilterBucket[] | { min: number; max: number; min_as_string?: string; max_as_string?: string }>;
   activeFilters: Record<string, any>;
-  onFilterChange: (key: string, value: any) => void;
+  onFilterChange: (keyOrUpdates: string | Record<string, any>, value?: any) => void;
   onClearAll: () => void;
+  disabled?: boolean;
 }
 
 function DateRangePicker({ 
@@ -60,7 +171,13 @@ function DateRangePicker({
   return (
     <div className="space-y-4 px-1 pt-1">
       <div className="flex flex-col gap-3">
-        <div className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all">
+        <div 
+          onClick={(e) => {
+            const input = e.currentTarget.querySelector('input');
+            if (input) (input as any).showPicker?.();
+          }}
+          className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all cursor-pointer"
+        >
           <CalendarIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
           <div className="flex-1 flex flex-col min-w-0">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">From</span>
@@ -76,8 +193,14 @@ function DateRangePicker({
           </div>
         </div>
 
-        <div className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all">
-          <ClockIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
+        <div 
+          onClick={(e) => {
+            const input = e.currentTarget.querySelector('input');
+            if (input) (input as any).showPicker?.();
+          }}
+          className="group/input relative flex items-center bg-gray-50/50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700/60 rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/40 transition-all cursor-pointer"
+        >
+          <CalendarIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
           <div className="flex-1 flex flex-col min-w-0">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">To</span>
             <input 
@@ -194,7 +317,7 @@ function RangeSlider({
   );
 }
 
-export default function FilterSidebar({ filters, activeFilters, onFilterChange, onClearAll }: FilterSidebarProps) {
+export default function FilterSidebar({ filters, activeFilters, onFilterChange, onClearAll, disabled = false }: FilterSidebarProps) {
   const { isFilterOpen, setIsFilterOpen } = useLayout();
   // ... rest of component
   const filterConfig: Record<string, { label: string; icon: any }> = {
@@ -296,6 +419,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
         fixed inset-y-0 right-0 z-50 w-80 max-w-[90%] bg-white dark:bg-[#0f111a] border-l border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0 lg:w-72 lg:border-r lg:border-l-0 lg:z-0 lg:flex
         ${isFilterOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+        ${disabled ? 'pointer-events-none opacity-60' : ''}
         flex flex-col h-full overflow-hidden shrink-0 shadow-2xl lg:shadow-none
       `}>
         <div className="flex flex-col h-full overflow-y-auto px-5 py-6 space-y-6">
@@ -312,6 +436,8 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
               </div>
               {hasActiveFilters && (
                 <button 
+                  type="button"
+                  disabled={disabled}
                   onClick={clearAll}
                   className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
                 >
@@ -372,8 +498,10 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                                 currentMin={activeFilters[`${key}[gte]`]} 
                                 currentMax={activeFilters[`${key}[lte]`]} 
                                 onChange={(minVal, maxVal) => {
-                                  onFilterChange(`${key}[gte]`, minVal);
-                                  onFilterChange(`${key}[lte]`, maxVal);
+                                  onFilterChange({
+                                    [`${key}[gte]`]: minVal,
+                                    [`${key}[lte]`]: maxVal
+                                  });
                                 }}
                               />
                             ) : (
@@ -383,8 +511,10 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                                 currentMin={activeFilters[`${key}[gte]`]} 
                                 currentMax={activeFilters[`${key}[lte]`]} 
                                 onChange={(minVal, maxVal) => {
-                                  onFilterChange(`${key}[gte]`, minVal);
-                                  onFilterChange(`${key}[lte]`, maxVal);
+                                  onFilterChange({
+                                    [`${key}[gte]`]: minVal,
+                                    [`${key}[lte]`]: maxVal
+                                  });
                                 }}
                               />
                             )}
@@ -421,31 +551,46 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                           </div>
                         ) : (
                           <div className="space-y-2.5">
-                            {data
-                              .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
-                              .map((bucket) => {
-                                const rawActive = activeFilters[key];
-                                const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
-                                const isActive = activeList.includes(bucket.value);
-                                return (
-                                  <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
-                                    <div className="flex items-center overflow-hidden pr-2">
-                                      <input
-                                        type="checkbox"
-                                        checked={isActive}
-                                        onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
-                                        className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
-                                      />
-                                      <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
-                                        {bucket.label || bucket.value}
+                            {key === 'category_paths' ? (
+                              buildTree(data)
+                                .filter(node => !filterSearch || String(node.value).toLowerCase().includes(filterSearch.toLowerCase()) || node.children.some(c => String(c.value).toLowerCase().includes(filterSearch.toLowerCase())))
+                                .map(node => (
+                                  <RenderCategoryNode 
+                                    key={String(node.value)}
+                                    bucket={node}
+                                    activeFilters={activeFilters}
+                                    handleCheckboxChange={handleCheckboxChange}
+                                    groupKey={key}
+                                  />
+                                ))
+                            ) : (
+                              data
+                                .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
+                                .sort((a, b) => (b.count || 0) - (a.count || 0))
+                                .map((bucket) => {
+                                  const rawActive = activeFilters[key];
+                                  const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
+                                  const isActive = activeList.includes(bucket.value);
+                                  return (
+                                    <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                                      <div className="flex items-center overflow-hidden pr-2">
+                                        <input
+                                          type="checkbox"
+                                          checked={isActive}
+                                          onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
+                                          className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                                        />
+                                        <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
+                                          {bucket.label || bucket.value}
+                                        </span>
+                                      </div>
+                                      <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+                                        {bucket.count}
                                       </span>
-                                    </div>
-                                    <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
-                                      {bucket.count}
-                                    </span>
-                                  </label>
-                                );
-                              })}
+                                    </label>
+                                  );
+                                })
+                            )}
                           </div>
                         )}
                       </div>
@@ -492,8 +637,10 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                                 currentMin={activeFilters[`${key}[gte]`]} 
                                 currentMax={activeFilters[`${key}[lte]`]} 
                                 onChange={(minVal, maxVal) => {
-                                  onFilterChange(`${key}[gte]`, minVal);
-                                  onFilterChange(`${key}[lte]`, maxVal);
+                                  onFilterChange({
+                                    [`${key}[gte]`]: minVal,
+                                    [`${key}[lte]`]: maxVal
+                                  });
                                 }}
                               />
                             ) : (
@@ -503,8 +650,10 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                                 currentMin={activeFilters[`${key}[gte]`]} 
                                 currentMax={activeFilters[`${key}[lte]`]} 
                                 onChange={(minVal, maxVal) => {
-                                  onFilterChange(`${key}[gte]`, minVal);
-                                  onFilterChange(`${key}[lte]`, maxVal);
+                                  onFilterChange({
+                                    [`${key}[gte]`]: minVal,
+                                    [`${key}[lte]`]: maxVal
+                                  });
                                 }}
                               />
                             )}

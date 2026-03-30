@@ -8,6 +8,8 @@ interface DeleteConfirmationModalProps {
   onConfirm: () => void;
   title?: string;
   message?: string;
+  confirmText?: string;
+  cancelText?: string;
   isDeleting?: boolean;
 }
 
@@ -17,13 +19,22 @@ export default function DeleteConfirmationModal({
   onConfirm,
   title = 'Delete Asset',
   message = 'Are you sure you want to delete this asset? This action cannot be undone.',
+  confirmText = 'Delete permanently',
+  cancelText = 'Cancel',
   isDeleting = false,
 }: DeleteConfirmationModalProps) {
   if (!isOpen) return null;
 
+  const titleId = 'delete-confirmation-modal-title';
+  const descriptionId = 'delete-confirmation-modal-description';
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
         className="bg-white dark:bg-[#0f111a] rounded-3xl w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-800/60 overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
@@ -42,10 +53,10 @@ export default function DeleteConfirmationModal({
               <ExclamationTriangleIcon className="h-8 w-8 text-red-500" />
             </div>
 
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            <h3 id={titleId} className="text-xl font-bold text-gray-900 dark:text-white mb-2">
               {title}
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-[280px]">
+            <p id={descriptionId} className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-[280px]">
               {message}
             </p>
           </div>
@@ -61,7 +72,7 @@ export default function DeleteConfirmationModal({
               ) : (
                 <>
                   <TrashIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                  <span>Delete permanently</span>
+                  <span>{confirmText}</span>
                 </>
               )}
             </button>
@@ -71,7 +82,7 @@ export default function DeleteConfirmationModal({
               disabled={isDeleting}
               className="w-full py-3.5 bg-gray-100 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50"
             >
-              Cancel
+              {cancelText}
             </button>
           </div>
         </div>

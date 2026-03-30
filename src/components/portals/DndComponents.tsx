@@ -9,6 +9,7 @@ import {
   CheckIcon, 
   TrashIcon 
 } from '@heroicons/react/24/outline';
+import { BASE_URL } from '@/lib/api';
 
 export const ItemTypes = {
   ASSET: 'asset',
@@ -32,7 +33,7 @@ export function DraggableAsset({ asset, onAdd, isAlreadyInPortal }: any) {
       <div className="aspect-video bg-gray-950 rounded-xl overflow-hidden relative">
          {asset.mime_type?.startsWith('image/') ? (
            <img 
-            src={`http://localhost:3000/api/v1/assets/${asset.id}/view`} 
+            src={`${BASE_URL}/assets/${asset.id}/view`} 
             alt={asset.original_name}
             className="w-full h-full object-cover"
            />
@@ -116,7 +117,7 @@ export function DroppablePortalAssets({ assets, onDrop, onOpenSearch }: any) {
                 <div className="aspect-square bg-gray-900 flex items-center justify-center relative">
                   {asset.type.startsWith('image/') ? (
                     <img 
-                      src={`http://localhost:3000/api/v1/assets/${asset.id}/view`} 
+                      src={`${BASE_URL}/assets/${asset.id}/view`} 
                       alt={asset.name}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                     />

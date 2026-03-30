@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch } from '@/lib/api';
+import { useMarqueeSelection } from '@/hooks/useMarqueeSelection';
 import AssetGrid from '@/components/AssetGrid';
 import UploadModal from '@/components/UploadModal';
 import MetadataPanel from '@/components/MetadataPanel';
 import FilterSidebar from '@/components/FilterSidebar';
 import DuplicateFinderModal from '@/components/DuplicateFinderModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import DownloadModal from '@/components/DownloadModal';
 import { 
   PlusIcon, 
   ArrowPathIcon, 
@@ -18,8 +20,9 @@ import {
   ChevronRightIcon, 
   MagnifyingGlassIcon, 
   FunnelIcon,
-  SparklesIcon
+  SquaresPlusIcon
 } from '@heroicons/react/24/outline';
+import BulkActionToolbar from '@/components/BulkActionToolbar';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
 import Pagination from '@/components/Pagination';
 import { useLayout } from '@/context/LayoutContext';
@@ -31,12 +34,14 @@ function FilterChips({
   activeFilters, 
   filters,
   onRemove, 
-  onClearAll 
+  onClearAll,
+  disabled = false,
 }: { 
   activeFilters: Record<string, any>, 
   filters: any,
   onRemove: (key: string, value?: any) => void, 
-  onClearAll: () => void 
+  onClearAll: () => void,
+  disabled?: boolean,
 }) {
   const filterLabels: Record<string, string> = {
     mime_type: 'File Type',
@@ -50,27 +55,41 @@ function FilterChips({
     created_at: 'Uploaded',
     release_date: 'Released',
     expiration_date: 'Expires',
+    aspect_ratio: 'Aspect Ratio',
+    category_paths: 'Category',
   };
 
-  const chips: { key: string; label: string; value: any; displayValue: string }[] = [];
+  const chips: { key: string; label: string; value: any; displayValue: string; isRange?: boolean }[] = [];
+  const rangeGroups: Record<string, { gte?: any, lte?: any }> = {};
+  const processedKeys = new Set<string>();
 
+  // 1. First pass: group range filters
   Object.entries(activeFilters).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    const match = key.match(/^(.+)\[(gte|lte)\]$/);
+    if (match) {
+      const [, baseKey, op] = match;
+      if (!rangeGroups[baseKey]) rangeGroups[baseKey] = {};
+      rangeGroups[baseKey][op as 'gte' | 'lte'] = value;
+      processedKeys.add(key);
+    }
+  });
+
+  // 2. Second pass: generate chips
+  Object.entries(activeFilters).forEach(([key, value]) => {
+    if (processedKeys.has(key)) return; // Skip already grouped range keys
     if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) return;
-    
     if (key.startsWith('ws') || key === 'page' || key === 'limit' || key === 'is_semantic') return;
 
-    const label = filterLabels[key] || (key.startsWith('metadata.') ? key.split('.')[1].replace(/_/g, ' ') : key);
+    const label = filterLabels[key] || key.split('.').pop()!.replace(/_/g, ' ');
     
     if (Array.isArray(value)) {
       value.forEach(v => {
-        // Try to find label in facets
         let displayValue = String(v);
         const facetBuckets = filters[key];
         if (Array.isArray(facetBuckets)) {
-          const bucket = facetBuckets.find(b => b.value === v);
-          if (bucket?.label) {
-            displayValue = bucket.label;
-          }
+          const bucket = facetBuckets.find((b: any) => b.value === v);
+          if (bucket?.label) displayValue = bucket.label;
         }
 
         chips.push({ 
@@ -80,22 +99,46 @@ function FilterChips({
           displayValue: key === 'color_palette' ? '' : displayValue
         });
       });
-    } else if (key.endsWith('[gte]') || key.endsWith('[lte]')) {
-      const baseKey = key.replace(/\[(gte|lte)\]/, '');
-      const type = key.includes('gte') ? 'Min' : 'Max';
-      const baseLabel = filterLabels[baseKey] || baseKey;
-      chips.push({ key, label: `${baseLabel} (${type})`, value, displayValue: String(value) });
     } else {
-      // Try to find label in facets for non-array values
       let displayValue = String(value);
       const facetBuckets = filters[key];
       if (Array.isArray(facetBuckets)) {
-        const bucket = facetBuckets.find(b => b.value === value);
-        if (bucket?.label) {
-          displayValue = bucket.label;
-        }
+        const bucket = facetBuckets.find((b: any) => b.value === value);
+        if (bucket?.label) displayValue = bucket.label;
       }
       chips.push({ key, label, value, displayValue });
+    }
+  });
+
+  // 3. Third pass: Add grouped range chips
+  Object.entries(rangeGroups).forEach(([baseKey, values]) => {
+    const label = filterLabels[baseKey] || baseKey.split('.').pop()!.replace(/_/g, ' ');
+    
+    const formatValue = (val: any) => {
+      if (typeof val === 'number') return val.toFixed(2);
+      if (!isNaN(parseFloat(val)) && /^-?\d*\.?\d+$/.test(String(val))) {
+        return parseFloat(val).toFixed(2);
+      }
+      return String(val);
+    };
+
+    let displayValue = '';
+    if (values.gte && values.lte) {
+      displayValue = `${formatValue(values.gte)} - ${formatValue(values.lte)}`;
+    } else if (values.gte) {
+      displayValue = `> ${formatValue(values.gte)}`;
+    } else if (values.lte) {
+      displayValue = `< ${formatValue(values.lte)}`;
+    }
+
+    if (displayValue) {
+      chips.push({ 
+        key: baseKey, 
+        label, 
+        value: values, 
+        displayValue,
+        isRange: true
+      } as any);
     }
   });
 
@@ -123,6 +166,8 @@ function FilterChips({
         </div>
       ))}
       <button 
+        type="button"
+        disabled={disabled}
         onClick={onClearAll}
         className="px-3 py-1.5 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors uppercase tracking-tight"
       >
@@ -139,6 +184,7 @@ function DashboardContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const limit = Number(searchParams.get('limit')) || 20;
+  const contentRef = useRef<HTMLDivElement>(null);
   
   const [assets, setAssets] = useState<any[]>([]);
   const [totalMatching, setTotalMatching] = useState(0);
@@ -151,10 +197,11 @@ function DashboardContent() {
   const [filters, setFilters] = useState<any>({});
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [isClearingAllFilters, setIsClearingAllFilters] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [isDuplicateFinderOpen, setIsDuplicateFinderOpen] = useState(false);
   const { sidebarCollapsed, setSidebarCollapsed, isFilterOpen, setIsFilterOpen } = useLayout();
-  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const q = searchParams.get('q') || '';
   const isSemantic = searchParams.get('is_semantic') === 'true';
 
@@ -162,6 +209,9 @@ function DashboardContent() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [assetToDelete, setAssetToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Download Modal State
+  const [downloadAsset, setDownloadAsset] = useState<any | null>(null);
 
   useEffect(() => {
     const params: Record<string, any> = {};
@@ -193,7 +243,11 @@ function DashboardContent() {
       by: searchParams.get('sort_by') || 'created_at',
       order: (searchParams.get('sort_order') as 'asc' | 'desc') || 'desc'
     });
-  }, [searchParams]);
+
+    if (isClearingAllFilters && searchParams.toString() === '') {
+      setIsClearingAllFilters(false);
+    }
+  }, [isClearingAllFilters, searchParams]);
 
   const fetchAssets = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -223,19 +277,34 @@ function DashboardContent() {
     fetchAssets();
   }, [fetchAssets]);
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (keyOrUpdates: string | Record<string, any>, value?: any) => {
     const params = new URLSearchParams(searchParams.toString());
     
-    params.delete(key);
     // Reset page on filter change
     params.delete('page');
     
-    if (value !== undefined && value !== null) {
-      if (Array.isArray(value)) {
-        value.forEach(v => params.append(key, String(v)));
-      } else {
-        params.set(key, String(value));
+    if (typeof keyOrUpdates === 'string') {
+      const key = keyOrUpdates;
+      params.delete(key);
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          value.forEach(v => params.append(key, String(v)));
+        } else {
+          params.set(key, String(value));
+        }
       }
+    } else {
+      // Multi-update
+      Object.entries(keyOrUpdates).forEach(([k, v]) => {
+        params.delete(k);
+        if (v !== undefined && v !== null && v !== '') {
+          if (Array.isArray(v)) {
+            v.forEach(val => params.append(k, String(val)));
+          } else {
+            params.set(k, String(v));
+          }
+        }
+      });
     }
     
     const query = params.toString();
@@ -257,12 +326,25 @@ function DashboardContent() {
   };
 
   const handleClearAll = () => {
+    setIsClearingAllFilters(true);
+    setActiveFilters({});
+    setSelectedIds([]);
+    setLastSelectedId(null);
     router.replace('/dashboard');
   };
 
   const removeFilter = (key: string, value?: any) => {
     if (value === undefined) {
       handleFilterChange(key, undefined);
+      return;
+    }
+
+    // Handle grouped range removal
+    if (typeof value === 'object' && (value.gte !== undefined || value.lte !== undefined)) {
+      handleFilterChange({
+        [`${key}[gte]`]: undefined,
+        [`${key}[lte]`]: undefined
+      });
       return;
     }
 
@@ -281,7 +363,7 @@ function DashboardContent() {
       setIsDeleting(true);
       await apiFetch(`/assets/${assetToDelete}`, { method: 'DELETE' });
       setAssets(prev => prev.filter((a: any) => a.id !== assetToDelete));
-      if (selectedAssetId === assetToDelete) setSelectedAssetId(null);
+      setSelectedIds(prev => prev.filter(id => id !== assetToDelete));
       setDeleteModalOpen(false);
       setAssetToDelete(null);
     } catch (error) {
@@ -294,6 +376,62 @@ function DashboardContent() {
   const handleDeleteTrigger = (id: string) => {
     setAssetToDelete(id);
     setDeleteModalOpen(true);
+  };
+
+  const handleToggleSelect = (id: string, isShift: boolean) => {
+    setSelectedIds(prev => {
+      if (isShift && lastSelectedId) {
+        const currentIndex = assets.findIndex(a => a.id === id);
+        const lastIndex = assets.findIndex(a => a.id === lastSelectedId);
+        if (currentIndex !== -1 && lastIndex !== -1) {
+          const start = Math.min(currentIndex, lastIndex);
+          const end = Math.max(currentIndex, lastIndex);
+          const rangeIds = assets.slice(start, end + 1).map(a => a.id);
+          const combined = Array.from(new Set([...prev, ...rangeIds]));
+          return combined;
+        }
+      }
+
+      setLastSelectedId(id);
+      if (prev.includes(id)) {
+        return prev.filter(i => i !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === assets.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(assets.map(a => a.id));
+    }
+  };
+
+  const [marqueeIds, setMarqueeIds] = useState<string[]>([]);
+  const { isDragging, selectionBox } = useMarqueeSelection(
+    contentRef,
+    '[data-asset-id]',
+    (ids) => setMarqueeIds(ids),
+    (finalIds) => {
+      setSelectedIds(prev => {
+        // If nothing was selected by marquee, we don't clear (that's handled by simple click elsewhere if needed)
+        // But for marquee, we usually want to REPLACEMENT select unless Shift is held.
+        // For simplicity, let's just use finalIds if not empty.
+        return finalIds.length > 0 ? finalIds : prev;
+      });
+      setMarqueeIds([]);
+    }
+  );
+
+  const handleBulkSelect = (ids: string[], isAppend: boolean) => {
+    setSelectedIds(prev => {
+      if (isAppend) {
+        return Array.from(new Set([...prev, ...ids]));
+      }
+      return ids;
+    });
   };
 
   if (!activeWorkspace) {
@@ -311,9 +449,25 @@ function DashboardContent() {
         activeFilters={activeFilters} 
         onFilterChange={handleFilterChange} 
         onClearAll={handleClearAll}
+        disabled={isClearingAllFilters}
       />
 
-      <div className={`flex-1 p-4 sm:p-8 transition-all overflow-y-auto`}>
+      <div 
+        ref={contentRef}
+        className={`relative flex-1 p-4 sm:p-8 transition-all overflow-y-auto select-none`}
+      >
+        {/* Marquee Overlay */}
+        {isDragging && selectionBox && (
+          <div 
+            className="absolute z-50 bg-blue-500/20 border border-blue-500 rounded-sm pointer-events-none"
+            style={{
+              left: selectionBox.left,
+              top: selectionBox.top,
+              width: selectionBox.width,
+              height: selectionBox.height,
+            }}
+          />
+        )}
         <div className="space-y-6">
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
@@ -360,13 +514,6 @@ function DashboardContent() {
                   </button>
                 </div>
                 <div className="flex items-center gap-2 flex-1 sm:flex-none">
-                  <button 
-                    onClick={() => setIsDuplicateFinderOpen(true)}
-                    className="flex-1 flex items-center justify-center px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs font-bold rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all shrink-0"
-                  >
-                    <SparklesIcon className="h-4 w-4 mr-1.5" />
-                    Clean Library
-                  </button>
                   <SortDropdown 
                     currentSortBy={currentSort.by}
                     currentSortOrder={currentSort.order}
@@ -389,7 +536,8 @@ function DashboardContent() {
               activeFilters={activeFilters} 
               filters={filters}
               onRemove={removeFilter} 
-              onClearAll={handleClearAll} 
+              onClearAll={handleClearAll}
+              disabled={isClearingAllFilters}
             />
           </div>
 
@@ -405,10 +553,24 @@ function DashboardContent() {
             </div>
           ) : (
             <div>
+              <div className="flex items-center justify-between mb-4">
+                <button 
+                  onClick={handleSelectAll}
+                  className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors uppercase tracking-widest"
+                >
+                  <SquaresPlusIcon className="h-4 w-4" />
+                  {selectedIds.length === assets.length ? 'Deselect All' : 'Select All on Page'}
+                </button>
+              </div>
+
               <AssetGrid 
                 assets={assets} 
                 onDelete={handleDeleteTrigger} 
                 onSelect={(id) => router.push(`/dashboard/assets/${id}`)}
+                onToggleSelect={handleToggleSelect}
+                onDownload={(asset) => setDownloadAsset(asset)}
+                onSuccess={fetchAssets}
+                selectedIds={Array.from(new Set([...selectedIds, ...marqueeIds]))}
               />
               
               <Pagination 
@@ -429,21 +591,35 @@ function DashboardContent() {
         />
       )}
 
-      {isDuplicateFinderOpen && (
-        <DuplicateFinderModal
-          workspaceId={activeWorkspace.id}
-          onClose={() => setIsDuplicateFinderOpen(false)}
-          onRefresh={fetchAssets}
-        />
-      )}
-
-      {/* Custom Delete Modal */}
       <DeleteConfirmationModal
         isOpen={deleteModalOpen}
         isDeleting={isDeleting}
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={confirmDelete}
       />
+
+      {selectedIds.length > 0 && (
+        <BulkActionToolbar 
+          selectedIds={selectedIds}
+          onClear={() => setSelectedIds([])}
+          onSuccess={() => {
+            setSelectedIds([]);
+            fetchAssets();
+          }}
+        />
+      )}
+
+      {downloadAsset && (
+        <DownloadModal
+          isOpen={!!downloadAsset}
+          onClose={() => setDownloadAsset(null)}
+          assetId={downloadAsset.id}
+          originalName={downloadAsset.original_name}
+          width={downloadAsset.width || null}
+          height={downloadAsset.height || null}
+          mimeType={downloadAsset.mime_type}
+        />
+      )}
     </div>
   );
 }

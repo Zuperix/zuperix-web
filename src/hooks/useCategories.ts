@@ -10,6 +10,8 @@ export interface Category {
   parent_id: string | null;
   path: string;
   depth: number;
+  is_smart: boolean;
+  smart_filter: any;
   children?: Category[];
 }
 
@@ -46,8 +48,22 @@ export function useCategories() {
           name,
           parent_id: parentId,
           workspace_id: activeWorkspace.id,
-          customer_id: (activeWorkspace as any).customer_id, // Match snake_case from API
+          customer_id: (activeWorkspace as any).customer_id,
+          is_smart: false,
+          smart_filter: null,
         }),
+      });
+      await fetchCategories();
+    } catch (err: any) {
+      throw err;
+    }
+  };
+
+  const updateCategory = async (id: string, body: { name?: string; is_smart?: boolean; smart_filter?: any }) => {
+    try {
+      await apiFetch(`/categories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
       });
       await fetchCategories();
     } catch (err: any) {
@@ -70,6 +86,7 @@ export function useCategories() {
     error,
     refresh: fetchCategories,
     createCategory,
+    updateCategory,
     deleteCategory,
   };
 }

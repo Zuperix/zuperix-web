@@ -19,7 +19,12 @@ import {
   ShieldCheckIcon,
   KeyIcon,
   UsersIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  InboxIcon,
+  QueueListIcon,
+  PaintBrushIcon,
+  ChartBarIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -27,17 +32,20 @@ import { Action } from '@/types/auth';
 
 const NAV = [
   { name: 'Assets', href: '/dashboard', icon: FolderIcon },
+  { name: 'My Tasks', href: '/dashboard/tasks', icon: InboxIcon },
   { name: 'Categories', href: '/dashboard/categories', icon: TagIcon },
   { name: 'Collections', href: '/dashboard/collections', icon: Square3Stack3DIcon },
+  // { name: 'Brand kits', href: '/dashboard/brand', icon: PaintBrushIcon },
   { name: 'Portals', href: '/dashboard/portals', icon: GlobeAltIcon },
-  { name: 'Trash', href: '/dashboard/trash', icon: TrashIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
 ];
 
 const ADMIN_NAV = [
   { name: 'Users', href: '/dashboard/admin/users', icon: UsersIcon },
   { name: 'Roles', href: '/dashboard/admin/roles', icon: ShieldCheckIcon },
-  { name: 'Permissions', href: '/dashboard/admin/permissions', icon: KeyIcon },
+  { name: 'API Keys', href: '/dashboard/admin/api-keys', icon: KeyIcon },
+  { name: 'Webhooks', href: '/dashboard/admin/webhooks', icon: GlobeAltIcon },
+  { name: 'Analytics', href: '/dashboard/admin/analytics', icon: ChartBarIcon },
 ];
 
 export default function Sidebar() {
@@ -50,11 +58,29 @@ export default function Sidebar() {
   const { sidebarCollapsed, setSidebarCollapsed } = useLayout();
   const [wsOpen, setWsOpen] = useState(false);
 
+  const filteredNav = useMemo(() => {
+    return NAV.filter(item => {
+      // Basic visibility rules:
+      if (item.name === 'Assets') return true; // Everyone sees assets, service handles filtering
+      if (item.name === 'My Tasks') return true; // Personalized
+      if (item.name === 'Settings') return true; // General settings
+      
+      // Permission-based:
+      if (item.name === 'Categories') return can(Action.Read, 'Category', activeWorkspace?.id);
+      if (item.name === 'Collections') return can(Action.Read, 'Collection', activeWorkspace?.id);
+      if (item.name === 'Portals') return can(Action.Read, 'Portal', activeWorkspace?.id);
+      
+      return true;
+    });
+  }, [can, activeWorkspace]);
+
   const filteredAdminNav = useMemo(() => {
     return ADMIN_NAV.filter(item => {
       if (item.name === 'Users') return can(Action.Read, 'User', activeWorkspace?.id);
       if (item.name === 'Roles') return can(Action.Read, 'Role', activeWorkspace?.id);
-      if (item.name === 'Permissions') return can(Action.Read, 'Permission', activeWorkspace?.id);
+      if (item.name === 'API Keys') return can(Action.Read, 'Role', activeWorkspace?.id); // Reuse Role read permission for API keys admin
+      if (item.name === 'Webhooks') return can(Action.Read, 'Webhook', activeWorkspace?.id);
+      if (item.name === 'Analytics') return can(Action.Manage, 'Asset', activeWorkspace?.id);
       return false;
     });
   }, [can, activeWorkspace]);
@@ -78,22 +104,17 @@ export default function Sidebar() {
         {/* Logo */}
         <div className={`flex items-center h-14 border-b border-gray-800/60 flex-shrink-0 ${collapsed ? 'justify-center' : 'px-4 gap-2.5'}`}>
           <div 
-            className="h-7 w-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg cursor-pointer"
+            className="h-9 w-9 flex items-center justify-center flex-shrink-0 cursor-pointer"
             onClick={() => router.push('/dashboard')}
           >
-            <svg viewBox="0 0 16 16" fill="white" className="h-4 w-4">
-              <rect x="1" y="1" width="6" height="6" rx="1.5" />
-              <rect x="9" y="1" width="6" height="6" rx="1.5" />
-              <rect x="1" y="9" width="6" height="6" rx="1.5" />
-              <rect x="9" y="9" width="6" height="6" rx="1.5" />
-            </svg>
+            <img src="/logo_transparant.png" alt="Zuperix Logo" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <span 
               className="text-sm font-semibold text-white tracking-wide cursor-pointer"
               onClick={() => router.push('/dashboard')}
             >
-              Open DAM
+              Zuperix
             </span>
           )}
         </div>
@@ -149,7 +170,7 @@ export default function Sidebar() {
           )}
 
           <nav className={`flex flex-col gap-0.5 ${collapsed ? 'items-center px-2' : 'px-3'}`}>
-            {NAV.map((item) => {
+            {filteredNav.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link

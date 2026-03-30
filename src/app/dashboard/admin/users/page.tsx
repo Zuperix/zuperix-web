@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
+import DeleteUserModal from '@/components/DeleteUserModal';
 
 interface Role {
   id: string;
@@ -55,6 +56,9 @@ export default function UsersPage() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [newUser, setNewUser] = useState({
     email: '',
@@ -169,6 +173,28 @@ export default function UsersPage() {
       fetchMemberships(editingUser.id);
     } catch (err: any) {
       setError(err.message);
+    }
+  };
+
+  const handleDeleteUserRequest = (user: User) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    setIsDeleting(true);
+    try {
+      await apiFetch(`/users/${userToDelete.id}`, {
+        method: 'DELETE',
+      });
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
+      fetchData();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -430,14 +456,26 @@ export default function UsersPage() {
                   </td>
                   <td className="px-6 py-4 text-xs text-gray-500 font-mono">{new Date(user.created_at).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-right">
-                    <PermissionGate action={Action.Update} subject="User">
-                      <button 
-                        onClick={() => { setEditingUser(user); fetchMemberships(user.id); }}
-                        className="text-xs text-gray-500 hover:text-white transition-colors underline underline-offset-4 decoration-gray-700 hover:decoration-white"
-                      >
-                        Manage Access
-                      </button>
-                    </PermissionGate>
+                    <div className="flex items-center justify-end gap-3 translate-x-1 group">
+                      <PermissionGate action={Action.Update} subject="User">
+                        <button 
+                          onClick={() => { setEditingUser(user); fetchMemberships(user.id); }}
+                          className="text-xs text-gray-500 hover:text-white transition-colors underline underline-offset-4 decoration-gray-700 hover:decoration-white"
+                        >
+                          Manage Access
+                        </button>
+                      </PermissionGate>
+                      
+                      <PermissionGate action={Action.Delete} subject="User">
+                        <button 
+                          onClick={() => handleDeleteUserRequest(user)}
+                          className="p-1 text-gray-700 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                          title="Delete User"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </PermissionGate>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -445,6 +483,14 @@ export default function UsersPage() {
           </table>
         </div>
       </div>
+
+      <DeleteUserModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => { setIsDeleteModalOpen(false); setUserToDelete(null); }}
+        onConfirm={confirmDeleteUser}
+        userName={userToDelete?.name || ''}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
