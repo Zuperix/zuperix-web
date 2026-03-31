@@ -78,7 +78,8 @@ const AssetCard = ({
   onDownload,
   onRestore,
   onShare,
-  onVault
+  onVault,
+  hideVaultAction
 }: { 
   asset: Asset, 
   onDelete: (id: string) => void, 
@@ -88,7 +89,8 @@ const AssetCard = ({
   onDownload?: (asset: Asset) => void,
   onRestore?: (id: string) => void,
   onShare: (asset: Asset) => void,
-  onVault: (asset: Asset) => void
+  onVault: (asset: Asset) => void,
+  hideVaultAction?: boolean
 }) => {
   const { activeWorkspace } = useWorkspace();
   const [imgError, setImgError] = useState(false);
@@ -238,16 +240,18 @@ const AssetCard = ({
             <ArrowDownTrayIcon className="h-4 w-4" />
           </button>
 
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onVault(asset);
-            }}
-            className="p-2.5 bg-gray-800/50 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 rounded-xl transition-all active:scale-95"
-            title="Add to Vault"
-          >
-            <ShieldCheckIcon className="h-4 w-4" />
-          </button>
+          {!hideVaultAction && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onVault(asset);
+              }}
+              className="p-2.5 bg-gray-800/50 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 rounded-xl transition-all active:scale-95"
+              title="Add to Vault"
+            >
+              <ShieldCheckIcon className="h-4 w-4" />
+            </button>
+          )}
 
           {onRestore && (
             <button 
@@ -288,7 +292,8 @@ export default function AssetGrid({
   onDownload,
   onRestore,
   onSuccess,
-  selectedIds = []
+  selectedIds = [],
+  hideVaultAction = false
 }: {
   assets: Asset[],
   onDelete: (id: string) => void,
@@ -297,7 +302,8 @@ export default function AssetGrid({
   onDownload?: (asset: Asset) => void,
   onRestore?: (id: string) => void,
   onSuccess?: () => void,
-  selectedIds?: string[]
+  selectedIds?: string[],
+  hideVaultAction?: boolean
 }) {
   const [sharingAsset, setSharingAsset] = useState<Asset | null>(null);
   const [vaultingAsset, setVaultingAsset] = useState<Asset | null>(null);
@@ -331,6 +337,7 @@ export default function AssetGrid({
               onShare={(a) => setSharingAsset(a)}
               onVault={(a) => setVaultingAsset(a)}
               isSelected={isSelected}
+              hideVaultAction={hideVaultAction}
             />
           );
         })}

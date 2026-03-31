@@ -13,9 +13,12 @@ import {
   PlusIcon,
   TrashIcon,
   PencilSquareIcon,
-  LockClosedIcon
+  LockClosedIcon,
+  SquaresPlusIcon
 } from '@heroicons/react/24/outline';
 import AssetGrid from '@/components/AssetGrid';
+import RemoveAssetFromVaultModal from '@/components/RemoveAssetFromVaultModal';
+import BulkActionToolbar from '@/components/BulkActionToolbar';
 import VaultMembersSection, { VaultRole } from '@/components/VaultMembersSection';
 import { useAuth } from '@/context/AuthContext';
 import { PermissionGate } from '@/components/PermissionGate';
@@ -31,6 +34,10 @@ export default function VaultDetailPage() {
   const [vault, setVault] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'assets' | 'members'>('assets');
+  const [assetIdToRemove, setAssetIdToRemove] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+  const [isBulkRemove, setIsBulkRemove] = useState(false);
 
   useEffect(() => {
     const fetchVault = async () => {
@@ -54,13 +61,49 @@ export default function VaultDetailPage() {
   const isOwner = userRole === VaultRole.OWNER || user?.system_role === 'SUPER_ADMIN';
   const isEditor = isOwner || userRole === VaultRole.EDITOR;
 
-  const handleDeleteAsset = async (assetId: string) => {
-    if (!confirm('Remove this asset from the vault? This won\'t delete it from the workspace.')) return;
+  const handleRemoveConfirm = async () => {
+    const idsToRemove = isBulkRemove ? selectedIds : (assetIdToRemove ? [assetIdToRemove] : []);
+    if (idsToRemove.length === 0) return;
+    
     try {
-      await removeAssetsFromVault([assetId]);
-      toast.success('Asset removed from vault');
+      await removeAssetsFromVault(idsToRemove);
+      setAssetIdToRemove(null);
+      setIsBulkRemove(false);
+      setSelectedIds([]);
+      toast.success(idsToRemove.length > 1 ? `Removed ${idsToRemove.length} assets from vault` : 'Asset removed from vault');
     } catch (error) {
       toast.error('Failed to remove asset');
+    }
+  };
+
+  const handleToggleSelect = (id: string, isShift: boolean) => {
+    setSelectedIds(prev => {
+      if (isShift && lastSelectedId) {
+        const currentIndex = assets.findIndex(a => a.id === id);
+        const lastIndex = assets.findIndex(a => a.id === lastSelectedId);
+        if (currentIndex !== -1 && lastIndex !== -1) {
+          const start = Math.min(currentIndex, lastIndex);
+          const end = Math.max(currentIndex, lastIndex);
+          const rangeIds = assets.slice(start, end + 1).map(a => a.id);
+          const combined = Array.from(new Set([...prev, ...rangeIds]));
+          return combined;
+        }
+      }
+
+      setLastSelectedId(id);
+      if (prev.includes(id)) {
+        return prev.filter(i => i !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === assets.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(assets.map(a => a.id));
     }
   };
 
@@ -160,6 +203,18 @@ export default function VaultDetailPage() {
                )}
             </div>
             
+            {assets.length > 0 && (
+              <div className="flex items-center justify-between">
+                <button 
+                  onClick={handleSelectAll}
+                  className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-blue-500 transition-colors uppercase tracking-widest"
+                >
+                  <SquaresPlusIcon className="h-4 w-4" />
+                  {selectedIds.length === assets.length ? 'Deselect All' : 'Select All on Page'}
+                </button>
+              </div>
+            )}
+            
             {assetsLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
                  {[...Array(4)].map((_, i) => (
@@ -176,9 +231,12 @@ export default function VaultDetailPage() {
             ) : (
               <AssetGrid 
                 assets={assets} 
-                onDelete={handleDeleteAsset}
+                onDelete={setAssetIdToRemove}
                 onSelect={(id) => router.push(`/dashboard/assets/${id}`)}
+                onToggleSelect={handleToggleSelect}
+                selectedIds={selectedIds}
                 onSuccess={refreshAssets}
+                hideVaultAction={true}
               />
             )}
           </div>
@@ -191,6 +249,28 @@ export default function VaultDetailPage() {
           />
         )}
       </div>
+      <RemoveAssetFromVaultModal 
+        isOpen={!!assetIdToRemove || isBulkRemove}
+        onClose={() => {
+          setAssetIdToRemove(null);
+          setIsBulkRemove(false);
+        }}
+        onConfirm={handleRemoveConfirm}
+        assetName={assets.find(a => a.id === assetIdToRemove)?.name}
+        count={isBulkRemove ? selectedIds.length : undefined}
+      />
+
+      {selectedIds.length > 0 && (
+        <BulkActionToolbar 
+          selectedIds={selectedIds}
+          onClear={() => setSelectedIds([])}
+          onRemoveFromVault={() => setIsBulkRemove(true)}
+          onSuccess={() => {
+            setSelectedIds([]);
+            refreshAssets();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -20,8 +20,10 @@ import { toast } from 'sonner';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useRouter } from 'next/navigation';
 
 export default function PortalsPage() {
+  const router = useRouter();
   const { portals, createPortal, deletePortal, loading, refresh } = usePortals();
   const { activeWorkspace } = useWorkspace();
   const [isAdding, setIsAdding] = useState(false);
@@ -193,9 +195,9 @@ export default function PortalsPage() {
             </div>
           ) : (
             filteredPortals.map(portal => (
-              <Link 
+              <div 
                 key={portal.id}
-                href={`/dashboard/portals/${portal.id}`}
+                onClick={() => router.push(`/dashboard/portals/${portal.id}`)}
                 className="group flex flex-col p-6 rounded-[32px] bg-gray-900/40 border border-gray-800/60 hover:border-blue-500/30 hover:bg-gray-800/40 transition-all duration-300 relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -252,7 +254,7 @@ export default function PortalsPage() {
                      </div>
                    </div>
                 </div>
-              </Link>
+              </div>
             ))
           )}
         </div>

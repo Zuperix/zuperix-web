@@ -8,7 +8,8 @@ import {
   TrashIcon,
   ArchiveBoxIcon,
   CheckBadgeIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ShieldExclamationIcon
 } from '@heroicons/react/24/outline';
 import AddToVaultModal from './AddToVaultModal';
 import { toast } from 'sonner';
@@ -22,12 +23,14 @@ interface BulkActionToolbarProps {
   selectedIds: string[];
   onClear: () => void;
   onSuccess: () => void;
+  onRemoveFromVault?: () => void;
 }
 
 export default function BulkActionToolbar({ 
   selectedIds, 
   onClear,
-  onSuccess 
+  onSuccess,
+  onRemoveFromVault
 }: BulkActionToolbarProps) {
   const { activeWorkspace } = useWorkspace();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -115,11 +118,23 @@ export default function BulkActionToolbar({
               onClick={() => setIsVaultModalOpen(true)}
               disabled={isProcessing}
               className="p-2.5 text-white/70 hover:text-blue-400 hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group"
-              title="Add to Vault"
+              title="Add to Another Vault"
             >
               <ShieldCheckIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-medium hidden sm:inline text-blue-400">Vault</span>
+              <span className="text-xs font-medium hidden sm:inline text-blue-400 font-bold uppercase tracking-tight">Add to Vault</span>
             </button>
+
+            {onRemoveFromVault && (
+              <button 
+                onClick={onRemoveFromVault}
+                disabled={isProcessing}
+                className="p-2.5 text-white/70 hover:text-orange-400 hover:bg-orange-400/10 rounded-xl transition-all flex items-center gap-2 group border-l border-white/10 ml-1 pl-3"
+                title="Remove from current Vault"
+              >
+                <ShieldExclamationIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-medium hidden sm:inline text-orange-400 font-bold uppercase tracking-tight">Remove from Vault</span>
+              </button>
+            )}
 
             <div className="w-px h-6 bg-white/10 mx-1" />
 

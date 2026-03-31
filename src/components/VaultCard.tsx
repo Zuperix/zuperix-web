@@ -9,7 +9,7 @@ import {
   ArrowRightIcon,
   UserIcon
 } from '@heroicons/react/24/outline';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PermissionGate } from './PermissionGate';
 import { Action } from '@/types/auth';
 import { Vault } from '@/hooks/useVaults';
@@ -22,14 +22,20 @@ interface VaultCardProps {
 }
 
 export default function VaultCard({ vault, workspaceId, onEdit, onDelete }: VaultCardProps) {
+  const router = useRouter();
+
   return (
     <div 
-      className="group flex flex-col p-6 rounded-[32px] bg-gray-900/40 border border-gray-800/60 hover:border-blue-500/30 hover:bg-gray-800/40 transition-all duration-300 relative overflow-hidden"
+      onClick={() => router.push(`/dashboard/vaults/${vault.id}`)}
+      className="group flex flex-col p-6 rounded-[32px] bg-gray-900/40 border border-gray-800/60 hover:border-blue-500/30 hover:bg-gray-800/40 transition-all duration-300 relative overflow-hidden cursor-pointer"
     >
-      <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+      <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 z-10">
          <PermissionGate action={Action.Update} subject="Vault" workspaceId={workspaceId}>
            <button 
-             onClick={() => onEdit(vault)}
+             onClick={(e) => {
+               e.stopPropagation();
+               onEdit(vault);
+             }}
              className="p-2 text-gray-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-xl transition-all"
              title="Edit Vault"
            >
@@ -38,7 +44,10 @@ export default function VaultCard({ vault, workspaceId, onEdit, onDelete }: Vaul
          </PermissionGate>
          <PermissionGate action={Action.Delete} subject="Vault" workspaceId={workspaceId}>
            <button 
-             onClick={() => onDelete(vault.id)}
+             onClick={(e) => {
+               e.stopPropagation();
+               onDelete(vault.id);
+             }}
              className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
              title="Delete Vault"
            >
@@ -71,13 +80,10 @@ export default function VaultCard({ vault, workspaceId, onEdit, onDelete }: Vaul
             <CalendarIcon className="h-3.5 w-3.5 text-gray-600" />
             <span className="text-[10px] text-gray-500 font-mono">{new Date(vault.created_at).toLocaleDateString()}</span>
          </div>
-         <Link 
-           href={`/dashboard/vaults/${vault.id}`}
-           className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white text-xs font-bold rounded-xl transition-all uppercase tracking-widest active:scale-95"
-         >
+         <div className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white text-xs font-bold rounded-xl transition-all uppercase tracking-widest active:scale-95">
             Open
             <ArrowRightIcon className="h-3 w-3" />
-         </Link>
+         </div>
       </div>
     </div>
   );
