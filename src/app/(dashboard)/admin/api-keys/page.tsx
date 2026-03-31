@@ -34,10 +34,18 @@ interface UsageStat {
 }
 
 const AVAILABLE_SCOPES = [
-  { id: 'all', label: 'Full Access (manage)', description: 'Can perform any action' },
-  { id: 'assets:read', label: 'Read Assets', description: 'Can view assets and metadata' },
-  { id: 'assets:write', label: 'Upload Assets', description: 'Can upload and update assets' },
-  { id: 'search:read', label: 'Search Assets', description: 'Can search and list assets' },
+  { id: 'all', label: 'Full Access', description: 'Can perform any action', group: 'general' },
+  { id: 'search:read', label: 'Search Assets', description: 'Full-text and semantic search', group: 'search' },
+  { id: 'asset:read', label: 'Read Assets', description: 'List and view asset details', group: 'assets' },
+  { id: 'asset:write', label: 'Update Assets', description: 'Update asset status, name, and dates', group: 'assets' },
+  { id: 'asset.add', label: 'Upload Assets', description: 'Upload files and metadata', group: 'assets' },
+  { id: 'asset.delete', label: 'Delete Assets', description: 'Remove assets from library', group: 'assets' },
+  { id: 'collection:read', label: 'Read Collections', description: 'List collections and their assets', group: 'collections' },
+  { id: 'collection:write', label: 'Manage Collections', description: 'Create collections, add/remove assets', group: 'collections' },
+  { id: 'category:read', label: 'Read Categories', description: 'View category tree', group: 'categories' },
+  { id: 'category:write', label: 'Manage Categories', description: 'Assign assets to categories', group: 'categories' },
+  { id: 'tag:read', label: 'Read Tags', description: 'List workspace tags', group: 'tags' },
+  { id: 'tag:write', label: 'Manage Tags', description: 'Add and remove tags on assets', group: 'tags' },
 ];
 
 export default function ApiKeysPage() {
@@ -379,12 +387,13 @@ export default function ApiKeysPage() {
 
               <div>
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Select Scopes</label>
-                <div className="grid grid-cols-1 gap-3">
-                  {AVAILABLE_SCOPES.map(scope => (
+                <div className="max-h-[360px] overflow-y-auto pr-1 space-y-4 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+                  {/* Full Access - standalone */}
+                  {AVAILABLE_SCOPES.filter(s => s.group === 'general').map(scope => (
                     <button
                       key={scope.id}
                       onClick={() => toggleScope(scope.id)}
-                      className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group ${
+                      className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group w-full ${
                         selectedScopes.includes(scope.id)
                           ? 'bg-blue-500/10 border-blue-500/40 text-blue-100'
                           : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-gray-900/40'
@@ -406,6 +415,46 @@ export default function ApiKeysPage() {
                       </div>
                     </button>
                   ))}
+
+                  {/* Granular scopes grouped by domain */}
+                  {['search', 'assets', 'collections', 'categories', 'tags'].map(group => {
+                    const groupScopes = AVAILABLE_SCOPES.filter(s => s.group === group);
+                    if (groupScopes.length === 0) return null;
+                    const groupLabel = group.charAt(0).toUpperCase() + group.slice(1);
+                    return (
+                      <div key={group}>
+                        <div className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] mb-2 pl-1">{groupLabel}</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {groupScopes.map(scope => (
+                            <button
+                              key={scope.id}
+                              onClick={() => toggleScope(scope.id)}
+                              className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left group ${
+                                selectedScopes.includes(scope.id)
+                                  ? 'bg-blue-500/10 border-blue-500/40 text-blue-100'
+                                  : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-gray-900/40'
+                              }`}
+                            >
+                              <div className={`p-1.5 rounded-md transition-colors ${
+                                selectedScopes.includes(scope.id) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500'
+                              }`}>
+                                <ShieldCheckIcon className="h-4 w-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className={`text-xs font-bold truncate ${selectedScopes.includes(scope.id) ? 'text-white' : ''}`}>{scope.label}</div>
+                                <div className="text-[9px] opacity-60 truncate">{scope.description}</div>
+                              </div>
+                              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                                selectedScopes.includes(scope.id) ? 'border-blue-500 bg-blue-500' : 'border-gray-700'
+                              }`}>
+                                {selectedScopes.includes(scope.id) && <ChevronRightIcon className="h-2.5 w-2.5 text-white" />}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
