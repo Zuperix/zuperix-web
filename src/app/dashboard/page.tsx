@@ -541,13 +541,7 @@ function DashboardContent() {
             />
           </div>
 
-          {loading && assets.length === 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-              {[...Array(10)].map((_, i) => (
-                <div key={i} className="animate-pulse bg-gray-200 dark:bg-gray-800 aspect-square rounded-xl"></div>
-              ))}
-            </div>
-          ) : assets.length === 0 ? (
+          {assets.length === 0 && !loading ? (
             <div className="text-center py-20">
               <p className="text-gray-500">No assets found for these filters.</p>
             </div>
@@ -571,6 +565,8 @@ function DashboardContent() {
                 onDownload={(asset) => setDownloadAsset(asset)}
                 onSuccess={fetchAssets}
                 selectedIds={Array.from(new Set([...selectedIds, ...marqueeIds]))}
+                loading={loading}
+                limit={limit}
               />
               
               <Pagination 

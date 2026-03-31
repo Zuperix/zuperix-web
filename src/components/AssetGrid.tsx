@@ -265,6 +265,47 @@ const AssetCard = ({
   );
 };
 
+const SkeletonAssetCard = () => (
+  <div className="bg-white dark:bg-gray-900/60 rounded-2xl border-2 border-transparent overflow-hidden flex flex-col">
+    {/* Top Banner Skeleton */}
+    <div className="relative aspect-[4/3] w-full bg-gray-200 dark:bg-gray-800/50 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+    </div>
+    
+    {/* Content Section Skeleton */}
+    <div className="p-5 space-y-4">
+      <div className="space-y-2">
+        {/* Title Skeleton */}
+        <div className="relative h-4 bg-gray-200 dark:bg-gray-800/80 rounded-md w-3/4 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+        </div>
+        {/* Meta Row Skeleton */}
+        <div className="flex justify-between items-center">
+          <div className="relative h-3 bg-gray-200 dark:bg-gray-800/80 rounded-md w-1/4 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+          </div>
+          <div className="relative h-3 bg-gray-200 dark:bg-gray-800/80 rounded-md w-1/5 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+          </div>
+        </div>
+      </div>
+
+      {/* Action Row Skeleton */}
+      <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-800/50">
+        <div className="relative h-9 w-9 bg-gray-200 dark:bg-gray-800/80 rounded-xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+        </div>
+        <div className="relative h-9 w-9 bg-gray-200 dark:bg-gray-800/80 rounded-xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+        </div>
+        <div className="relative h-9 w-9 bg-gray-200 dark:bg-gray-800/80 rounded-xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function AssetGrid({ 
   assets = [], 
   onDelete,
@@ -273,7 +314,9 @@ export default function AssetGrid({
   onDownload,
   onRestore,
   onSuccess,
-  selectedIds = []
+  selectedIds = [],
+  loading = false,
+  limit = 20
 }: {
   assets: Asset[],
   onDelete: (id: string) => void,
@@ -282,10 +325,22 @@ export default function AssetGrid({
   onDownload?: (asset: Asset) => void,
   onRestore?: (id: string) => void,
   onSuccess?: () => void,
-  selectedIds?: string[]
+  selectedIds?: string[],
+  loading?: boolean,
+  limit?: number
 }) {
   const [sharingAsset, setSharingAsset] = useState<Asset | null>(null);
   const assetList = Array.isArray(assets) ? assets : [];
+
+  if (loading && assetList.length === 0) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        {[...Array(limit)].map((_, i) => (
+          <SkeletonAssetCard key={i} />
+        ))}
+      </div>
+    );
+  }
 
   if (assetList.length === 0) {
     return (
@@ -298,7 +353,15 @@ export default function AssetGrid({
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+      <div className={`relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 transition-all duration-300 ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+        {/* Shimmer Overlay during pagination/filtering if assets exist */}
+        {loading && (
+          <div className="absolute inset-0 z-20 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 pointer-events-none">
+            {[...Array(Math.min(assetList.length, limit))].map((_, i) => (
+              <SkeletonAssetCard key={`shimmer-${i}`} />
+            ))}
+          </div>
+        )}
         {assetList.map((asset) => {
           const assetId = asset.id || (asset as any).asset_id;
           const isSelected = selectedIds.includes(assetId);
