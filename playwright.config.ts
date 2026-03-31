@@ -39,9 +39,9 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
     /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: process.env.NODE_ENV === 'production' 
-      ? 'https://dashboard.zuperix.com' 
-      : 'http://localhost:3001',
+    baseURL: process.env.NODE_ENV !== 'production' 
+      ? 'http://localhost:3001' 
+      : 'https://dashboard.zuperix.com',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
