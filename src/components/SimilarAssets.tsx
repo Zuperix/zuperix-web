@@ -127,7 +127,7 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
                 return (
                 <Link
                     key={asset.id}
-                    href={`/dashboard/assets/${asset.id}`}
+                    href={`/assets/${asset.id}`}
                     className="min-w-[260px] max-w-[260px] group/card snap-start flex flex-col bg-white dark:bg-[#151720] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden hover:border-blue-500/50 hover:shadow-2xl transition-all duration-500"
                 >
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-50 dark:bg-gray-950/50">

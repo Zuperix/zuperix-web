@@ -400,7 +400,7 @@ export default function AssetDetailPage() {
     if (!confirm('Are you sure you want to delete this asset?')) return;
     try {
       await apiFetch(`/assets/${assetId}`, { method: 'DELETE' });
-      router.push('/dashboard');
+      router.push('');
     } catch (err) {
       toast.error('Failed to delete asset');
     }

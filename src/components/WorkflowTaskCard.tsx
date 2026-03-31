@@ -42,7 +42,7 @@ export default function WorkflowTaskCard({ task, onRefresh }: WorkflowTaskCardPr
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       
       <div className="p-6 relative">
-        <Link href={`/dashboard/assets/${asset?.id}`} className="flex items-start gap-4 cursor-pointer">
+        <Link href={`/assets/${asset?.id}`} className="flex items-start gap-4 cursor-pointer">
           {/* Asset Preview Placeholder */}
           <div className="w-20 h-20 rounded-2xl bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-blue-500/20 transition-all shadow-inner">
              {asset?.thumbnail_url ? (

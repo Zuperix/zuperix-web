@@ -9,7 +9,7 @@ function createUserModal(page: Page) {
 }
 
 test('users page shows existing user inventory', async ({ page }) => {
-  await page.goto('/dashboard/admin/users');
+  await page.goto('/admin/users');
 
   await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible();
   await expect(page.getByText(/Manage users, their access levels, and workspace assignments\./i)).toBeVisible();
@@ -27,7 +27,7 @@ test('users page shows existing user inventory', async ({ page }) => {
 });
 
 test('create user with main workspace admin role (cleanup)', async ({ page }) => {
-  await page.goto('/dashboard/admin/users');
+  await page.goto('/admin/users');
   await expect(page.getByRole('heading', { name: /User Management/i })).toBeVisible();
 
   const userName = `E2E User ${Date.now()}`;

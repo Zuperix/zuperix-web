@@ -3,7 +3,7 @@ import { test, expect, Page } from '@playwright/test';
 test.describe.configure({ mode: 'serial' });
 
 const ASSET_ID = 'ed1cf816-cf2e-4688-be71-f422fe6174f9';
-const ASSET_URL = `/dashboard/assets/${ASSET_ID}`;
+const ASSET_URL = `/assets/${ASSET_ID}`;
 const ORIGINAL_FILE_NAME = 'single asset e2e test.png';
 const ORIGINAL_BASE_NAME = 'single asset e2e test';
 const E2E_TAG = 'e2e-test-tag';

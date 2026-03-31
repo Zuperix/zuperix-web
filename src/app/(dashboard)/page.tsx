@@ -308,13 +308,13 @@ function DashboardContent() {
     }
     
     const query = params.toString();
-    router.replace(`/dashboard${query ? `?${query}` : ''}`);
+    router.replace(`/${query ? `?${query}` : ''}`);
   };
 
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(page));
-    router.replace(`/dashboard?${params.toString()}`);
+    router.replace(`/?${params.toString()}`);
   };
 
   const handleSortChange = (option: SortOption) => {
@@ -322,7 +322,7 @@ function DashboardContent() {
     params.set('sort_by', option.sort_by);
     params.set('sort_order', option.sort_order);
     params.set('page', '1'); // Reset to page 1 on sort change
-    router.replace(`/dashboard?${params.toString()}`);
+    router.replace(`/?${params.toString()}`);
   };
 
   const handleClearAll = () => {
@@ -330,7 +330,7 @@ function DashboardContent() {
     setActiveFilters({});
     setSelectedIds([]);
     setLastSelectedId(null);
-    router.replace('/dashboard');
+    router.replace('/');
   };
 
   const removeFilter = (key: string, value?: any) => {
@@ -560,7 +560,7 @@ function DashboardContent() {
               <AssetGrid 
                 assets={assets} 
                 onDelete={handleDeleteTrigger} 
-                onSelect={(id) => router.push(`/dashboard/assets/${id}`)}
+                onSelect={(id) => router.push(`/assets/${id}`)}
                 onToggleSelect={handleToggleSelect}
                 onDownload={(asset) => setDownloadAsset(asset)}
                 onSuccess={fetchAssets}

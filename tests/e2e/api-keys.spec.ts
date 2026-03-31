@@ -15,7 +15,7 @@ function revokeKeyModal(page: Page) {
 }
 
 test('api keys page shows empty inventory state', async ({ page }) => {
-  await page.goto('/dashboard/admin/api-keys');
+  await page.goto('/admin/api-keys');
 
   await expect(page.getByRole('heading', { name: /^API Keys$/i })).toBeVisible();
   await expect(page.getByText(/Manage API keys for programmatic access to your assets\./i)).toBeVisible();
@@ -24,7 +24,7 @@ test('api keys page shows empty inventory state', async ({ page }) => {
 });
 
 test('create and revoke api key \(cleanup\)', async ({ page }) => {
-  await page.goto('/dashboard/admin/api-keys');
+  await page.goto('/admin/api-keys');
   await expect(page.getByRole('heading', { name: /^API Keys$/i })).toBeVisible();
 
   const keyName = `E2E API Key ${Date.now()}`;

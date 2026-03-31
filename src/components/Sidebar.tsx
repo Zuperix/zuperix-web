@@ -31,21 +31,21 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Action } from '@/types/auth';
 
 const NAV = [
-  { name: 'Assets', href: '/dashboard', icon: FolderIcon },
-  { name: 'My Tasks', href: '/dashboard/tasks', icon: InboxIcon },
-  { name: 'Categories', href: '/dashboard/categories', icon: TagIcon },
-  { name: 'Collections', href: '/dashboard/collections', icon: Square3Stack3DIcon },
-  // { name: 'Brand kits', href: '/dashboard/brand', icon: PaintBrushIcon },
-  { name: 'Portals', href: '/dashboard/portals', icon: GlobeAltIcon },
-  { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
+  { name: 'Assets', href: '/', icon: FolderIcon },
+  { name: 'My Tasks', href: '/tasks', icon: InboxIcon },
+  { name: 'Categories', href: '/categories', icon: TagIcon },
+  { name: 'Collections', href: '/collections', icon: Square3Stack3DIcon },
+  // { name: 'Brand kits', href: '/brand', icon: PaintBrushIcon },
+  { name: 'Portals', href: '/portals', icon: GlobeAltIcon },
+  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
 const ADMIN_NAV = [
-  { name: 'Users', href: '/dashboard/admin/users', icon: UsersIcon },
-  { name: 'Roles', href: '/dashboard/admin/roles', icon: ShieldCheckIcon },
-  { name: 'API Keys', href: '/dashboard/admin/api-keys', icon: KeyIcon },
-  { name: 'Webhooks', href: '/dashboard/admin/webhooks', icon: GlobeAltIcon },
-  { name: 'Analytics', href: '/dashboard/admin/analytics', icon: ChartBarIcon },
+  { name: 'Users', href: '/admin/users', icon: UsersIcon },
+  { name: 'Roles', href: '/admin/roles', icon: ShieldCheckIcon },
+  { name: 'API Keys', href: '/admin/api-keys', icon: KeyIcon },
+  { name: 'Webhooks', href: '/admin/webhooks', icon: GlobeAltIcon },
+  { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
 ];
 
 export default function Sidebar() {
@@ -105,14 +105,14 @@ export default function Sidebar() {
         <div className={`flex items-center h-14 border-b border-gray-800/60 flex-shrink-0 ${collapsed ? 'justify-center' : 'px-4 gap-2.5'}`}>
           <div 
             className="h-9 w-9 flex items-center justify-center flex-shrink-0 cursor-pointer"
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/')}
           >
             <img src="/logo_transparant.png" alt="Zuperix Logo" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <span 
               className="text-sm font-semibold text-white tracking-wide cursor-pointer"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/')}
             >
               Zuperix
             </span>

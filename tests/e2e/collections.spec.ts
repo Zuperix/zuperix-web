@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe.configure({ mode: 'serial' });
 
 test('collections page shows create form controls', async ({ page }) => {
-  await page.goto('/dashboard/collections');
+  await page.goto('/collections');
 
   await expect(page.getByRole('heading', { name: /My Collections/i })).toBeVisible();
   await expect(page.getByText(/Curate and group your favorite assets for quick access and sharing\./i)).toBeVisible();
@@ -24,7 +24,7 @@ test('collections page shows create form controls', async ({ page }) => {
 });
 
 test('create and delete collection (cleanup)', async ({ page }) => {
-  await page.goto('/dashboard/collections');
+  await page.goto('/collections');
   await expect(page.getByRole('heading', { name: /My Collections/i })).toBeVisible();
 
   const collectionName = `e2e-collection-${Date.now()}-${Math.random().toString(36).slice(2)}`;

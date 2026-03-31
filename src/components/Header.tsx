@@ -69,7 +69,7 @@ export default function Header() {
     localStorage.setItem('isSemantic', String(newState));
     
     // If on dashboard or search results, update the URL to trigger re-fetch
-    if (pathname === '/dashboard') {
+    if (pathname === '/') {
       const params = new URLSearchParams(searchParams.toString());
       if (newState) {
         params.set('is_semantic', 'true');
@@ -89,12 +89,12 @@ export default function Header() {
     e.preventDefault();
     setShowSuggestions(false);
     if (searchQuery.trim()) {
-      router.push(`/dashboard?q=${encodeURIComponent(searchQuery)}${isSemantic ? '&is_semantic=true' : ''}`);
+      router.push(`/?q=${encodeURIComponent(searchQuery)}${isSemantic ? '&is_semantic=true' : ''}`);
     }
   };
 
   const fetchSuggestions = async (query: string, semanticState = isSemantic) => {
-    if (!activeWorkspace || !query.trim() || query.length < 2 || pathname === '/dashboard/search') {
+    if (!activeWorkspace || !query.trim() || query.length < 2 || pathname === '/search') {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -252,7 +252,7 @@ export default function Header() {
                     key={asset.id}
                     onClick={() => {
                       setShowSuggestions(false);
-                      router.push(`/dashboard/assets/${asset.id}`);
+                      router.push(`/assets/${asset.id}`);
                     }}
                     className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-blue-50/80 dark:hover:bg-blue-900/10 flex items-center gap-4 transition-all group/item"
                   >

@@ -87,7 +87,7 @@ export default function BrandKitsPage() {
           {kits.map(kit => (
             <div 
               key={kit.id}
-              onClick={() => router.push(`/dashboard/brand/${kit.id}`)}
+              onClick={() => router.push(`/brand/${kit.id}`)}
               className="group relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 hover:shadow-2xl hover:shadow-blue-500/10 transition-all cursor-pointer overflow-hidden transform hover:-translate-y-1"
             >
               {/* Decorative background gradient */}

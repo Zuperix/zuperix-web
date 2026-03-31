@@ -68,7 +68,7 @@ export default function OnboardingPage() {
         if (is_onboarding_completed) {
           setSetupProgress(100);
           setTimeout(() => {
-            window.location.href = '/dashboard';
+            window.location.href = '/';
           }, 1500);
         } else {
           setSetupProgress(prev => Math.min(prev + 5, 95));

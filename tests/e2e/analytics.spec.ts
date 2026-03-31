@@ -7,7 +7,7 @@ function parseNumber(text: string) {
 }
 
 test('analytics page shows system metrics and recent activity', async ({ page }) => {
-  await page.goto('/dashboard/admin/analytics');
+  await page.goto('/admin/analytics');
 
   await expect(page.getByRole('heading', { name: /System Analytics/i })).toBeVisible();
   await expect(page.getByText(/Real-time performance and system growth metrics/i)).toBeVisible();
@@ -37,7 +37,7 @@ test('analytics page shows system metrics and recent activity', async ({ page })
   await expect(page.getByRole('heading', { name: /Recent Work Activity/i })).toBeVisible();
   await expect(page.getByText(/Latest user login sessions/i)).toBeVisible();
 
-  // const activityLinks = page.locator('a[href="/dashboard/admin/users"]');
+  // const activityLinks = page.locator('a[href="/admin/users"]');
   // await expect(activityLinks.first()).toBeVisible();
   // expect(await activityLinks.count()).toBeGreaterThan(0);
 

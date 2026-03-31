@@ -26,7 +26,7 @@ export default function MaintenancePage() {
     <div className="max-w-4xl mx-auto py-8 px-6 animate-in fade-in duration-500">
       <div className="mb-10">
         <Link 
-          href="/dashboard/settings" 
+          href="/settings" 
           className="flex items-center gap-1 text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 transition-colors group"
         >
           <ChevronLeftIcon className="h-3 w-3 group-hover:-translate-x-1 transition-transform" />

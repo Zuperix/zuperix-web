@@ -14,7 +14,7 @@ export default function WorkflowsSettingsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <Link 
-            href="/dashboard/settings"
+            href="/settings"
             className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

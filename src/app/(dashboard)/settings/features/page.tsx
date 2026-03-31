@@ -175,7 +175,7 @@ export default function ProjectFeaturesPage() {
   return (
     <div className="p-10 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-32">
       <Link 
-        href="/dashboard/settings"
+        href="/settings"
         className="flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors mb-6 group"
       >
         <ChevronLeftIcon className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />

@@ -567,7 +567,7 @@ export default function UploadModal({
                               </button>
                               <span className="text-gray-300 dark:text-gray-700">|</span>
                               <a
-                                href={`/dashboard/assets/${entry.duplicateAsset.id}`}
+                                href={`/assets/${entry.duplicateAsset.id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-1 text-[10px] font-extrabold text-amber-600 dark:text-amber-500 hover:text-amber-700 underline uppercase tracking-widest"

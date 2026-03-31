@@ -25,7 +25,7 @@ async function setUploadDateRange(page: Page, from: string, to: string) {
 test.describe.configure({ mode: 'serial' });
 
 test('dashboard filters update results', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   // Per-page selector: switch to 50 per page and verify showing count

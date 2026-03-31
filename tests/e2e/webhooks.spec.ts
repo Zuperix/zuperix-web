@@ -15,7 +15,7 @@ function deleteWebhookModal(page: Page) {
 }
 
 test('webhooks page shows empty inventory state', async ({ page }) => {
-  await page.goto('/dashboard/admin/webhooks');
+  await page.goto('/admin/webhooks');
 
   await expect(page.getByRole('heading', { name: /Webhook Management/i })).toBeVisible();
   await expect(page.getByText(/Configure real-time notifications for system events\./i)).toBeVisible();
@@ -24,7 +24,7 @@ test('webhooks page shows empty inventory state', async ({ page }) => {
 });
 
 test('create and delete webhook (cleanup)', async ({ page }) => {
-  await page.goto('/dashboard/admin/webhooks');
+  await page.goto('/admin/webhooks');
   await expect(page.getByRole('heading', { name: /Webhook Management/i })).toBeVisible();
 
   const webhookUrl = `https://example.com/e2e-webhook-${Date.now()}`;

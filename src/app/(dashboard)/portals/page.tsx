@@ -240,7 +240,7 @@ export default function PortalsPage() {
                      >
                        <GlobeAltIcon className="h-5 w-5" />
                      </a>
-                     <Link href={`/dashboard/portals/${portal.id}`}>
+                     <Link href={`/portals/${portal.id}`}>
                        <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white text-xs font-bold rounded-xl transition-all uppercase tracking-widest active:scale-95">
                           Assets
                           <ArrowRightIcon className="h-3 w-3" />

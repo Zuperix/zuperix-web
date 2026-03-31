@@ -5,7 +5,7 @@ test.describe('Metadata Management', () => {
   const fieldKey = fieldLabel.toLowerCase().replace(/\s+/g, '_');
 
   test('page loads with expected UI elements', async ({ page }) => {
-    await page.goto('/dashboard/settings/metadata');
+    await page.goto('/settings/metadata');
 
     await expect(page.getByRole('heading', { name: /Metadata Management/i })).toBeVisible();
     await expect(page.getByText(/Define custom properties to store alongside your digital assets/i)).toBeVisible();
@@ -25,7 +25,7 @@ test.describe('Metadata Management', () => {
   });
 
   test('existing Brand field is visible', async ({ page }) => {
-    await page.goto('/dashboard/settings/metadata');
+    await page.goto('/settings/metadata');
 
     const brandField = page.locator('text=Brand').first();
     await expect(brandField).toBeVisible();
@@ -36,7 +36,7 @@ test.describe('Metadata Management', () => {
   });
 
   test('create new metadata field and verify persistence after refresh', async ({ page }) => {
-    await page.goto('/dashboard/settings/metadata');
+    await page.goto('/settings/metadata');
     await expect(page.getByRole('heading', { name: /Metadata Management/i })).toBeVisible();
 
     const labelInput = page.getByPlaceholder(/e\.g\. Photographer Name/i);
@@ -56,7 +56,7 @@ test.describe('Metadata Management', () => {
   });
 
   test('field type dropdown has expected options', async ({ page }) => {
-    await page.goto('/dashboard/settings/metadata');
+    await page.goto('/settings/metadata');
     await expect(page.getByRole('heading', { name: /Metadata Management/i })).toBeVisible();
 
     // Field type is a native select element
@@ -69,7 +69,7 @@ test.describe('Metadata Management', () => {
   });
 
   test('toggle switches work correctly', async ({ page }) => {
-    await page.goto('/dashboard/settings/metadata');
+    await page.goto('/settings/metadata');
     await expect(page.getByRole('heading', { name: /Metadata Management/i })).toBeVisible();
 
     const requiredToggle = page.locator('button[role="switch"]').filter({ hasText: /Required/i }).or(
@@ -93,7 +93,7 @@ test.describe('Metadata Management', () => {
   });
 
   test('Bulk Import CSV tab switches view', async ({ page }) => {
-    await page.goto('/dashboard/settings/metadata');
+    await page.goto('/settings/metadata');
     await expect(page.getByRole('heading', { name: /Metadata Management/i })).toBeVisible();
 
     await page.getByRole('button', { name: /Bulk Import \(CSV\)/i }).click();

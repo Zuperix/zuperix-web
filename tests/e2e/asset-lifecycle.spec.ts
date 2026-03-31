@@ -5,7 +5,7 @@ import { expectShowing } from './helpers';
 test.describe.configure({ mode: 'serial' });
 
 test('upload and delete asset (cleanup)', async ({ page }, testInfo) => {
-  await page.goto('/dashboard');
+  await page.goto('');
 
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 

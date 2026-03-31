@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } else if (isLoginOrRegister || isOnboardingPage) {
       console.log('Redirecting to dashboard...');
-      router.push('/dashboard');
+      router.push('/');
     }
   }, [router, pathname]);
 

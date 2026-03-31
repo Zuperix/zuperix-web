@@ -11,6 +11,6 @@ export async function clearAllFilters(page: Page) {
   const clearAll = page.locator('div.flex.flex-wrap.gap-2').getByRole('button', { name: /Clear all/i });
   await expect(clearAll).toBeVisible();
   await clearAll.click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\/$/);
   await expectShowing(page, 20, 535);
 }

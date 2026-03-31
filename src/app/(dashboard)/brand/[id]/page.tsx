@@ -51,7 +51,7 @@ export default function BrandKitDetailPage() {
     try {
       await apiFetch(`/brand-kits/${id}`, { method: 'DELETE' });
       toast.success('Brand kit deleted');
-      router.push('/dashboard/brand');
+      router.push('/brand');
     } catch (err) {
       toast.error('Failed to delete brand kit');
     }
@@ -89,7 +89,7 @@ export default function BrandKitDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <button 
-          onClick={() => router.push('/dashboard/brand')}
+          onClick={() => router.push('/brand')}
           className="flex items-center gap-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <ArrowLeftIcon className="h-4 w-4" />

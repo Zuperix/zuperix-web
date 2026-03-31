@@ -98,7 +98,7 @@ export default function TagsManagementPage() {
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <Link 
-            href="/dashboard/settings" 
+            href="/settings" 
             className="flex items-center gap-1 text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 transition-colors group"
           >
             <ChevronLeftIcon className="h-3 w-3 group-hover:-translate-x-1 transition-transform" />

@@ -13,7 +13,7 @@ test.describe.configure({ mode: 'serial' });
 
 
 test('search shortcuts: type:image AND size>500kb', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   const input = searchInput(page);
@@ -24,7 +24,7 @@ test('search shortcuts: type:image AND size>500kb', async ({ page }) => {
 
 
 test('search shortcuts: type:image AND size>100kb', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   const input = searchInput(page);
@@ -34,7 +34,7 @@ test('search shortcuts: type:image AND size>100kb', async ({ page }) => {
 });
 
 test('search shortcuts: type:image AND size > 100kb (with spaces) - parser ignores size filter', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   const input = searchInput(page);
@@ -45,7 +45,7 @@ test('search shortcuts: type:image AND size > 100kb (with spaces) - parser ignor
 });
 
 test('search shortcuts: (type:image OR type:video) AND tag:airplane', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   const input = searchInput(page);
@@ -55,7 +55,7 @@ test('search shortcuts: (type:image OR type:video) AND tag:airplane', async ({ p
 });
 
 test('search shortcuts: type:image', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   const input = searchInput(page);
@@ -66,7 +66,7 @@ test('search shortcuts: type:image', async ({ page }) => {
 });
 
 test('search shortcuts: type:video', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   const input = searchInput(page);
@@ -78,7 +78,7 @@ test('search shortcuts: type:video', async ({ page }) => {
 });
 
 test('search shortcuts: size>1mb', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   const input = searchInput(page);
@@ -89,7 +89,7 @@ await expectShowing(page, 20, 23);
 });
 
 test('search shortcuts: tag:airplane', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   const input = searchInput(page);
@@ -102,7 +102,7 @@ test('search shortcuts: tag:airplane', async ({ page }) => {
 
 
 test('dashboard search supports keyword and semantic flows', async ({ page }) => {
-  await page.goto('/dashboard');
+  await page.goto('');
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
   const input = searchInput(page);

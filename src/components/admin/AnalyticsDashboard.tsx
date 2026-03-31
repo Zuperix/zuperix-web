@@ -213,7 +213,7 @@ export default function AnalyticsDashboard() {
             {recentLogins.map((login) => (
               <Link 
                 key={login.id} 
-                href="/dashboard/admin/users"
+                href="/admin/users"
                 className="flex items-center gap-4 group hover:bg-gray-800/30 p-2 rounded-2xl transition-all block"
               >
                 <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-800 to-gray-950 border border-gray-700 flex items-center justify-center text-sm font-bold text-blue-400">
@@ -246,7 +246,7 @@ export default function AnalyticsDashboard() {
           {topAssets.map((asset) => (
             <Link 
               key={asset.asset.id} 
-              href={`/dashboard/assets/${asset.asset.id}`}
+              href={`/assets/${asset.asset.id}`}
               className="bg-gray-800/50 border border-gray-700/50 rounded-2xl p-4 hover:border-blue-500/50 transition-all group block"
             >
               <div className="aspect-square rounded-xl bg-gray-900 mb-4 flex items-center justify-center relative overflow-hidden">

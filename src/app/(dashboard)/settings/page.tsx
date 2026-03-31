@@ -17,7 +17,7 @@ const SETTINGS_SECTIONS = [
     name: 'Metadata Management',
     description: 'Configure custom fields, groups, and templates for your assets.',
     icon: IdentificationIcon,
-    href: '/dashboard/settings/metadata',
+    href: '/settings/metadata',
     color: 'bg-blue-500/10 text-blue-400',
   },
   {
@@ -25,7 +25,7 @@ const SETTINGS_SECTIONS = [
     name: 'Tags & Labels',
     description: 'Manage asset tags and labels for better organization.',
     icon: TagIcon,
-    href: '/dashboard/settings/tags',
+    href: '/settings/tags',
     color: 'bg-indigo-500/10 text-indigo-400',
   },
   {
@@ -33,7 +33,7 @@ const SETTINGS_SECTIONS = [
     name: 'Workflows',
     description: 'Define automation and approval processes for your assets.',
     icon: QueueListIcon,
-    href: '/dashboard/settings/workflows',
+    href: '/settings/workflows',
     color: 'bg-purple-500/10 text-purple-400',
   },
   {
@@ -41,7 +41,7 @@ const SETTINGS_SECTIONS = [
     name: 'Library Maintenance',
     description: 'Scan for duplicates, near-matches, and keep your library organized.',
     icon: CpuChipIcon,
-    href: '/dashboard/settings/maintenance',
+    href: '/settings/maintenance',
     color: 'bg-amber-500/10 text-amber-400',
   },
   {
@@ -49,7 +49,7 @@ const SETTINGS_SECTIONS = [
     name: 'Trash',
     description: 'Recover or permanently delete items from your workspace.',
     icon: TrashIcon,
-    href: '/dashboard/settings/trash',
+    href: '/settings/trash',
     color: 'bg-red-500/10 text-red-400',
   },
   {
@@ -57,7 +57,7 @@ const SETTINGS_SECTIONS = [
     name: 'Project Features',
     description: 'Enable or disable advanced features like OCR and Text Extraction.',
     icon: AdjustmentsHorizontalIcon,
-    href: '/dashboard/settings/features',
+    href: '/settings/features',
     color: 'bg-emerald-500/10 text-emerald-400',
   }
 ];

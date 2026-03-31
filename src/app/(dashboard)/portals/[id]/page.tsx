@@ -139,7 +139,7 @@ export default function PortalDetailPage() {
     return (
       <div className="p-8 text-center bg-gray-950 min-h-screen flex flex-col items-center justify-center gap-6">
         <h1 className="text-xl font-bold text-white">Portal not found</h1>
-        <Link href="/dashboard/portals" className="text-blue-500 mt-4 inline-block italic">Back to Portals</Link>
+        <Link href="/portals" className="text-blue-500 mt-4 inline-block italic">Back to Portals</Link>
       </div>
     );
   }
@@ -190,7 +190,7 @@ function PortalDetailContent({
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div className="space-y-2">
           <Link 
-            href="/dashboard/portals" 
+            href="/portals" 
             className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest group"
           >
             <ArrowLeftIcon className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
