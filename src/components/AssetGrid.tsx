@@ -11,8 +11,10 @@ import {
   ArrowDownTrayIcon,
   ShareIcon,
   LockClosedIcon,
-  ArrowUturnLeftIcon
+  ArrowUturnLeftIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
+import AddToVaultModal from './AddToVaultModal';
 import { PermissionGate } from './PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
@@ -75,7 +77,8 @@ const AssetCard = ({
   isSelected,
   onDownload,
   onRestore,
-  onShare
+  onShare,
+  onVault
 }: { 
   asset: Asset, 
   onDelete: (id: string) => void, 
@@ -84,7 +87,8 @@ const AssetCard = ({
   isSelected: boolean,
   onDownload?: (asset: Asset) => void,
   onRestore?: (id: string) => void,
-  onShare: (asset: Asset) => void
+  onShare: (asset: Asset) => void,
+  onVault: (asset: Asset) => void
 }) => {
   const { activeWorkspace } = useWorkspace();
   const [imgError, setImgError] = useState(false);
@@ -234,6 +238,17 @@ const AssetCard = ({
             <ArrowDownTrayIcon className="h-4 w-4" />
           </button>
 
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onVault(asset);
+            }}
+            className="p-2.5 bg-gray-800/50 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 rounded-xl transition-all active:scale-95"
+            title="Add to Vault"
+          >
+            <ShieldCheckIcon className="h-4 w-4" />
+          </button>
+
           {onRestore && (
             <button 
               onClick={(e) => {
@@ -285,6 +300,7 @@ export default function AssetGrid({
   selectedIds?: string[]
 }) {
   const [sharingAsset, setSharingAsset] = useState<Asset | null>(null);
+  const [vaultingAsset, setVaultingAsset] = useState<Asset | null>(null);
   const assetList = Array.isArray(assets) ? assets : [];
 
   if (assetList.length === 0) {
@@ -313,6 +329,7 @@ export default function AssetGrid({
               onDownload={onDownload}
               onRestore={onRestore}
               onShare={(a) => setSharingAsset(a)}
+              onVault={(a) => setVaultingAsset(a)}
               isSelected={isSelected}
             />
           );
@@ -325,6 +342,17 @@ export default function AssetGrid({
         assetId={sharingAsset?.id || ''}
         originalName={sharingAsset?.original_name || ''}
       />
+
+      {vaultingAsset && (
+        <AddToVaultModal 
+          selectedIds={[vaultingAsset.id]}
+          onClose={() => setVaultingAsset(null)}
+          onSuccess={() => {
+            setVaultingAsset(null);
+            onSuccess?.();
+          }}
+        />
+      )}
     </>
   );
 }

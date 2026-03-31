@@ -7,8 +7,10 @@ import {
   RectangleGroupIcon,
   TrashIcon,
   ArchiveBoxIcon,
-  CheckBadgeIcon
+  CheckBadgeIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
+import AddToVaultModal from './AddToVaultModal';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
@@ -30,6 +32,7 @@ export default function BulkActionToolbar({
   const { activeWorkspace } = useWorkspace();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+  const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -108,6 +111,16 @@ export default function BulkActionToolbar({
               <span className="text-xs font-medium hidden sm:inline">Collection</span>
             </button>
 
+            <button 
+              onClick={() => setIsVaultModalOpen(true)}
+              disabled={isProcessing}
+              className="p-2.5 text-white/70 hover:text-blue-400 hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group"
+              title="Add to Vault"
+            >
+              <ShieldCheckIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-medium hidden sm:inline text-blue-400">Vault</span>
+            </button>
+
             <div className="w-px h-6 bg-white/10 mx-1" />
 
             <button 
@@ -145,6 +158,17 @@ export default function BulkActionToolbar({
           selectedIds={selectedIds}
           onClose={() => setIsCollectionModalOpen(false)}
           onSuccess={onSuccess}
+        />
+      )}
+
+      {isVaultModalOpen && (
+        <AddToVaultModal 
+          selectedIds={selectedIds}
+          onClose={() => setIsVaultModalOpen(false)}
+          onSuccess={() => {
+            onSuccess();
+            onClear();
+          }}
         />
       )}
 

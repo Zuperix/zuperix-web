@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, DragEvent, useEffect } from 'react';
+import { useState, useRef, useCallback, DragEvent } from 'react';
 import {
   XMarkIcon,
   CloudArrowUpIcon,
@@ -17,10 +17,13 @@ import {
   ChevronUpIcon,
   ArrowTopRightOnSquareIcon,
   CubeTransparentIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { BASE_URL } from '@/lib/api';
 import { useCategories, Category } from '@/hooks/useCategories';
+import { useVaults } from '@/hooks/useVaults';
 import { useMetadataFields, MetadataField } from '@/hooks/useMetadataFields';
+import { LockClosedIcon } from '@heroicons/react/20/solid';
 
 const CONCURRENCY = 5;
 const MAX_FILES = 500;
@@ -56,12 +59,27 @@ function formatSize(bytes: number) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <div className="relative group inline-block">
+      <InformationCircleIcon className="h-3.5 w-3.5 text-gray-400 hover:text-blue-500 transition-colors cursor-help" />
+      <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 p-2.5 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[70] scale-95 group-hover:scale-100 origin-bottom">
+        <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
+          {content}
+        </p>
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-[4px] border-transparent border-t-gray-800" />
+      </div>
+    </div>
+  );
+}
+
 function uploadFileXHR(
   file: File,
   workspaceId: string,
   token: string | null,
   onProgress: (pct: number) => void,
   categoryIds: string[] = [],
+  vaultId: string | null = null,
   force: boolean = false,
   metadata: Record<string, any> = {}
 ): Promise<void | { id: string; original_name: string }> {
@@ -73,6 +91,10 @@ function uploadFileXHR(
     
     if (categoryIds.length > 0) {
       categoryIds.forEach(id => formData.append('category_ids[]', id));
+    }
+
+    if (vaultId) {
+      formData.append('vault_id', vaultId);
     }
 
     if (Object.keys(metadata).length > 0) {
@@ -141,9 +163,11 @@ export default function UploadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
 
-  // Category selection state
+  // Category & Vault selection state
   const { categories } = useCategories();
+  const { vaults } = useVaults();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [selectedVaultId, setSelectedVaultId] = useState<string>('');
 
   // Metadata state
   const { fields: metadataFields } = useMetadataFields(workspaceId);
@@ -197,7 +221,7 @@ export default function UploadModal({
       try {
         await uploadFileXHR(entry.file, workspaceId, token, (pct) => {
           updateEntry(entry.id, { progress: pct });
-        }, categoryIds, entry.force, initialMetadata);
+        }, categoryIds, selectedVaultId || null, entry.force, initialMetadata);
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: any) {
         if (err instanceof DuplicateError) {
@@ -291,7 +315,10 @@ export default function UploadModal({
         <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/20 border-b dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Target Category</label>
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                Target Category
+                <InfoTooltip content="Organize your assets into a specific category within the workspace." />
+              </label>
               <div className="relative">
                 <select
                   value={selectedCategoryId}
@@ -314,6 +341,36 @@ export default function UploadModal({
                 </div>
               </div>
             </div>
+
+            {vaults.length > 0 && (
+              <div className="flex-1">
+                <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                  Target Vault
+                  <InfoTooltip content="Vaults provide an extra layer of security with role-based access for sensitive assets." />
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedVaultId}
+                    onChange={(e) => setSelectedVaultId(e.target.value)}
+                    disabled={running}
+                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none disabled:opacity-50"
+                  >
+                    <option value="">No Vault (Direct Upload)</option>
+                    {vaults.map((vault) => (
+                      <option key={vault.id} value={vault.id}>
+                        {vault.name}
+                      </option>
+                    ))}
+                  </select>
+                  <LockClosedIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -326,8 +383,9 @@ export default function UploadModal({
             >
               <div className="flex items-center gap-2">
                 <TagIcon className={`h-4 w-4 ${showMetadata ? 'text-blue-500' : 'text-gray-400'}`} />
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   Initial Metadata (Apply to all)
+                  <InfoTooltip content="Common metadata values that will be automatically applied to all uploaded assets." />
                 </span>
                 {Object.keys(initialMetadata).length > 0 && (
                   <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] font-bold rounded-md">
@@ -397,7 +455,7 @@ export default function UploadModal({
                   ))}
                   {metadataFields.filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
                     <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
-                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching "{metadataSearch}"</p>
+                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching &quot;{metadataSearch}&quot;</p>
                     </div>
                   )}
                 </div>
