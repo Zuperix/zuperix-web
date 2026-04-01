@@ -5,7 +5,8 @@ import {
   ChevronDownIcon,
   CalendarIcon,
   DocumentTextIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 
 export type SortOption = {
@@ -16,6 +17,7 @@ export type SortOption = {
 };
 
 const sortOptions: SortOption[] = [
+  { label: 'Most Relevant', sort_by: '_score', sort_order: 'desc', icon: SparklesIcon },
   { label: 'Newest First', sort_by: 'created_at', sort_order: 'desc', icon: CalendarIcon },
   { label: 'Oldest First', sort_by: 'created_at', sort_order: 'asc', icon: CalendarIcon },
   { label: 'Name (A-Z)', sort_by: 'original_filename.keyword', sort_order: 'asc', icon: DocumentTextIcon },

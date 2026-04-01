@@ -12,13 +12,13 @@ import FilterSidebar from '@/components/FilterSidebar';
 import DuplicateFinderModal from '@/components/DuplicateFinderModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import DownloadModal from '@/components/DownloadModal';
-import { 
-  PlusIcon, 
-  ArrowPathIcon, 
-  XMarkIcon, 
-  ChevronLeftIcon, 
-  ChevronRightIcon, 
-  MagnifyingGlassIcon, 
+import {
+  PlusIcon,
+  ArrowPathIcon,
+  XMarkIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MagnifyingGlassIcon,
   FunnelIcon,
   SquaresPlusIcon
 } from '@heroicons/react/24/outline';
@@ -30,16 +30,16 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { toast } from 'sonner';
 
-function FilterChips({ 
-  activeFilters, 
+function FilterChips({
+  activeFilters,
   filters,
-  onRemove, 
+  onRemove,
   onClearAll,
   disabled = false,
-}: { 
-  activeFilters: Record<string, any>, 
+}: {
+  activeFilters: Record<string, any>,
   filters: any,
-  onRemove: (key: string, value?: any) => void, 
+  onRemove: (key: string, value?: any) => void,
   onClearAll: () => void,
   disabled?: boolean,
 }) {
@@ -82,7 +82,7 @@ function FilterChips({
     if (key.startsWith('ws') || key === 'page' || key === 'limit' || key === 'is_semantic') return;
 
     const label = filterLabels[key] || key.split('.').pop()!.replace(/_/g, ' ');
-    
+
     if (Array.isArray(value)) {
       value.forEach(v => {
         let displayValue = String(v);
@@ -92,10 +92,10 @@ function FilterChips({
           if (bucket?.label) displayValue = bucket.label;
         }
 
-        chips.push({ 
-          key, 
-          label, 
-          value: v, 
+        chips.push({
+          key,
+          label,
+          value: v,
           displayValue: key === 'color_palette' ? '' : displayValue
         });
       });
@@ -113,7 +113,7 @@ function FilterChips({
   // 3. Third pass: Add grouped range chips
   Object.entries(rangeGroups).forEach(([baseKey, values]) => {
     const label = filterLabels[baseKey] || baseKey.split('.').pop()!.replace(/_/g, ' ');
-    
+
     const formatValue = (val: any) => {
       if (typeof val === 'number') return val.toFixed(2);
       if (!isNaN(parseFloat(val)) && /^-?\d*\.?\d+$/.test(String(val))) {
@@ -132,10 +132,10 @@ function FilterChips({
     }
 
     if (displayValue) {
-      chips.push({ 
-        key: baseKey, 
-        label, 
-        value: values, 
+      chips.push({
+        key: baseKey,
+        label,
+        value: values,
         displayValue,
         isRange: true
       } as any);
@@ -147,7 +147,7 @@ function FilterChips({
   return (
     <div className="flex flex-wrap gap-2 pt-2">
       {chips.map((chip, i) => (
-        <div 
+        <div
           key={`${chip.key}-${chip.value}-${i}`}
           className="group flex items-center gap-1.5 px-3 py-1.5 bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-full shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-top-1 duration-300"
         >
@@ -157,7 +157,7 @@ function FilterChips({
           ) : (
             <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{chip.displayValue}</span>
           )}
-          <button 
+          <button
             onClick={() => onRemove(chip.key, chip.value)}
             className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all"
           >
@@ -165,7 +165,7 @@ function FilterChips({
           </button>
         </div>
       ))}
-      <button 
+      <button
         type="button"
         disabled={disabled}
         onClick={onClearAll}
@@ -185,7 +185,7 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const limit = Number(searchParams.get('limit')) || 20;
   const contentRef = useRef<HTMLDivElement>(null);
-  
+
   const [assets, setAssets] = useState<any[]>([]);
   const [totalMatching, setTotalMatching] = useState(0);
   const [totalInWorkspace, setTotalInWorkspace] = useState(0);
@@ -226,7 +226,7 @@ function DashboardContent() {
         params[key] = value;
       }
     });
-    
+
     const normalized: Record<string, any> = {};
     const arrayKeys = ['mime_type', 'file_extension', 'tag_uuids', 'orientation', 'color_palette', 'category_uuids', 'collection_uuids', 'category_paths'];
     Object.entries(params).forEach(([k, v]) => {
@@ -236,12 +236,20 @@ function DashboardContent() {
         normalized[k] = v;
       }
     });
-    
+
     setActiveFilters(normalized);
-    
+
+    const q = searchParams.get('q');
+    const isSemantic = searchParams.get('is_semantic') === 'true';
+    const sortBy = searchParams.get('sort_by');
+    const sortOrder = searchParams.get('sort_order') as 'asc' | 'desc';
+
+    const defaultBy = (q || isSemantic) ? '_score' : 'created_at';
+    const defaultOrder = 'desc';
+
     setCurrentSort({
-      by: searchParams.get('sort_by') || 'created_at',
-      order: (searchParams.get('sort_order') as 'asc' | 'desc') || 'desc'
+      by: sortBy || defaultBy,
+      order: sortOrder || defaultOrder
     });
 
     if (isClearingAllFilters && searchParams.toString() === '') {
@@ -253,9 +261,9 @@ function DashboardContent() {
     if (!activeWorkspace) return;
     try {
       setLoading(true);
-      
+
       const endpoint = `/workspaces/${activeWorkspace.id}/search/assets?${searchParams.toString()}`;
-      
+
       // We expect the new envelope with results, pagination, filters
       const data = await apiFetch<any>(endpoint);
       setAssets(data.results || []);
@@ -279,10 +287,10 @@ function DashboardContent() {
 
   const handleFilterChange = (keyOrUpdates: string | Record<string, any>, value?: any) => {
     const params = new URLSearchParams(searchParams.toString());
-    
+
     // Reset page on filter change
     params.delete('page');
-    
+
     if (typeof keyOrUpdates === 'string') {
       const key = keyOrUpdates;
       params.delete(key);
@@ -306,7 +314,7 @@ function DashboardContent() {
         }
       });
     }
-    
+
     const query = params.toString();
     router.replace(`/${query ? `?${query}` : ''}`);
   };
@@ -444,21 +452,21 @@ function DashboardContent() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      <FilterSidebar 
-        filters={filters} 
-        activeFilters={activeFilters} 
-        onFilterChange={handleFilterChange} 
+      <FilterSidebar
+        filters={filters}
+        activeFilters={activeFilters}
+        onFilterChange={handleFilterChange}
         onClearAll={handleClearAll}
         disabled={isClearingAllFilters}
       />
 
-      <div 
+      <div
         ref={contentRef}
         className={`relative flex-1 p-4 sm:p-8 transition-all overflow-y-auto select-none`}
       >
         {/* Marquee Overlay */}
         {isDragging && selectionBox && (
-          <div 
+          <div
             className="absolute z-50 bg-blue-500/20 border border-blue-500 rounded-sm pointer-events-none"
             style={{
               left: selectionBox.left,
@@ -482,7 +490,7 @@ function DashboardContent() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-2">
-                  <select 
+                  <select
                     value={limit}
                     onChange={(e) => {
                       const newLimit = Number(e.target.value);
@@ -499,14 +507,14 @@ function DashboardContent() {
                   </select>
                 </div>
                 <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
-                  <button 
+                  <button
                     onClick={() => setIsFilterOpen(true)}
                     className="lg:hidden flex-1 flex items-center justify-center px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shrink-0"
                   >
                     <FunnelIcon className="h-3.5 w-3.5 mr-1.5" />
                     Filters
                   </button>
-                  <button 
+                  <button
                     onClick={fetchAssets}
                     className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 border border-gray-200 dark:border-gray-700 sm:border-transparent rounded-xl transition-all shrink-0"
                   >
@@ -514,13 +522,13 @@ function DashboardContent() {
                   </button>
                 </div>
                 <div className="flex items-center gap-2 flex-1 sm:flex-none">
-                  <SortDropdown 
+                  <SortDropdown
                     currentSortBy={currentSort.by}
                     currentSortOrder={currentSort.order}
                     onSortChange={handleSortChange}
                   />
                   <PermissionGate action={Action.Create} subject="Asset" workspaceId={activeWorkspace.id}>
-                    <button 
+                    <button
                       onClick={() => setIsUploadOpen(true)}
                       className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95 shrink-0"
                     >
@@ -532,10 +540,10 @@ function DashboardContent() {
               </div>
             </div>
 
-            <FilterChips 
-              activeFilters={activeFilters} 
+            <FilterChips
+              activeFilters={activeFilters}
               filters={filters}
-              onRemove={removeFilter} 
+              onRemove={removeFilter}
               onClearAll={handleClearAll}
               disabled={isClearingAllFilters}
             />
@@ -548,7 +556,7 @@ function DashboardContent() {
           ) : (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <button 
+                <button
                   onClick={handleSelectAll}
                   className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors uppercase tracking-widest"
                 >
@@ -557,9 +565,9 @@ function DashboardContent() {
                 </button>
               </div>
 
-              <AssetGrid 
-                assets={assets} 
-                onDelete={handleDeleteTrigger} 
+              <AssetGrid
+                assets={assets}
+                onDelete={handleDeleteTrigger}
                 onSelect={(id) => router.push(`/assets/${id}`)}
                 onToggleSelect={handleToggleSelect}
                 onDownload={(asset) => setDownloadAsset(asset)}
@@ -568,11 +576,11 @@ function DashboardContent() {
                 loading={loading}
                 limit={limit}
               />
-              
-              <Pagination 
-                currentPage={pagination.page} 
-                totalPages={pagination.total_pages} 
-                onPageChange={handlePageChange} 
+
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.total_pages}
+                onPageChange={handlePageChange}
               />
             </div>
           )}
@@ -580,9 +588,9 @@ function DashboardContent() {
       </div>
 
       {isUploadOpen && (
-        <UploadModal 
-          workspaceId={activeWorkspace.id} 
-          onClose={() => setIsUploadOpen(false)} 
+        <UploadModal
+          workspaceId={activeWorkspace.id}
+          onClose={() => setIsUploadOpen(false)}
           onSuccess={fetchAssets}
         />
       )}
@@ -595,7 +603,7 @@ function DashboardContent() {
       />
 
       {selectedIds.length > 0 && (
-        <BulkActionToolbar 
+        <BulkActionToolbar
           selectedIds={selectedIds}
           onClear={() => setSelectedIds([])}
           onSuccess={() => {
