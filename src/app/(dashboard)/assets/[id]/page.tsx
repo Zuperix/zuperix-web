@@ -54,6 +54,7 @@ import { AssetWorkflow, WorkflowTaskStatus } from '@/types/workflow';
 import ThreeDPreview from '@/components/ThreeDPreview';
 import PdfPreview from '@/components/PdfPreview';
 import { splitFileName, joinFileName } from '@/lib/naming';
+import ShareAssetModal from '@/components/ShareAssetModal';
 
 interface Field {
   id: string;
@@ -155,6 +156,7 @@ export default function AssetDetailPage() {
   const [pendingAnnotation, setPendingAnnotation] = useState<{ type: string; coordinates: any } | null>(null);
   const [assetComments, setAssetComments] = useState<any[]>([]);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const { fetchAssetWorkflow, processTask, loading: processingTask } = useWorkflows();
@@ -407,9 +409,7 @@ export default function AssetDetailPage() {
   };
 
   const handleShare = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    toast.success('Link copied to clipboard');
+    setIsShareModalOpen(true);
   };
 
   const updateValue = (fieldId: string, value: any) => {
@@ -1970,6 +1970,14 @@ export default function AssetDetailPage() {
         height={asset?.height}
         mimeType={asset?.mime_type || 'application/octet-stream'}
       />
+      {asset && (
+        <ShareAssetModal 
+            assetId={assetId}
+            originalName={asset.original_name}
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

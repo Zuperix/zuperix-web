@@ -234,12 +234,6 @@ export default function ShareAssetModal({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-4 bg-gray-50 dark:bg-white/2 border-t border-gray-100 dark:border-white/5 flex items-center justify-center">
-           <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">
-            Pre-signed URL
-           </p>
-        </div>
       </div>
     </div>
   );
