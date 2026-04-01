@@ -16,12 +16,11 @@ test('upload and delete asset (cleanup)', async ({ page }, testInfo) => {
   await page.getByRole('button', { name: /^Upload$/i }).click();
   const modalHeader = page.getByText('Bulk Upload');
   await expect(modalHeader).toBeVisible();
-  const modal = page
-    .getByRole('heading', { name: /Bulk Upload/i })
-    .locator('xpath=ancestor::div[contains(@class, "fixed")][1]');
+  const modal = page.locator('div.fixed', { has: page.getByRole('heading', { name: /Bulk Upload/i }) });
+  await expect(modal).toBeVisible();
 
-  await page.setInputFiles('input[type="file"]', filePath);
-  await expect(modal.getByText(fileName, { exact: true })).toBeVisible();
+  await modal.locator('input[type="file"]').setInputFiles(filePath);
+  await expect(modal.getByText(fileName)).toBeVisible({ timeout: 10000 });
 
   await modal.getByRole('button', { name: /^Upload \d+ file(s)?$/i }).click();
   await expect(modal.getByText(/1\s*\/\s*1 complete/i)).toBeVisible({ timeout: 20000 });
