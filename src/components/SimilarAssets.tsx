@@ -17,6 +17,7 @@ interface SimilarAsset {
   mime_type: string;
   size: number;
   created_at: string;
+  asset_live_url?: string;
 }
 
 type SimilarityType = 'metadata' | 'visual';
@@ -133,7 +134,7 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-50 dark:bg-gray-950/50">
                     {isImage ? (
                         <img
-                        src={`${BASE_URL}/assets/${asset.id}/view`}
+                        src={asset.asset_live_url}
                         alt={asset.original_name}
                         className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-1000 ease-out"
                         />

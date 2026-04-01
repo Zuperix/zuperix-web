@@ -873,18 +873,18 @@ export default function AssetDetailPage() {
                 )}
 
               {is3D(asset?.mime_type, asset?.original_name) ? (
-                <ThreeDPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={asset?.original_name} />
+                <ThreeDPreview src={asset?.asset_live_url} alt={asset?.original_name} />
               ) : asset?.mime_type === 'application/pdf' ? (
-                <PdfPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-2xl md:rounded-[32px]" />
+                <PdfPreview src={asset?.asset_live_url} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-2xl md:rounded-[32px]" />
               ) : asset?.mime_type?.startsWith('image/') ? (
                 <img
-                  src={`${BASE_URL}/assets/${assetId}/view`}
+                  src={asset?.asset_live_url}
                   alt={asset?.original_name}
                   className="max-w-full max-h-[70vh] object-contain transition-transform duration-700 group-hover:scale-[1.01] pointer-events-none"
                 />
               ) : asset?.mime_type?.startsWith('video/') ? (
                 <video
-                  src={`${BASE_URL}/assets/${assetId}/view`}
+                  src={asset?.asset_live_url}
                   controls={!annotationMode}
                   className="max-w-full max-h-[70vh] rounded-2xl pointer-events-none"
                 />
@@ -898,7 +898,7 @@ export default function AssetDetailPage() {
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{asset?.mime_type?.split('/')[1] || 'FILE'}</span>
                   </div>
                   <button 
-                    onClick={() => window.open(`${BASE_URL}/assets/${assetId}/view`, '_blank')}
+                    onClick={() => window.open(asset?.asset_live_url, '_blank')}
                     className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20"
                   >
                     View Original

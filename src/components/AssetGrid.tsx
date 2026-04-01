@@ -33,6 +33,7 @@ type Asset = components['schemas']['MetadataEntryDto'] & {
   is_ocr_match?: boolean;
   is_text_extraction_match?: boolean;
   is_semantic_match?: boolean;
+  asset_live_url?: string;
 };
 
 const is3D = (mime: string, filename: string) => {
@@ -71,11 +72,11 @@ const AssetCard = ({
   asset, 
   onDelete, 
   onSelect, 
-  onToggleSelect,
+  onToggleSelect, 
   isSelected,
   onDownload,
   onRestore,
-  onShare
+  onShare,
 }: { 
   asset: Asset, 
   onDelete: (id: string) => void, 
@@ -84,7 +85,8 @@ const AssetCard = ({
   isSelected: boolean,
   onDownload?: (asset: Asset) => void,
   onRestore?: (id: string) => void,
-  onShare: (asset: Asset) => void
+  onShare: (asset: Asset) => void,
+  signedUrl?: string
 }) => {
   const { activeWorkspace } = useWorkspace();
   const [imgError, setImgError] = useState(false);
@@ -128,12 +130,12 @@ const AssetCard = ({
       {/* Top Banner with Image/Preview/3D */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-gray-950/50">
         {is3D(mimeType, originalName) ? (
-          <ThreeDPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={originalName} />
+          <ThreeDPreview src={asset.asset_live_url!} alt={originalName} />
         ) : mimeType === 'application/pdf' ? (
-          <PdfPreview src={`${BASE_URL}/assets/${assetId}/view`} alt={originalName} />
+          <PdfPreview src={asset.asset_live_url!} alt={originalName} />
         ) : mimeType.startsWith('image/') && !imgError ? (
           <img 
-            src={`${BASE_URL}/assets/${assetId}/view`} 
+            src={asset.asset_live_url} 
             alt={originalName}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
             onError={() => setImgError(true)}
@@ -331,6 +333,7 @@ export default function AssetGrid({
 }) {
   const [sharingAsset, setSharingAsset] = useState<Asset | null>(null);
   const assetList = Array.isArray(assets) ? assets : [];
+  
 
   if (loading && assetList.length === 0) {
     return (

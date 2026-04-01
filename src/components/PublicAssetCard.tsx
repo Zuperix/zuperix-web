@@ -15,6 +15,7 @@ interface PublicAsset {
   type: string;
   thumbnail_url: string;
   download_url: string;
+  asset_live_url?: string;
 }
 
 const getIcon = (mime: string) => {
@@ -29,8 +30,10 @@ export default function PublicAssetCard({ asset }: { asset: PublicAsset }) {
 
   // Use the full URL if it's a relative path from the backend
   const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || BASE_URL.replace('/api/v1', '');
-  const imageUrl = asset.thumbnail_url.startsWith('http') ? asset.thumbnail_url : `${backendUrl}${asset.thumbnail_url}`;
-  const downloadUrl = asset.download_url.startsWith('http') ? asset.download_url : `${backendUrl}${asset.download_url}`;
+  
+  // Prioritize CloudFront signed URL (asset_live_url)
+  const imageUrl = asset.asset_live_url!;
+  const downloadUrl = asset.asset_live_url!;
 
   return (
     <div className="group relative bg-white dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all duration-300 overflow-hidden hover:border-blue-400 dark:hover:border-blue-500/50 hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-blue-900/10">
