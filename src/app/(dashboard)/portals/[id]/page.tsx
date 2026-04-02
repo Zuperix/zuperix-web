@@ -28,6 +28,7 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 
 import { toast } from 'sonner';
+import { getPortalUrl } from '@/lib/constants';
 
 export default function PortalDetailPage() {
   const { id } = useParams() as { id: string };
@@ -203,7 +204,7 @@ function PortalDetailContent({
           <div className="flex items-center gap-4">
             <span className="text-gray-500 text-xs font-mono bg-gray-900/50 px-3 py-1 rounded-lg border border-gray-800">/p/{portal.slug}</span>
             <a 
-              href={`/p/${portal.slug}`} 
+              href={getPortalUrl(portal.slug)} 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-blue-500 hover:text-blue-400 text-xs font-bold flex items-center gap-1.5"

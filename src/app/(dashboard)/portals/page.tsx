@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { getPortalUrl } from '@/lib/constants';
 
 export default function PortalsPage() {
   const { portals, createPortal, deletePortal, loading, refresh } = usePortals();
@@ -232,7 +233,7 @@ export default function PortalsPage() {
                    </div>
                    <div className="flex gap-2">
                      <a 
-                      href={`/p/${portal.slug}`} 
+                      href={getPortalUrl(portal.slug)} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="p-2 rounded-xl text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 transition-all"

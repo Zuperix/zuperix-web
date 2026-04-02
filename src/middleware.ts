@@ -41,6 +41,15 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // 3. Redirect /p/* from dashboard to portals domain
+  if (!isPortalsDomain && pathname.startsWith('/p/')) {
+    const url = request.nextUrl.clone();
+    // Use the portal domain for redirection
+    url.host = portalsDomain;
+    url.protocol = 'https:'; // Force HTTPS for portals
+    return NextResponse.redirect(url, 301);
+  }
+
   return NextResponse.next();
 }
 

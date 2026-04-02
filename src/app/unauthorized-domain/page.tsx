@@ -44,10 +44,6 @@ export default function UnauthorizedDomain() {
             </a>
           </div>
         </div>
-
-        <div className="pt-12 text-[10px] font-bold text-gray-600 uppercase tracking-[0.5em] select-none">
-          Zuperix Security & Routing Protocol
-        </div>
       </div>
 
       {/* Grid pattern overlay */}
