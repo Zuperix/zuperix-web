@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { components } from '@/types/api';
-import { 
-  DocumentIcon, 
-  PhotoIcon, 
+import {
+  DocumentIcon,
+  PhotoIcon,
   VideoCameraIcon,
   TrashIcon,
   FolderIcon,
@@ -21,7 +21,7 @@ import ShareAssetModal from './ShareAssetModal';
 import ThreeDPreview from './ThreeDPreview';
 import PdfPreview from './PdfPreview';
 
-type Asset = components['schemas']['MetadataEntryDto'] & { 
+type Asset = components['schemas']['MetadataEntryDto'] & {
   id: string;
   filename: string;
   original_name: string;
@@ -34,16 +34,17 @@ type Asset = components['schemas']['MetadataEntryDto'] & {
   is_text_extraction_match?: boolean;
   is_semantic_match?: boolean;
   asset_live_url?: string;
+  thumbnail_lg_url?: string;
 };
 
 const is3D = (mime: string, filename: string) => {
   const m = mime.toLowerCase();
   const f = filename.toLowerCase();
   return (
-    m === 'model/gltf-binary' || 
-    m === 'model/gltf+json' || 
+    m === 'model/gltf-binary' ||
+    m === 'model/gltf+json' ||
     m.includes('model/') ||
-    f.endsWith('.glb') || 
+    f.endsWith('.glb') ||
     f.endsWith('.gltf')
   );
 };
@@ -68,19 +69,19 @@ const getIcon = (mime: string) => {
   return DocumentIcon;
 };
 
-const AssetCard = ({ 
-  asset, 
-  onDelete, 
-  onSelect, 
-  onToggleSelect, 
+const AssetCard = ({
+  asset,
+  onDelete,
+  onSelect,
+  onToggleSelect,
   isSelected,
   onDownload,
   onRestore,
   onShare,
-}: { 
-  asset: Asset, 
-  onDelete: (id: string) => void, 
-  onSelect?: (id: string) => void, 
+}: {
+  asset: Asset,
+  onDelete: (id: string) => void,
+  onSelect?: (id: string) => void,
   onToggleSelect?: (id: string, isShift: boolean) => void,
   isSelected: boolean,
   onDownload?: (asset: Asset) => void,
@@ -118,30 +119,30 @@ const AssetCard = ({
   };
 
   return (
-    <div 
+    <div
       onClick={() => onSelect?.(assetId)}
       data-asset-id={assetId}
-      className={`group relative bg-white dark:bg-gray-900/60 rounded-2xl border-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col ${
-        isSelected 
-          ? 'border-indigo-500 shadow-2xl shadow-indigo-500/20 z-10 scale-[1.02]' 
+      className={`group relative bg-white dark:bg-gray-900/60 rounded-2xl border-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col ${isSelected
+          ? 'border-indigo-500 shadow-2xl shadow-indigo-500/20 z-10 scale-[1.02]'
           : 'border-transparent hover:border-indigo-500/30 hover:shadow-2xl hover:bg-gray-800/40'
-      }`}
+        }`}
     >
       {/* Top Banner with Image/Preview/3D */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-gray-950/50">
         {is3D(mimeType, originalName) ? (
           <ThreeDPreview src={asset.asset_live_url!} alt={originalName} />
         ) : mimeType === 'application/pdf' ? (
-          <PdfPreview 
-            src={asset.asset_live_url!} 
+          <PdfPreview
+            src={asset.asset_live_url!}
             assetId={assetId}
-            alt={originalName} 
+            alt={originalName}
           />
 
         ) : mimeType.startsWith('image/') && !imgError ? (
-          <img 
-            src={asset.asset_live_url} 
+          <img
+            src={asset.thumbnail_lg_url || asset.asset_live_url}
             alt={originalName}
+            loading="lazy"
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
             onError={() => setImgError(true)}
           />
@@ -158,16 +159,15 @@ const AssetCard = ({
         <div className="absolute inset-0 p-4 pointer-events-none flex flex-col justify-between">
           <div className="flex justify-between items-start pointer-events-auto">
             {/* Selection Checkbox */}
-            <div 
+            <div
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleSelect?.(assetId, e.shiftKey);
               }}
-              className={`p-2 rounded-2xl backdrop-blur-xl border transition-all cursor-pointer ${
-                isSelected 
-                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' 
+              className={`p-2 rounded-2xl backdrop-blur-xl border transition-all cursor-pointer ${isSelected
+                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg'
                   : 'bg-black/20 border-white/20 text-white group-hover:bg-black/40'
-              }`}
+                }`}
             >
               <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? 'border-white bg-white' : 'border-white/60 bg-transparent'}`}>
                 {isSelected && <div className="w-2 h-2 bg-indigo-600 rounded-[2px]" />}
@@ -210,7 +210,7 @@ const AssetCard = ({
           )}
         </div>
       </div>
-      
+
       {/* Content Section */}
       <div className="p-5 space-y-4">
         <div className="space-y-1">
@@ -225,15 +225,15 @@ const AssetCard = ({
 
         {/* Action Row - Permanent */}
         <div className="flex items-center justify-end gap-1 pt-3 border-t border-gray-800/50">
-          <button 
+          <button
             onClick={handleShare}
             className="p-2.5 bg-gray-800/50 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl transition-all active:scale-95"
             title="Secure Share Link"
           >
             <ShareIcon className="h-4 w-4" />
           </button>
-          
-          <button 
+
+          <button
             onClick={handleDownload}
             className="p-2.5 bg-gray-800/50 hover:bg-emerald-500/20 text-gray-400 hover:text-emerald-400 rounded-xl transition-all active:scale-95"
             title="Download Options"
@@ -242,7 +242,7 @@ const AssetCard = ({
           </button>
 
           {onRestore && (
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 onRestore(assetId);
@@ -255,7 +255,7 @@ const AssetCard = ({
           )}
 
           <PermissionGate action={Action.Delete} subject="Asset" workspaceId={activeWorkspace?.id}>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(assetId);
@@ -278,7 +278,7 @@ const SkeletonAssetCard = () => (
     <div className="relative aspect-[4/3] w-full bg-gray-200 dark:bg-gray-800/50 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
     </div>
-    
+
     {/* Content Section Skeleton */}
     <div className="p-5 space-y-4">
       <div className="space-y-2">
@@ -313,8 +313,8 @@ const SkeletonAssetCard = () => (
   </div>
 );
 
-export default function AssetGrid({ 
-  assets = [], 
+export default function AssetGrid({
+  assets = [],
   onDelete,
   onSelect,
   onToggleSelect,
@@ -338,7 +338,7 @@ export default function AssetGrid({
 }) {
   const [sharingAsset, setSharingAsset] = useState<Asset | null>(null);
   const assetList = Array.isArray(assets) ? assets : [];
-  
+
 
   if (loading && assetList.length === 0) {
     return (
@@ -373,12 +373,12 @@ export default function AssetGrid({
         {assetList.map((asset) => {
           const assetId = asset.id || (asset as any).asset_id;
           const isSelected = selectedIds.includes(assetId);
-          
+
           return (
-            <AssetCard 
-              key={assetId} 
-              asset={asset} 
-              onDelete={onDelete} 
+            <AssetCard
+              key={assetId}
+              asset={asset}
+              onDelete={onDelete}
               onSelect={onSelect}
               onToggleSelect={onToggleSelect}
               onDownload={onDownload}
@@ -390,7 +390,7 @@ export default function AssetGrid({
         })}
       </div>
 
-      <ShareAssetModal 
+      <ShareAssetModal
         isOpen={!!sharingAsset}
         onClose={() => setSharingAsset(null)}
         assetId={sharingAsset?.id || ''}
