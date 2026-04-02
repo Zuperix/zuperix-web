@@ -190,7 +190,7 @@ export default function DownloadModal({
               <>
                 <img 
                   ref={imageRef}
-                  src={previewUrl || `${BASE_URL}/assets/${assetId}/view`} 
+                  src={previewUrl} 
                   alt={originalName}
                   onLoad={onImageLoad}
                   crossOrigin="anonymous"

@@ -21,13 +21,10 @@ export default function ThreeDPreview({
 }: ThreeDPreviewProps) {
   const ModelViewer = 'model-viewer' as any;
 
-  const [cacheBuster] = React.useState(() => Date.now());
-  const finalSrc = src.includes('?') ? `${src}&t=${cacheBuster}` : `${src}?t=${cacheBuster}`;
-
   return (
     <div className={`relative w-full h-full overflow-hidden bg-gray-900/20 backdrop-blur-sm rounded-2xl border border-white/5 ${className}`}>
       <ModelViewer
-        src={finalSrc}
+        src={src}
         poster={poster}
         alt={alt}
         auto-rotate={autoRotate ? 'true' : undefined}

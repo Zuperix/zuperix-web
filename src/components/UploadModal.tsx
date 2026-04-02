@@ -21,6 +21,7 @@ import {
 import { BASE_URL } from '@/lib/api';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useMetadataFields, MetadataField } from '@/hooks/useMetadataFields';
+import PdfPreview from './PdfPreview';
 
 const CONCURRENCY = 5;
 const MAX_FILES = 500;
@@ -35,10 +36,11 @@ interface FileEntry {
   progress: number;
   error?: string;
   force?: boolean;
-  duplicateAsset?: {
-    id: string;
-    original_name: string;
-  };
+    duplicateAsset?: {
+      id: string;
+      original_name: string;
+      asset_live_url?: string;
+    };
 }
 
 function fileIcon(file: File) {
@@ -112,7 +114,7 @@ function uploadFileXHR(
 }
 
 class DuplicateError extends Error {
-  public asset?: { id: string; original_name: string };
+  public asset?: { id: string; original_name: string; asset_live_url?: string };
   constructor(message: string, asset?: any) {
     super(message);
     this.name = 'DuplicateError';
@@ -120,6 +122,7 @@ class DuplicateError extends Error {
       this.asset = {
         id: asset.id,
         original_name: asset.originalName || asset.original_name,
+        asset_live_url: asset.asset_live_url,
       };
     }
   }
@@ -541,9 +544,15 @@ export default function UploadModal({
                         <div className="h-16 w-16 bg-white dark:bg-gray-950 rounded-lg overflow-hidden border border-amber-200 dark:border-amber-800 shadow-inner flex-shrink-0">
                           {entry.file.type.startsWith('image/') ? (
                             <img 
-                              src={`${BASE_URL}/assets/${entry.duplicateAsset.id}/view`} 
+                              src={entry.duplicateAsset.asset_live_url} 
                               className="h-full w-full object-cover" 
                               alt="Existing duplicate" 
+                            />
+                          ) : entry.file.type === 'application/pdf' ? (
+                            <PdfPreview 
+                              src={entry.duplicateAsset.asset_live_url || ''} 
+                              assetId={entry.duplicateAsset.id}
+                              className="h-full w-full"
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center">

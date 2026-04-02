@@ -33,7 +33,7 @@ export function DraggableAsset({ asset, onAdd, isAlreadyInPortal }: any) {
       <div className="aspect-video bg-gray-950 rounded-xl overflow-hidden relative">
          {asset.mime_type?.startsWith('image/') || asset.type?.startsWith('image/') ? (
            <img 
-            src={`${BASE_URL}/assets/${asset.id}/view`} 
+            src={asset.asset_live_url} 
             alt={asset.original_name || asset.name}
             className="w-full h-full object-cover"
            />
@@ -117,7 +117,7 @@ export function DroppablePortalAssets({ assets, onDrop, onOpenSearch }: any) {
                 <div className="aspect-square bg-gray-900 flex items-center justify-center relative">
                   {(asset.type?.startsWith('image/') || asset.mime_type?.startsWith('image/')) ? (
                     <img 
-                      src={`${BASE_URL}/assets/${asset.id}/view`} 
+                      src={asset.asset_live_url} 
                       alt={asset.name || asset.original_name}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                     />

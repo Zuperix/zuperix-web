@@ -136,7 +136,7 @@ export default function DuplicateFinderModal({
                           <div className="aspect-square bg-gray-50 dark:bg-gray-950 rounded-xl overflow-hidden border dark:border-gray-800 relative shadow-inner">
                             {asset.mimeType?.startsWith('image/') ? (
                               <img 
-                                src={`${BASE_URL}/assets/${asset.id}/view`}
+                                src={asset.asset_live_url}
                                 className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-500"
                                 alt={asset.originalName}
                               />

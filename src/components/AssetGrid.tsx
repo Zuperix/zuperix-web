@@ -132,7 +132,12 @@ const AssetCard = ({
         {is3D(mimeType, originalName) ? (
           <ThreeDPreview src={asset.asset_live_url!} alt={originalName} />
         ) : mimeType === 'application/pdf' ? (
-          <PdfPreview src={asset.asset_live_url!} alt={originalName} />
+          <PdfPreview 
+            src={asset.asset_live_url!} 
+            assetId={assetId}
+            alt={originalName} 
+          />
+
         ) : mimeType.startsWith('image/') && !imgError ? (
           <img 
             src={asset.asset_live_url} 

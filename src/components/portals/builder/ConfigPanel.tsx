@@ -46,7 +46,7 @@ export default function ConfigPanel() {
         body: formData,
       });
 
-      const url = `${BASE_URL}/assets/${response.id}/view`;
+      const url = response.asset_live_url;
       const newSettings = { ...(portalConfig.settings || {}), [key]: url };
       setPortalConfig({ settings: newSettings });
     } catch (err) {

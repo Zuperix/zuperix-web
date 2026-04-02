@@ -55,6 +55,7 @@ import ThreeDPreview from '@/components/ThreeDPreview';
 import PdfPreview from '@/components/PdfPreview';
 import { splitFileName, joinFileName } from '@/lib/naming';
 import ShareAssetModal from '@/components/ShareAssetModal';
+import { is3D } from '@/lib/format';
 
 interface Field {
   id: string;
@@ -69,18 +70,6 @@ interface MetadataValue {
 }
 
 type Tab = 'file-info' | 'attachments' | 'versions' | 'comments' | 'history' | 'workflow';
-
-const is3D = (mime: string, filename: string) => {
-  const m = (mime || '').toLowerCase();
-  const f = (filename || '').toLowerCase();
-  return (
-    m === 'model/gltf-binary' || 
-    m === 'model/gltf+json' || 
-    m.includes('model/') ||
-    f.endsWith('.glb') || 
-    f.endsWith('.gltf')
-  );
-};
 
 const STATUS_STYLING: Record<string, string> = {
   draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
@@ -873,7 +862,11 @@ export default function AssetDetailPage() {
                 )}
 
               {is3D(asset?.mime_type, asset?.original_name) ? (
-                <ThreeDPreview src={asset?.asset_live_url} alt={asset?.original_name} />
+                <ThreeDPreview 
+                  src={asset?.asset_live_url || ''} 
+                  alt={asset?.original_name} 
+                  className="w-full h-[60vh] max-h-[70vh]"
+                />
               ) : asset?.mime_type === 'application/pdf' ? (
                 <PdfPreview src={asset?.asset_live_url} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-2xl md:rounded-[32px]" />
               ) : asset?.mime_type?.startsWith('image/') ? (
@@ -1484,7 +1477,7 @@ export default function AssetDetailPage() {
                              </div>
                            </div>
                            <div className="flex items-center gap-1">
-                             <a href={`${BASE_URL}/assets/attachments/${attachment.id}/view`} target="_blank" className="p-2 text-gray-400 hover:text-blue-500"><ArrowDownTrayIcon className="h-4 w-4" /></a>
+                             <a href={attachment.asset_live_url} target="_blank" className="p-2 text-gray-400 hover:text-blue-500"><ArrowDownTrayIcon className="h-4 w-4" /></a>
                              <PermissionGate action={Action.Delete} subject="Asset" workspaceId={activeWorkspace?.id}>
                                <button
                                  onClick={() => handleDeleteAttachment(attachment.id)}
@@ -1683,7 +1676,7 @@ export default function AssetDetailPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <a
-                          href={`${BASE_URL}/assets/attachments/${attachment.id}/view`}
+                          href={attachment.asset_live_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
@@ -1822,7 +1815,7 @@ export default function AssetDetailPage() {
 
                           <div className="flex flex-col gap-2">
                             <a
-                              href={`${BASE_URL}/assets/${assetId}/versions/${version.id}/view`}
+                              href={version.asset_live_url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"

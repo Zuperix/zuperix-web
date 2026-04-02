@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import { components } from '@/types/api';
+import PdfPreview from './PdfPreview';
+import ThreeDPreview from './ThreeDPreview';
+import { is3D } from '@/lib/format';
 import { 
   XMarkIcon, 
   CheckIcon, 
@@ -31,6 +34,7 @@ type AssetDetails = {
   release_date: string | null;
   expiration_date: string | null;
   ocr_text?: string | null;
+  asset_live_url: string;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -213,21 +217,37 @@ export default function MetadataPanel({
         {/* Preview Section */}
         <div className="p-4 bg-gray-950/20 border-b border-gray-800/50">
           <div className="aspect-video rounded-xl overflow-hidden bg-gray-800 border border-gray-700/50 relative group">
-            <img 
-              src={`${BASE_URL}/assets/${assetId}/view`} 
-              className="w-full h-full object-contain"
-              alt="Asset preview"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                if (target.nextElementSibling) {
-                  (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                }
-              }}
-            />
-            <div className="hidden absolute inset-0 items-center justify-center bg-gray-800">
-              <DocumentIcon className="h-12 w-12 text-gray-600" />
-            </div>
+            {is3D(asset?.mime_type, asset?.original_name) ? (
+              <ThreeDPreview 
+                src={asset?.asset_live_url || ''} 
+                alt={asset?.original_name || ''}
+                className="w-full h-full"
+              />
+            ) : asset?.mime_type === 'application/pdf' ? (
+              <PdfPreview 
+                src={asset?.asset_live_url || ''} 
+                assetId={asset?.id} 
+                className="w-full h-full"
+              />
+            ) : (
+              <>
+                <img 
+                  src={asset?.asset_live_url} 
+                  className="w-full h-full object-contain"
+                  alt="Asset preview"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    if (target.nextElementSibling) {
+                      (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                    }
+                  }}
+                />
+                <div className="hidden absolute inset-0 items-center justify-center bg-gray-800">
+                  <DocumentIcon className="h-12 w-12 text-gray-600" />
+                </div>
+              </>
+            )}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               <p className="text-[10px] font-bold text-white uppercase tracking-widest">Preview</p>
             </div>
