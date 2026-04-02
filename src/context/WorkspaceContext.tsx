@@ -24,7 +24,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
   const fetchWorkspaces = useCallback(async () => {
-    if (!user) return;
+    if (!user?.id) return;
     try {
       setLoading(true);
       const data = await apiFetch<Workspace[]>('/workspaces');
@@ -39,17 +39,17 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [user, activeWorkspace]);
+  }, [user?.id, activeWorkspace]);
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       fetchWorkspaces();
-    } else {
+    } else if (!user) {
       setWorkspaces([]);
       setActiveWorkspace(null);
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id, fetchWorkspaces]);
 
   const handleSetActiveWorkspace = (workspace: Workspace) => {
     setActiveWorkspace(workspace);
