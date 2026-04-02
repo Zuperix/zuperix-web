@@ -1,6 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import DownloadOptions from './DownloadOptions';
+import CustomImage from './CustomImage';
 import { BASE_URL } from '@/lib/api';
 
 interface Crop {
@@ -188,12 +189,14 @@ export default function DownloadModal({
           >
             {mimeType.startsWith('image/') ? (
               <>
-                <img 
+                <CustomImage 
                   ref={imageRef}
-                  src={previewUrl} 
+                  src={previewUrl!} 
                   alt={originalName}
                   onLoad={onImageLoad}
                   crossOrigin="anonymous"
+                  width={originalWidth || 1000}
+                  height={originalHeight || 1000}
                   className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl ring-1 ring-white/10 select-none"
                 />
                 

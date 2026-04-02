@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import CustomImage from './CustomImage';
 import { components } from '@/types/api';
 import {
   DocumentIcon,
@@ -139,11 +140,11 @@ const AssetCard = ({
           />
 
         ) : mimeType.startsWith('image/') && !imgError ? (
-          <img
-            src={asset.thumbnail_lg_url || asset.asset_live_url}
+          <CustomImage 
+            src={asset.thumbnail_lg_url || asset.asset_live_url!} 
             alt={originalName}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
             onError={() => setImgError(true)}
           />
         ) : (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import CustomImage from './CustomImage';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import { 
   PhotoIcon, 
@@ -18,6 +19,7 @@ interface SimilarAsset {
   size: number;
   created_at: string;
   asset_live_url?: string;
+  thumbnail_lg_url?: string;
 }
 
 type SimilarityType = 'metadata' | 'visual';
@@ -133,10 +135,13 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
                 >
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-50 dark:bg-gray-950/50">
                     {isImage ? (
-                        <img
-                        src={asset.asset_live_url}
-                        alt={asset.original_name}
-                        className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-1000 ease-out"
+                        <CustomImage
+                          src={asset.thumbnail_lg_url || asset.asset_live_url!}
+                          alt={asset.original_name}
+                          fill
+                          shimmerWidth={260}
+                          shimmerHeight={180}
+                          className="object-cover group-hover/card:scale-110 transition-transform duration-1000 ease-out"
                         />
                     ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-3">

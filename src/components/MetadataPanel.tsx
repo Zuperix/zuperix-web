@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import CustomImage from './CustomImage';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import { components } from '@/types/api';
 import PdfPreview from './PdfPreview';
@@ -35,6 +36,7 @@ type AssetDetails = {
   expiration_date: string | null;
   ocr_text?: string | null;
   asset_live_url: string;
+  thumbnail_lg_url?: string;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -231,9 +233,12 @@ export default function MetadataPanel({
               />
             ) : (
               <>
-                <img 
-                  src={asset?.asset_live_url} 
-                  className="w-full h-full object-contain"
+                <CustomImage 
+                  src={asset?.thumbnail_lg_url || asset?.asset_live_url!} 
+                  fill
+                  shimmerWidth={350}
+                  shimmerHeight={200}
+                  className="object-contain"
                   alt="Asset preview"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;

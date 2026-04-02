@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import NotificationCenter from './NotificationCenter';
+import CustomImage from './CustomImage';
 
 export default function Header() {
   const { sidebarCollapsed, setSidebarCollapsed, searchQuery, setSearchQuery } = useLayout();
@@ -310,11 +311,16 @@ export default function Header() {
                   >
                     <div className="h-12 w-12 rounded-xl bg-gray-50 dark:bg-gray-900/40 overflow-hidden flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-800 group-hover/item:border-blue-500/30 transition-all shadow-sm" title={`Score: ${asset.score?.toFixed(4) || 'N/A'}`}>
                       {asset.mime_type?.startsWith('image/') ? (
-                        <img 
-                          src={asset.asset_live_url} 
-                          alt="" 
-                          className="h-full w-full object-cover group-hover/item:scale-110 transition-transform duration-500"
-                        />
+                        <div className="relative h-full w-full">
+                          <CustomImage 
+                            src={asset.thumbnail_lg_url || asset.asset_live_url} 
+                            alt="" 
+                            fill
+                            shimmerWidth={48}
+                            shimmerHeight={48}
+                            className="object-cover group-hover/item:scale-110 transition-transform duration-500"
+                          />
+                        </div>
                       ) : (
                         <DocumentIcon className="h-6 w-6 text-gray-400 dark:text-gray-600 group-hover/item:text-blue-500 transition-colors" />
                       )}

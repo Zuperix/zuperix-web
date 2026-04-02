@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import { toast } from 'sonner';
+import CustomImage from './CustomImage';
 
 interface DuplicateGroup {
   type: 'exact' | 'near';
@@ -135,10 +136,11 @@ export default function DuplicateFinderModal({
                         >
                           <div className="aspect-square bg-gray-50 dark:bg-gray-950 rounded-xl overflow-hidden border dark:border-gray-800 relative shadow-inner">
                             {asset.mimeType?.startsWith('image/') ? (
-                              <img 
-                                src={asset.asset_live_url}
-                                className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-500"
+                              <CustomImage 
+                                src={asset.thumbnail_lg_url || asset.asset_live_url}
+                                fill
                                 alt={asset.originalName}
+                                className="object-cover transition-transform group-hover:scale-105 duration-500"
                               />
                             ) : (
                               <div className="h-full w-full flex items-center justify-center">
