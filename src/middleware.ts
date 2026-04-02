@@ -20,7 +20,9 @@ export function middleware(request: NextRequest) {
   }
 
   // 2. Domain-based access control
-  const isPortalsDomain = host?.includes(portalsDomain);
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isLocalhost = host?.includes('localhost') || host?.includes('127.0.0.1');
+  const isPortalsDomain = host?.includes(portalsDomain) || (isLocalhost && host?.includes(':3001'));
   
   // Static assets and API routes should always be accessible
   const isStaticAsset = pathname.startsWith('/_next') || 
@@ -28,27 +30,26 @@ export function middleware(request: NextRequest) {
                         pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|js|css)$/);
   const isApiRoute = pathname.startsWith('/api');
 
-  if (isPortalsDomain && !isStaticAsset && !isApiRoute) {
-    // Portals domain should ONLY access /p/* routes
+  if (isPortalsDomain && !isStaticAsset && !isApiRoute && !isDevelopment) {
+    // Portals domain should ONLY access /p/* routes (Skip restriction in dev)
     const isPortalRoute = pathname.startsWith('/p/');
     const isUnauthorizedPage = pathname === '/unauthorized-domain';
 
     if (!isPortalRoute && !isUnauthorizedPage) {
-      // Rewrite to unauthorized domain page
       const url = request.nextUrl.clone();
       url.pathname = '/unauthorized-domain';
       return NextResponse.rewrite(url);
     }
   }
 
-  // 3. Redirect /p/* from dashboard to portals domain
-  if (!isPortalsDomain && pathname.startsWith('/p/')) {
+  if (!isPortalsDomain && pathname.startsWith('/p/') && !isDevelopment) {
     const url = request.nextUrl.clone();
     // Use the portal domain for redirection
     url.host = portalsDomain;
     url.protocol = 'https:'; // Force HTTPS for portals
     return NextResponse.redirect(url, 301);
   }
+
 
   return NextResponse.next();
 }

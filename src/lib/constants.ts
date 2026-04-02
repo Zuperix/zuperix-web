@@ -2,6 +2,10 @@ export const DASHBOARD_DOMAIN = process.env.NEXT_PUBLIC_DASHBOARD_DOMAIN || 'das
 export const PORTALS_DOMAIN = process.env.NEXT_PUBLIC_PORTALS_DOMAIN || 'portals.zuperix.com';
 
 export const getPortalUrl = (slug: string) => {
+  if (process.env.NODE_ENV === 'development') {
+    return `http://localhost:3001/p/${slug}`;
+  }
   // Always use HTTPS for the portal URL
   return `https://${PORTALS_DOMAIN}/p/${slug}`;
 };
+

@@ -18,6 +18,8 @@ interface DownloadModalProps {
   width: number | null;
   height: number | null;
   mimeType: string;
+  previewUrl?: string;
+  portalSlug?: string;
 }
 
 export default function DownloadModal({
@@ -28,7 +30,10 @@ export default function DownloadModal({
   width: propWidth,
   height: propHeight,
   mimeType,
+  previewUrl,
+  portalSlug,
 }: DownloadModalProps) {
+
   const [originalWidth, setOriginalWidth] = useState<number | null>(propWidth);
   const [originalHeight, setOriginalHeight] = useState<number | null>(propHeight);
   const [crop, setCrop] = useState<Crop>({ x: 10, y: 10, width: 80, height: 80 });
@@ -185,7 +190,7 @@ export default function DownloadModal({
               <>
                 <img 
                   ref={imageRef}
-                  src={`${BASE_URL}/assets/${assetId}/view`} 
+                  src={previewUrl || `${BASE_URL}/assets/${assetId}/view`} 
                   alt={originalName}
                   onLoad={onImageLoad}
                   crossOrigin="anonymous"
@@ -282,7 +287,9 @@ export default function DownloadModal({
               aspectRatioType={aspectRatioType}
               onAspectRatioChange={setAspectRatioType}
               onCropChange={setCrop}
+              portalSlug={portalSlug}
             />
+
           </div>
 
           {/* Footer */}

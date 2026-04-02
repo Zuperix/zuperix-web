@@ -47,8 +47,13 @@ export default function CategoryWidget({ widget, isEditMode, context }: { widget
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {filteredAssets.length > 0 ? (
           filteredAssets.map((asset: any) => (
-            <PublicAssetCard key={asset.id} asset={asset} />
+            <PublicAssetCard 
+              key={asset.id} 
+              asset={asset} 
+              onDownload={context?.onDownload} 
+            />
           ))
+
         ) : isEditMode ? (
           placeholders.map((_, i) => (
             <div key={i} className="aspect-square bg-gray-900/40 border border-gray-800/60 rounded-2xl flex items-center justify-center opacity-40 group-hover:opacity-60 transition-opacity">
