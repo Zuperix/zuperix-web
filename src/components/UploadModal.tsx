@@ -58,6 +58,220 @@ function formatSize(bytes: number) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+async function uploadFileSingle(
+  file: File,
+  workspaceId: string,
+  token: string | null,
+  onProgress: (pct: number) => void,
+  categoryIds: string[] = [],
+  force: boolean = false,
+  metadata: Record<string, any> = {}
+): Promise<void | { id: string; original_name: string }> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // 1. Init Upload via backend
+      const initRes = await fetch(`${BASE_URL}/assets/upload/init`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          workspace_id: workspaceId,
+          filename: file.name,
+          mime_type: file.type || 'application/octet-stream',
+          size: file.size,
+        }),
+      });
+
+      if (!initRes.ok) {
+        const body: any = await initRes.json().catch(() => ({}));
+        throw new Error(body.message || `Init failed (${initRes.status})`);
+      }
+
+      const initBody = await initRes.json();
+      const { url, key, method } = initBody.data;
+
+      // 2. Direct upload to Storage (S3 / Local Proxy)
+      await new Promise<void>((uploadResolve, uploadReject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            onProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        });
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            onProgress(100);
+            uploadResolve();
+          } else {
+            uploadReject(new Error(`Storage upload failed (${xhr.status})`));
+          }
+        };
+
+        xhr.onerror = () => uploadReject(new Error('Network error during storage transfer'));
+        xhr.ontimeout = () => uploadReject(new Error('Storage transfer timed out'));
+        xhr.timeout = 300_000; // 5 mins for large files directly to storage
+
+        xhr.open(method || 'PUT', url);
+        // Important: S3 presigned PUT requires the exact Content-Type that was signed
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        xhr.send(file);
+      });
+
+      // 3. Finalize upload
+      const finalizeRes = await fetch(`${BASE_URL}/assets/upload/finalize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          workspace_id: workspaceId,
+          key,
+          filename: file.name,
+          original_name: file.name,
+          mime_type: file.type || 'application/octet-stream',
+          size: file.size,
+          category_ids: categoryIds,
+          metadata,
+        }),
+      });
+
+      if (!finalizeRes.ok) {
+        const body: any = await finalizeRes.json().catch(() => ({}));
+        throw new Error(body.message || `Finalize failed (${finalizeRes.status})`);
+      }
+
+      resolve();
+    } catch (err: any) {
+      reject(err);
+    }
+  });
+}
+
+async function uploadFileMultipart(
+  file: File,
+  workspaceId: string,
+  token: string | null,
+  onProgress: (pct: number) => void,
+  categoryIds: string[] = [],
+  force: boolean = false,
+  metadata: Record<string, any> = {}
+): Promise<void | { id: string; original_name: string }> {
+  const CHUNK_SIZE = 10 * 1024 * 1024;
+  const totalParts = Math.ceil(file.size / CHUNK_SIZE);
+
+  // 1. Initial request
+  const initRes = await fetch(`${BASE_URL}/assets/upload/multipart/init`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      workspace_id: workspaceId,
+      filename: file.name,
+      mime_type: file.type || 'application/octet-stream',
+      size: file.size,
+    }),
+  });
+
+  if (!initRes.ok) throw new Error('Init multipart failed');
+  const initBody = await initRes.json();
+  const { upload_id, key } = initBody.data;
+
+  // 2. Fetch URLs
+  const urlsRes = await fetch(`${BASE_URL}/assets/upload/multipart/urls`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ workspace_id: workspaceId, key, upload_id, parts: totalParts }),
+  });
+
+  if (!urlsRes.ok) throw new Error('Fetch multipart URLs failed');
+  const urlsData = (await urlsRes.json()).data;
+
+  // 3. Upload parts concurrently
+  let uploadedBytes = 0;
+  const completedParts: { partNumber: number; etag: string }[] = [];
+  const CONCURRENCY_LIMIT = 3;
+
+  for (let i = 0; i < urlsData.length; i += CONCURRENCY_LIMIT) {
+    const batch = urlsData.slice(i, i + CONCURRENCY_LIMIT);
+    await Promise.all(batch.map(async (part: any) => {
+      // The backend global interceptor converts partNumber to part_number!
+      const pNumber = part.part_number || part.partNumber;
+      
+      const start = (pNumber - 1) * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, file.size);
+      const chunk = file.slice(start, end);
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        let lastLoaded = 0;
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            uploadedBytes += (e.loaded - lastLoaded);
+            lastLoaded = e.loaded;
+            onProgress(Math.round((uploadedBytes / file.size) * 100));
+          }
+        });
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const rawEtag = xhr.getResponseHeader('ETag');
+            if (!rawEtag) {
+               console.error(`Missing ETag for part ${part.partNumber}. CORS issue!`);
+            }
+            const fallbackEtag = rawEtag || `"cf23df2207d99a74fbe169e3eba035e6"`; // Fake MD5 to prevent XML crash, but will cause InvalidPart
+            completedParts.push({ partNumber: pNumber, etag: fallbackEtag });
+            resolve();
+          } else {
+            reject(new Error(`Chunk upload failed`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Chunk upload network error'));
+        xhr.open('PUT', part.url);
+        xhr.send(chunk);
+      });
+    }));
+  }
+
+  // 4. Complete
+  const finalizeRes = await fetch(`${BASE_URL}/assets/upload/multipart/complete`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      workspace_id: workspaceId,
+      key,
+      upload_id: upload_id,
+      parts: completedParts,
+      finalize_data: {
+        workspace_id: workspaceId,
+        key,
+        filename: file.name,
+        original_name: file.name,
+        mime_type: file.type || 'application/octet-stream',
+        size: file.size,
+        category_ids: categoryIds,
+        metadata,
+      }
+    }),
+  });
+
+  if (!finalizeRes.ok) {
+    const body: any = await finalizeRes.json().catch(() => ({}));
+    throw new Error(body.message || `Finalize failed (${finalizeRes.status})`);
+  }
+}
+
 function uploadFileXHR(
   file: File,
   workspaceId: string,
@@ -67,50 +281,12 @@ function uploadFileXHR(
   force: boolean = false,
   metadata: Record<string, any> = {}
 ): Promise<void | { id: string; original_name: string }> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('workspace_id', workspaceId);
-    
-    if (categoryIds.length > 0) {
-      categoryIds.forEach(id => formData.append('category_ids[]', id));
-    }
-
-    if (Object.keys(metadata).length > 0) {
-      formData.append('metadata', JSON.stringify(metadata));
-    }
-
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-    });
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        onProgress(100);
-        resolve();
-      } else {
-        let msg = `Upload failed (${xhr.status})`;
-        try {
-          const body = JSON.parse(xhr.responseText);
-          if (xhr.status === 409) {
-            reject(new DuplicateError(body.message || 'Duplicate detected', body.existing_asset));
-            return;
-          }
-          msg = body.message || msg;
-        } catch {}
-        reject(new Error(msg));
-      }
-    };
-
-    xhr.onerror = () => reject(new Error('Network error'));
-    xhr.ontimeout = () => reject(new Error('Request timed out'));
-    xhr.timeout = 120_000;
-
-    xhr.open('POST', `${BASE_URL}/assets/upload?workspace_id=${workspaceId}${force ? '&force=true' : ''}`);
-    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    xhr.send(formData);
-  });
+  // If > 10MB, use Multipart
+  if (file.size > 10 * 1024 * 1024) {
+    return uploadFileMultipart(file, workspaceId, token, onProgress, categoryIds, force, metadata);
+  } else {
+    return uploadFileSingle(file, workspaceId, token, onProgress, categoryIds, force, metadata);
+  }
 }
 
 class DuplicateError extends Error {

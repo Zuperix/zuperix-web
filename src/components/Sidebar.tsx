@@ -32,6 +32,7 @@ import { Action } from '@/types/auth';
 
 const NAV = [
   { name: 'Assets', href: '/', icon: FolderIcon },
+  { name: 'Upload Status', href: '/upload-status', icon: QueueListIcon },
   { name: 'My Tasks', href: '/tasks', icon: InboxIcon },
   { name: 'Categories', href: '/categories', icon: TagIcon },
   { name: 'Collections', href: '/collections', icon: Square3Stack3DIcon },
@@ -62,6 +63,7 @@ export default function Sidebar() {
     return NAV.filter(item => {
       // Basic visibility rules:
       if (item.name === 'Assets') return true; // Everyone sees assets, service handles filtering
+      if (item.name === 'Upload Status') return true; // Everyone sees upload status for their assets
       if (item.name === 'My Tasks') return true; // Personalized
       if (item.name === 'Settings') return true; // General settings
       

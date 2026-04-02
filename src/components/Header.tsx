@@ -1,6 +1,6 @@
 'use client';
 
-import { MagnifyingGlassIcon, Bars3Icon, BellIcon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, Bars3Icon, BellIcon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon, SparklesIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -370,6 +370,16 @@ export default function Header() {
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <SunIcon className="h-4.5 w-4.5" /> : <MoonIcon className="h-4.5 w-4.5" />}
+          </button>
+          
+          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
+
+          <button
+            onClick={() => router.push('/upload-status')}
+            className={`p-1.5 rounded-lg transition-all duration-200 ${pathname === '/upload-status' ? 'bg-blue-500/10 text-blue-500' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800'}`}
+            title="Upload Status"
+          >
+            <CloudArrowUpIcon className="h-4.5 w-4.5" />
           </button>
           
           <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
