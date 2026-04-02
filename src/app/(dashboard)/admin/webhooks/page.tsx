@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { 
-  GlobeAltIcon, 
+  SignalIcon, 
   PlusIcon, 
   TrashIcon, 
   ClipboardDocumentCheckIcon,
@@ -16,8 +16,10 @@ import {
   ClockIcon,
   KeyIcon,
   ArrowsRightLeftIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
+
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import type { Webhook, WebhookLog, WebhookStats } from '@/types/webhooks';
@@ -165,8 +167,9 @@ export default function WebhooksPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-500/10 rounded-xl">
-            <GlobeAltIcon className="h-6 w-6 text-indigo-400" />
+            <SignalIcon className="h-6 w-6 text-indigo-400" />
           </div>
+
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Webhook Management</h1>
             <p className="text-sm text-gray-500">Configure real-time notifications for system events.</p>
@@ -300,8 +303,9 @@ export default function WebhooksPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
                   <div className="space-y-1.5">
                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
-                      <GlobeAltIcon className="h-3.5 w-3.5 text-indigo-400" /> Payload URL
+                      <SignalIcon className="h-3.5 w-3.5 text-indigo-400" /> Payload URL
                     </label>
+
                     <input
                       type="url" required value={newWebhook.url}
                       onChange={e => setNewWebhook({ ...newWebhook, url: e.target.value })}

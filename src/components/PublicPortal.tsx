@@ -7,6 +7,8 @@ import DownloadModal from './DownloadModal';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 
 import WidgetRenderer from './portals/builder/WidgetRenderer';
+import PortalPasswordPrompt from './PortalPasswordPrompt';
+
 
 interface PortalData {
   name: string;
@@ -18,6 +20,9 @@ interface PortalData {
   banner_image_url: string | null;
   background_color: string | null;
   settings: any;
+  is_password_protected?: boolean;
+  is_authorized?: boolean;
+
   categories?: Array<{ id: string; name: string }>;
   collections?: Array<{ id: string; name: string }>;
   assets: Array<{
@@ -56,22 +61,37 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
   const [totalPages, setTotalPages] = useState(initialAssets?.pagination?.total_pages || 1);
   const [totalResults, setTotalResults] = useState(initialAssets?.pagination?.total_results || 0);
 
-  // 1. Initial portal config fetch (only if not SSR provided)
-  useEffect(() => {
-    if (initialData || initialError) return;
-
-    async function fetchPortal() {
-      try {
-        const response = await apiFetch<PortalData>(`/p/${slug}`);
-        setData(response);
-      } catch (err: any) {
-        console.error('Failed to fetch portal:', err);
-        setError(err.message || 'Failed to load portal');
-      } finally {
-        setLoading(false);
-      }
+  const [isVerifyingToken, setIsVerifyingToken] = useState(false);
+  
+  const fetchPortal = async () => {
+    try {
+      const response = await apiFetch<PortalData>(`/p/${slug}`);
+      setData(response);
+      setError(null);
+    } catch (err: any) {
+      console.error('Failed to fetch portal:', err);
+      setError(err.message || 'Failed to load portal');
+    } finally {
+      setLoading(false);
+      setIsVerifyingToken(false);
     }
-    fetchPortal();
+  };
+
+  // 1. Initial portal config fetch or re-fetch for authorization
+  useEffect(() => {
+    const hasToken = typeof window !== 'undefined' && localStorage.getItem(`portal_token_${slug}`);
+    
+    // If we have SSR data but it's unauthorized AND we have a token, we must re-fetch on client
+    if (initialData && initialData.is_password_protected && !initialData.is_authorized && hasToken) {
+      setIsVerifyingToken(true);
+      fetchPortal();
+      return;
+    }
+
+    // Standard initial fetch if no SSR data provided
+    if (!initialData && !initialError) {
+      fetchPortal();
+    }
   }, [slug, initialData, initialError]);
 
   // 2. Reset page on search change
@@ -81,7 +101,7 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
 
   // 3. Manage server-side OS Search & Pagination
   useEffect(() => {
-    if (loading || !data) return;
+    if (loading || isVerifyingToken || !data) return;
 
     // Skip the first fetch if we already have SSR initialAssets AND we are on page 1 with no query
     if (initialAssets && page === 1 && searchQuery.trim() === '' && searchResults.length === (initialAssets.results?.length || 0)) {
@@ -108,9 +128,9 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, page, slug, loading, data, initialAssets]);
+  }, [searchQuery, page, slug, loading, isVerifyingToken, data, initialAssets]);
 
-  if (loading) {
+  if (loading || isVerifyingToken) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -128,6 +148,20 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
       </div>
     );
   }
+
+  if (data.is_password_protected && !data.is_authorized) {
+    return (
+      <PortalPasswordPrompt 
+        slug={slug}
+        name={data.name}
+        logoUrl={data.settings?.logo_url}
+        backgroundColor={data.background_color || undefined}
+        onSuccess={fetchPortal}
+      />
+    );
+  }
+
+
 
   const hasLayout = data.settings?.layout && Array.isArray(data.settings.layout) && data.settings.layout.length > 0;
 

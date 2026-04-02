@@ -15,9 +15,11 @@ export interface Portal {
   banner_image_url?: string;
   background_color?: string;
   expires_at?: string;
+  password?: string;
   settings?: any;
   created_at: string;
 }
+
 
 export function usePortals() {
   const { activeWorkspace } = useWorkspace();

@@ -2,7 +2,8 @@
 
 import React, { useRef, useState } from 'react';
 import { useBuilderStore } from '@/stores/builderStore';
-import { XMarkIcon, Cog6ToothIcon, ChevronDownIcon, PhotoIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, Cog6ToothIcon, ChevronDownIcon, PhotoIcon, ArrowPathIcon, ShieldCheckIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+
 import { useCollections } from '@/hooks/useCollections';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useWorkspace } from '@/context/WorkspaceContext';
@@ -26,8 +27,10 @@ export default function ConfigPanel() {
   const { activeWorkspace } = useWorkspace();
   const [uploadingState, setUploadingState] = useState<{ logo?: boolean; favicon?: boolean }>({});
   
+  const [showPassword, setShowPassword] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
+
 
   const flatCategories = React.useMemo(() => flattenCategories(categories), [categories]);
 
@@ -75,8 +78,6 @@ export default function ConfigPanel() {
         <div className="h-14 w-14 rounded-3xl bg-gray-900/80 border border-gray-800/80 shadow-2xl flex items-center justify-center mb-6 relative z-10 backdrop-blur-md flex-shrink-0">
           <Cog6ToothIcon className="h-6 w-6 text-gray-400 stroke-[1.5]" />
         </div>
-
-        <h3 className="text-gray-200 font-semibold tracking-tight text-sm mb-2 relative z-10">Studio Ready</h3>
 
         <p className="text-[11px] text-gray-500 text-center leading-relaxed tracking-wide mb-10 max-w-[200px] relative z-10">
           Global settings for your portal.
@@ -191,6 +192,34 @@ export default function ConfigPanel() {
               </p>
             </div>
           </div>
+
+          {/* Password Protection */}
+          <div className="w-full bg-gray-900/40 border border-gray-800/40 rounded-3xl p-5 hover:bg-gray-900/60 transition-all backdrop-blur-md flex flex-col gap-3">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 flex items-center gap-2">
+              <ShieldCheckIcon className="h-3 w-3 text-blue-500" />
+              Password Access
+            </span>
+            <div className="relative group/pass">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="w-full bg-gray-800/50 border border-gray-700 rounded-xl px-3 py-2.5 text-xs text-gray-300 focus:border-blue-500 outline-none transition-all font-mono"
+                placeholder="Set access password..."
+                value={portalConfig?.password || ''}
+                onChange={(e) => setPortalConfig({ password: e.target.value })}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                {showPassword ? <EyeSlashIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+            <p className="text-[9px] text-gray-600 px-1 leading-tight">
+              Require a password to view portal assets. Leave blank to disable.
+            </p>
+          </div>
+
         </div>
       </div>
     );

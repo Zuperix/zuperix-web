@@ -112,7 +112,8 @@ export function DroppablePortalAssets({ assets, onDrop, onOpenSearch }: any) {
              </div>
           )}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {assets.map((asset: any) => (
+            {(Array.isArray(assets) ? assets : []).map((asset: any) => (
+
               <div key={asset.id} className="group relative bg-gray-950 rounded-2xl border border-gray-800 overflow-hidden hover:border-blue-500/30 transition-all shadow-lg">
                 <div className="aspect-square bg-gray-900 flex items-center justify-center relative">
                   {(asset.type?.startsWith('image/') || asset.mime_type?.startsWith('image/')) ? (

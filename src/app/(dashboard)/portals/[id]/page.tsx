@@ -60,8 +60,9 @@ export default function PortalDetailPage() {
         background_color: p.background_color || '#fafafa',
         expires_at: p.expires_at
       });
-      const assets = assetsData?.assets || assetsData || [];
+      const assets = Array.isArray(assetsData?.assets) ? assetsData.assets : (Array.isArray(assetsData) ? assetsData : []);
       setPortalAssets(assets);
+
       useBuilderStore.getState().setPortalAssets(assets);
       useBuilderStore.getState().setPortalCategories(assetsData?.categories || []);
       useBuilderStore.getState().setPortalCollections(assetsData?.collections || []);
@@ -110,11 +111,13 @@ export default function PortalDetailPage() {
     const updates = {
       background_color: currentConfig?.background_color,
       expires_at: currentConfig?.expires_at,
+      password: currentConfig?.password,
       settings: {
         ...(portal?.settings || {}),
         layout: currentWidgets
       }
     };
+
 
     try {
       setIsSaving(true);

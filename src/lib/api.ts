@@ -14,6 +14,18 @@ export async function apiFetch<T>(
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
+
+  // Handle portal-specific tokens
+  if (typeof window !== 'undefined' && endpoint.startsWith('/p/')) {
+    const slug = endpoint.split('/')[2];
+    if (slug) {
+      const portalToken = localStorage.getItem(`portal_token_${slug}`);
+      if (portalToken) {
+        headers.set('x-portal-token', portalToken);
+      }
+    }
+  }
+
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
@@ -53,6 +65,18 @@ export async function apiDownload(
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }
+
+  // Handle portal-specific tokens
+  if (typeof window !== 'undefined' && endpoint.startsWith('/p/')) {
+    const slug = endpoint.split('/')[2];
+    if (slug) {
+      const portalToken = localStorage.getItem(`portal_token_${slug}`);
+      if (portalToken) {
+        headers.set('x-portal-token', portalToken);
+      }
+    }
+  }
+
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
