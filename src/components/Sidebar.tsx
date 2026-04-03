@@ -32,7 +32,6 @@ import { Action } from '@/types/auth';
 
 const NAV = [
   { name: 'Assets', href: '/', icon: FolderIcon },
-  { name: 'Upload Status', href: '/upload-status', icon: QueueListIcon },
   { name: 'My Tasks', href: '/tasks', icon: InboxIcon },
   { name: 'Categories', href: '/categories', icon: TagIcon },
   { name: 'Collections', href: '/collections', icon: Square3Stack3DIcon },

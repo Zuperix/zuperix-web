@@ -1,4 +1,4 @@
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import DownloadOptions from './DownloadOptions';
 import CustomImage from './CustomImage';
@@ -188,20 +188,27 @@ export default function DownloadModal({
             className="relative max-w-full max-h-full aspect-auto flex items-center justify-center group"
           >
             {mimeType.startsWith('image/') ? (
-              <>
-                <CustomImage 
-                  ref={imageRef}
-                  src={previewUrl!} 
-                  alt={originalName}
-                  onLoad={onImageLoad}
-                  crossOrigin="anonymous"
-                  width={originalWidth || 1000}
-                  height={originalHeight || 1000}
-                  className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl ring-1 ring-white/10 select-none"
-                />
+              <div className="relative w-full h-full flex items-center justify-center">
+                {previewUrl ? (
+                  <CustomImage 
+                    ref={imageRef}
+                    src={previewUrl} 
+                    alt={originalName}
+                    onLoad={onImageLoad}
+                    crossOrigin="anonymous"
+                    width={originalWidth || 1000}
+                    height={originalHeight || 1000}
+                    className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl ring-1 ring-white/10 select-none"
+                    priority
+                  />
+                ) : (
+                  <div className="w-[400px] aspect-square bg-white/5 rounded-2xl animate-pulse flex items-center justify-center">
+                    <PhotoIcon className="w-12 h-12 text-white/10" />
+                  </div>
+                )}
                 
                 {/* Visual Crop Overlay */}
-                {showCrop && (
+                {(showCrop && previewUrl) && (
                   <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
                     {/* Darkened Overlays */}
                     <div className="absolute inset-0 bg-black/50" style={{ clipPath: `polygon(0% 0%, 0% 100%, ${crop.x}% 100%, ${crop.x}% ${crop.y}%, ${crop.x + crop.width}% ${crop.y}%, ${crop.x + crop.width}% ${crop.y + crop.height}%, ${crop.x}% ${crop.y + crop.height}%, ${crop.x}% 100%, 100% 100%, 100% 0%)` }} />
@@ -229,7 +236,7 @@ export default function DownloadModal({
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             ) : (
                <div className="flex flex-col items-center gap-4">
                  <div className="p-6 bg-white dark:bg-white/5 rounded-3xl shadow-xl ring-1 ring-black/5 dark:ring-white/10">

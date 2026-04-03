@@ -622,6 +622,7 @@ function DashboardContent() {
           width={downloadAsset.width || null}
           height={downloadAsset.height || null}
           mimeType={downloadAsset.mime_type}
+          previewUrl={downloadAsset.asset_live_url}
         />
       )}
     </div>

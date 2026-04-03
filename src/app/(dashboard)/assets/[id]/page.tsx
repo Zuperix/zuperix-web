@@ -1963,6 +1963,7 @@ export default function AssetDetailPage() {
         width={asset?.width}
         height={asset?.height}
         mimeType={asset?.mime_type || 'application/octet-stream'}
+        previewUrl={asset?.asset_live_url}
       />
       {asset && (
         <ShareAssetModal 
