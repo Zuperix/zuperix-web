@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { 
   ChevronRightIcon, 
   ChevronDownIcon, 
-  TagIcon,
+  FolderIcon,
   PlusIcon,
   EllipsisVerticalIcon
 } from '@heroicons/react/24/outline';
@@ -83,7 +83,7 @@ function CategoryItem({
           )}
         </button>
         
-        <TagIcon className={`h-3.5 w-3.5 ${isSelected ? 'text-blue-400' : 'text-gray-500'}`} />
+        <FolderIcon className={`h-3.5 w-3.5 ${isSelected ? 'text-blue-400' : 'text-gray-500'}`} />
         <span className="text-xs font-medium truncate flex-1">{category.name}</span>
 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { PortalWidget } from '@/stores/builderStore';
-import { TagIcon } from '@heroicons/react/24/outline';
+import { FolderIcon } from '@heroicons/react/24/outline';
 
 import PublicAssetCard from '@/components/PublicAssetCard';
 
@@ -12,7 +12,7 @@ export default function CategoryWidget({ widget, isEditMode, context }: { widget
   if (isEditMode && !category_id) {
      return (
        <div className="w-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-gray-800 rounded-3xl bg-gray-900/20">
-           <TagIcon className="h-10 w-10 text-gray-600 mb-3" />
+           <FolderIcon className="h-10 w-10 text-gray-600 mb-3" />
            <p className="text-sm font-bold text-gray-500">Unconfigured Category</p>
            <p className="text-[10px] text-gray-600 uppercase tracking-widest mt-1">Select a category in the config panel</p>
        </div>
@@ -39,7 +39,7 @@ export default function CategoryWidget({ widget, isEditMode, context }: { widget
       {isEditMode && (
         <div className="mb-6 flex items-center justify-between">
            <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-3 lowercase italic font-mono opacity-80">
-               <TagIcon className="h-5 w-5 text-blue-500" />
+               <FolderIcon className="h-5 w-5 text-blue-500" />
                {!category_id ? 'All Tags (Preview)' : categoryName}
            </h3>
         </div>

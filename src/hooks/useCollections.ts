@@ -14,6 +14,7 @@ export interface Collection {
   is_smart: boolean;
   smart_filter: any;
   is_global: boolean;
+  asset_count: number;
 }
 
 export function useCollections() {

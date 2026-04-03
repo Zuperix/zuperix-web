@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   XMarkIcon, 
-  TagIcon, 
+  FolderIcon, 
   Square3Stack3DIcon,
   CheckIcon,
   PlusIcon,
@@ -110,7 +110,7 @@ export default function AssetOrganizationDialog({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <TagIcon className="h-5 w-5 text-blue-400" />
+                <FolderIcon className="h-5 w-5 text-blue-400" />
                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Categories</h3>
               </div>
               <button 

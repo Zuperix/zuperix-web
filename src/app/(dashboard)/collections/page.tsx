@@ -296,14 +296,22 @@ export default function CollectionsPage() {
                 </p>
 
                 <div className="mt-auto flex items-center justify-between border-t border-gray-800/60 pt-4">
-                   <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-3.5 w-3.5 text-gray-600" />
-                      <span className="text-[10px] text-gray-500 font-mono">{(new Date()).toLocaleDateString()}</span>
+                   <div className="flex items-center gap-5">
+                      <div className="flex items-center gap-2">
+                         <CalendarIcon className="h-3.5 w-3.5 text-gray-600" />
+                         <span className="text-[10px] text-gray-500 font-mono">{(new Date()).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                         <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">{col.asset_count || 0} Assets</span>
+                      </div>
                    </div>
-                   <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-indigo-600 text-gray-300 hover:text-white text-xs font-bold rounded-xl transition-all uppercase tracking-widest active:scale-95">
+                   <Link 
+                     href={`/?collection_uuids=${col.id}`}
+                     className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-indigo-600 text-gray-300 hover:text-white text-xs font-bold rounded-xl transition-all uppercase tracking-widest active:scale-95"
+                   >
                       View
                       <ArrowRightIcon className="h-3 w-3" />
-                   </button>
+                   </Link>
                 </div>
               </div>
 

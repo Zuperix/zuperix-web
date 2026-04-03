@@ -22,6 +22,7 @@ import {
   ArrowUpTrayIcon,
   TrashIcon,
   ShareIcon,
+  FolderIcon,
   Square3Stack3DIcon,
   ClockIcon,
   InboxIcon,
@@ -944,7 +945,7 @@ export default function AssetDetailPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
-                        <Square3Stack3DIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <FolderIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
                       <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest leading-none">Categories</label>
                     </div>

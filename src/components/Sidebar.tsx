@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useLayout } from '@/context/LayoutContext';
 import {
-  FolderIcon,
   MagnifyingGlassIcon,
   TrashIcon,
   ArrowLeftOnRectangleIcon,
@@ -14,7 +13,8 @@ import {
   ChevronUpDownIcon,
   CheckIcon,
   PlusIcon,
-  TagIcon,
+  FolderIcon,
+  RectangleGroupIcon,
   Square3Stack3DIcon,
   ShieldCheckIcon,
   KeyIcon,
@@ -31,9 +31,9 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Action } from '@/types/auth';
 
 const NAV = [
-  { name: 'Assets', href: '/', icon: FolderIcon },
+  { name: 'Assets', href: '/', icon: RectangleGroupIcon },
   { name: 'My Tasks', href: '/tasks', icon: InboxIcon },
-  { name: 'Categories', href: '/categories', icon: TagIcon },
+  { name: 'Categories', href: '/categories', icon: FolderIcon },
   { name: 'Collections', href: '/collections', icon: Square3Stack3DIcon },
   // { name: 'Brand kits', href: '/brand', icon: PaintBrushIcon },
   { name: 'Portals', href: '/portals', icon: GlobeAltIcon },

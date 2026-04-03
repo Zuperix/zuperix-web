@@ -2,6 +2,20 @@ import { test, expect } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 
+test('collections page shows empty state when no collections exist', async ({ page }) => {
+  await page.goto('/collections');
+  await expect(page.getByRole('heading', { name: /My Collections/i })).toBeVisible();
+
+  const cards = page.locator('div.group.flex.flex-col.p-6');
+  const count = await cards.count();
+
+  if (count === 0) {
+    await expect(page.getByText(/No collections found/i)).toBeVisible();
+    await expect(page.getByText(/Start curating by creating your first collection\./i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Create Collection$/i })).toBeVisible();
+  }
+});
+
 test('collections page shows create form controls', async ({ page }) => {
   await page.goto('/collections');
 

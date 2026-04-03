@@ -13,6 +13,7 @@ import {
   ArrowPathIcon,
   InformationCircleIcon,
   TagIcon,
+  FolderIcon,
   DocumentDuplicateIcon,
   PhotoIcon,
   VideoCameraIcon,
@@ -267,7 +268,7 @@ export default function MetadataPanel({
                   disabled={!!activeWorkflow}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700/60 rounded-2xl text-xs font-bold text-white uppercase tracking-widest transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <TagIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
+                  <FolderIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
                   Organize
                 </button>
                 

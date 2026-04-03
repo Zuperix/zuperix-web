@@ -22,6 +22,7 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import Link from 'next/link';
 
 export default function CategoriesPage() {
   const { categories, updateCategory, deleteCategory, refresh } = useCategories();
@@ -138,47 +139,64 @@ export default function CategoriesPage() {
               {hasChildren ? (
                 isExpanded ? <FolderOpenIcon className="h-4 w-4 text-blue-400" /> : <FolderIcon className="h-4 w-4 text-blue-400" />
               ) : (
-                <TagIcon className="h-4 w-4 text-gray-500" />
+                <FolderIcon className="h-4 w-4 text-gray-500" />
               )}
               <span className="text-sm font-semibold text-white">{cat.name}</span>
+              {cat.asset_count > 0 && (
+                <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-md text-[10px] font-bold">
+                  {cat.asset_count}
+                </span>
+              )}
               {cat.name === 'Global' && (
                 <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md font-bold uppercase tracking-wider">System</span>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <PermissionGate action={Action.Update} subject="Category" workspaceId={activeWorkspace?.id}>
-              <button 
-                onClick={() => setIsAddingTo(cat.id)}
-                className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all"
-                title="Add sub-category"
+          <div className="flex items-center gap-3">
+            {cat.asset_count > 0 && (
+              <Link 
+                href={`/?category_uuids=${cat.id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/5 hover:bg-indigo-500 text-indigo-400 hover:text-white border border-indigo-500/10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all group/view"
               >
-                <PlusIcon className="h-4 w-4" />
-              </button>
-            </PermissionGate>
-            {cat.name !== 'Global' && (
-              <PermissionGate action={Action.Update} subject="Category" workspaceId={activeWorkspace?.id}>
-              <button 
-                onClick={() => startEdit(cat)}
-                className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all"
-                title="Edit"
-              >
-                <PencilSquareIcon className="h-4 w-4" />
-              </button>
-            </PermissionGate>
+                View
+                <ArrowRightIcon className="h-3 w-3 group-hover/view:translate-x-0.5 transition-transform" />
+              </Link>
             )}
-            {cat.name !== 'Global' && (
-              <PermissionGate action={Action.Delete} subject="Category" workspaceId={activeWorkspace?.id}>
+            
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <PermissionGate action={Action.Update} subject="Category" workspaceId={activeWorkspace?.id}>
                 <button 
-                  onClick={() => handleDeleteRequest(cat)}
-                  className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-xl transition-all"
-                  title="Delete"
+                  onClick={() => setIsAddingTo(cat.id)}
+                  className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all"
+                  title="Add sub-category"
                 >
-                  <TrashIcon className="h-4 w-4" />
+                  <PlusIcon className="h-4 w-4" />
                 </button>
               </PermissionGate>
-            )}
+              {cat.name !== 'Global' && (
+                <PermissionGate action={Action.Update} subject="Category" workspaceId={activeWorkspace?.id}>
+                  <button 
+                    onClick={() => startEdit(cat)}
+                    className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all"
+                    title="Edit"
+                  >
+                    <PencilSquareIcon className="h-4 w-4" />
+                  </button>
+                </PermissionGate>
+              )}
+              {cat.name !== 'Global' && (
+                <PermissionGate action={Action.Delete} subject="Category" workspaceId={activeWorkspace?.id}>
+                  <button 
+                    onClick={() => handleDeleteRequest(cat)}
+                    className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-xl transition-all"
+                    title="Delete"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                </PermissionGate>
+              )}
+            </div>
           </div>
         </div>
 
@@ -277,7 +295,7 @@ export default function CategoriesPage() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-            <TagIcon className="h-7 w-7 text-blue-500" />
+            <FolderIcon className="h-7 w-7 text-blue-500" />
             Taxonomy Management
           </h1>
           <p className="text-gray-500 text-sm mt-1">Manage hierarchical labels to organize your global asset library.</p>
@@ -324,7 +342,7 @@ export default function CategoriesPage() {
       <div className="space-y-3">
         {categories.length === 0 ? (
           <div className="text-center py-20 bg-gray-900/20 rounded-[40px] border-2 border-dashed border-gray-800 flex flex-col items-center justify-center gap-4">
-             <TagIcon className="h-12 w-12 text-gray-800" />
+             <FolderIcon className="h-12 w-12 text-gray-800" />
              <p className="text-gray-600 font-bold uppercase tracking-widest text-[10px]">No categories defined for this workspace</p>
           </div>
         ) : (

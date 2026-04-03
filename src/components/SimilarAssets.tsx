@@ -7,7 +7,7 @@ import {
   PhotoIcon, 
   VideoCameraIcon, 
   DocumentIcon,
-  TagIcon,
+  FolderIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -95,7 +95,7 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
                         : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
             >
-                <TagIcon className="h-3.5 w-3.5" />
+                <FolderIcon className="h-3.5 w-3.5" />
                 By Metadata
             </button>
             <button
