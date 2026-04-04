@@ -332,7 +332,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     lifecycle: { label: 'Asset Lifecycle', icon: ClockIcon },
     category_uuids: { label: 'Categories', icon: FolderIcon },
     category_paths: { label: 'Category', icon: FolderIcon },
-    collection_uuids: { label: 'Collections', icon: FolderIcon },
+    collection_uuids: { label: 'Collections', icon: Square3Stack3DIcon },
     uploaded_by_id: { label: 'Uploaded By', icon: IdentificationIcon },
   };
 
