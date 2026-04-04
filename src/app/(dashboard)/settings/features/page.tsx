@@ -13,7 +13,8 @@ import {
   ClockIcon,
   InformationCircleIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  FolderIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -26,6 +27,7 @@ interface Customer {
   is_ocr_enabled: boolean;
   is_text_extraction_enabled: boolean;
   is_geo_tagging_enabled: boolean;
+  is_single_category_enabled: boolean;
   ocr_last_toggle_at: string | null;
   geo_tagging_last_toggle_at: string | null;
   text_extraction_last_toggle_at: string | null;
@@ -36,6 +38,7 @@ interface LocalSettings {
   is_ocr_enabled: boolean;
   is_text_extraction_enabled: boolean;
   is_geo_tagging_enabled: boolean;
+  is_single_category_enabled: boolean;
 }
 
 export default function ProjectFeaturesPage() {
@@ -55,6 +58,7 @@ export default function ProjectFeaturesPage() {
           is_ocr_enabled: data[0].is_ocr_enabled,
           is_text_extraction_enabled: data[0].is_text_extraction_enabled,
           is_geo_tagging_enabled: data[0].is_geo_tagging_enabled,
+          is_single_category_enabled: data[0].is_single_category_enabled,
         });
       } else {
         setError('No customer settings found.');
@@ -79,7 +83,9 @@ export default function ProjectFeaturesPage() {
       ? customer.is_ocr_enabled 
       : feature === 'is_text_extraction_enabled'
         ? customer.is_text_extraction_enabled
-        : customer.is_geo_tagging_enabled;
+        : feature === 'is_geo_tagging_enabled'
+          ? customer.is_geo_tagging_enabled
+          : customer.is_single_category_enabled;
 
     const lastToggleAt = feature === 'is_ocr_enabled'
       ? customer.ocr_last_toggle_at
@@ -89,7 +95,8 @@ export default function ProjectFeaturesPage() {
 
     // If currently OFF in DB and trying to turn ON in Local
     if (!currentValueInDb && !localSettings[feature as keyof typeof localSettings]) {
-       if (isFeatureRestricted(lastToggleAt)) {
+       // Single Category has no restriction
+       if (feature !== 'is_single_category_enabled' && isFeatureRestricted(lastToggleAt)) {
          const hoursLeft = getHoursRemaining(lastToggleAt);
          toast.error(`Restriction active: Please wait ${hoursLeft} more hours before re-enabling this feature.`);
          return;
@@ -130,6 +137,7 @@ export default function ProjectFeaturesPage() {
           isOcrEnabled: localSettings.is_ocr_enabled,
           isTextExtractionEnabled: localSettings.is_text_extraction_enabled,
           isGeoTaggingEnabled: localSettings.is_geo_tagging_enabled,
+          isSingleCategoryEnabled: localSettings.is_single_category_enabled,
         }),
       });
       
@@ -145,7 +153,8 @@ export default function ProjectFeaturesPage() {
   const hasChanges = localSettings && customer && (
     localSettings.is_ocr_enabled !== customer.is_ocr_enabled ||
     localSettings.is_text_extraction_enabled !== customer.is_text_extraction_enabled ||
-    localSettings.is_geo_tagging_enabled !== customer.is_geo_tagging_enabled
+    localSettings.is_geo_tagging_enabled !== customer.is_geo_tagging_enabled ||
+    localSettings.is_single_category_enabled !== customer.is_single_category_enabled
   );
 
   const showBackfillWarning = localSettings && customer && (
@@ -324,6 +333,38 @@ export default function ProjectFeaturesPage() {
             </div>
         </div>
 
+        {/* Single Category Section */}
+        <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.is_single_category_enabled ? 'border-orange-500/30' : 'border-gray-800'}`}>
+            <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-xl transition-colors ${localSettings.is_single_category_enabled ? 'bg-orange-500/20' : 'bg-gray-800'}`}>
+                        <FolderIcon className={`h-6 w-6 ${localSettings.is_single_category_enabled ? 'text-orange-400' : 'text-gray-500'}`} />
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-white">Single Category Constraint</h3>
+                        </div>
+                        <p className="text-sm text-gray-400">Restrict assets to a single category (folder-based structure).</p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => handleToggleLocal('is_single_category_enabled')}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all focus:outline-none ${
+                        localSettings.is_single_category_enabled ? 'bg-orange-600 shadow-[0_0_15px_rgba(249,115,22,0.4)]' : 'bg-gray-700'
+                    }`}
+                >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                        localSettings.is_single_category_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                </button>
+            </div>
+            <div className="p-4 bg-orange-500/5 px-6">
+                <p className="text-xs text-orange-400/80 leading-relaxed font-medium">
+                    When enabled, the application treats categories as physical folders. Assets can only belong to one category at a time, preventing duplicates in bulk downloads.
+                </p>
+            </div>
+        </div>
+
         {/* Quotas / Plan Info */}
         <div className="bg-gray-900/20 border border-gray-800/60 border-dashed rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 justify-between opacity-80">
             <div className="flex items-center gap-3">
@@ -378,6 +419,7 @@ export default function ProjectFeaturesPage() {
                         is_ocr_enabled: customer.is_ocr_enabled,
                         is_text_extraction_enabled: customer.is_text_extraction_enabled,
                         is_geo_tagging_enabled: customer.is_geo_tagging_enabled,
+                        is_single_category_enabled: customer.is_single_category_enabled,
                     })}
                     className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
                     disabled={isSaving}

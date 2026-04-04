@@ -12,6 +12,8 @@ import {
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useCollections, Collection } from '@/hooks/useCollections';
 import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 interface AssetOrganizationDialogProps {
   assetId: string;
@@ -28,6 +30,8 @@ export default function AssetOrganizationDialog({
 }: AssetOrganizationDialogProps) {
   const { categories, refresh: refreshCategories } = useCategories();
   const { collections, refresh: refreshCollections } = useCollections();
+  const { user } = useAuth();
+  const isSingleCategory = user?.customer?.is_single_category_enabled;
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,9 +57,13 @@ export default function AssetOrganizationDialog({
   };
 
   const handleToggleCategory = (id: string) => {
-    setSelectedCategoryIds(prev => 
-      prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
-    );
+    if (isSingleCategory) {
+      setSelectedCategoryIds(prev => prev.includes(id) ? [] : [id]);
+    } else {
+      setSelectedCategoryIds(prev => 
+        prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
+      );
+    }
   };
 
   const handleToggleCollection = (id: string) => {
@@ -76,8 +84,9 @@ export default function AssetOrganizationDialog({
       });
       onSuccess?.();
       onClose();
-    } catch (err) {
-      console.error('Failed to save assignments');
+    } catch (err: any) {
+      const message = err.message || 'Failed to save assignments';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -144,7 +153,7 @@ export default function AssetOrganizationDialog({
                   {selectedCategoryIds.includes(cat.id) ? (
                     <CheckIcon className="h-3.5 w-3.5 shrink-0" />
                   ) : (
-                    <div className="h-3.5 w-3.5 rounded-full border border-gray-700 group-hover:border-gray-500" />
+                    <div className={`h-3.5 w-3.5 border border-gray-700 group-hover:border-gray-500 ${isSingleCategory ? 'rounded-full' : 'rounded'}`} />
                   )}
                 </div>
               ))}

@@ -54,8 +54,9 @@ export default function BulkAddCategoryModal({
       toast.success(`Added ${selectedIds.length} assets to category`);
       onSuccess();
       onClose();
-    } catch (error) {
-      toast.error('Failed to add assets to category');
+    } catch (error: any) {
+      const message = error.message || 'Failed to add assets to category';
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

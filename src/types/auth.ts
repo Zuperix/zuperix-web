@@ -40,6 +40,7 @@ export interface User {
     id: string;
     name: string;
     is_onboarding_completed: boolean;
+    is_single_category_enabled: boolean;
   };
   roles?: Role[];
   workspace_members?: WorkspaceMember[];
