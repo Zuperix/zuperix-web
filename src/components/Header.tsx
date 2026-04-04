@@ -9,6 +9,8 @@ import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import NotificationCenter from './NotificationCenter';
 import CustomImage from './CustomImage';
+import { useFliptBoolean } from '@flipt-io/flipt-client-react';
+import { FEATURES } from '@/constants/features';
 
 export default function Header() {
   const { sidebarCollapsed, setSidebarCollapsed, searchQuery, setSearchQuery } = useLayout();
@@ -25,6 +27,19 @@ export default function Header() {
   const [showSearchInfo, setShowSearchInfo] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const reverseSearchEnabled = useFliptBoolean(
+    FEATURES.REVERSE_IMAGE_SEARCH.key,
+    false,
+    user?.id || 'anonymous'
+  );
+
+  // Diagnostic logging for feature flags
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Flipt] ${FEATURES.REVERSE_IMAGE_SEARCH.name} status:`, reverseSearchEnabled);
+    }
+  }, [reverseSearchEnabled]);
 
   const formatSize = (bytes: number) => {
     if (!bytes || isNaN(bytes)) return '0 Bytes';
@@ -234,56 +249,57 @@ export default function Header() {
               </div>
 
               {/* Visual Search Trigger */}
-              <div className="flex items-center ml-1">
-                <input
-                  type="file"
-                  id="visual-search-upload"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file || !activeWorkspace) return;
-                    
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    
-                    try {
-                      setLoadingSuggestions(true);
-                      const response = await apiFetch<any>(`/workspaces/${activeWorkspace.id}/search/visual`, {
-                        method: 'POST',
-                        body: formData,
-                        // apiFetch handles FormData properly inzuperix-web's fetch logic
-                      });
+              {reverseSearchEnabled && (
+                <div className="flex items-center ml-1">
+                  <input
+                    type="file"
+                    id="visual-search-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !activeWorkspace) return;
                       
-                      if (response.results) {
-                        setSuggestions(response.results);
-                        setShowSuggestions(true);
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      
+                      try {
+                        setLoadingSuggestions(true);
+                        const response = await apiFetch<any>(`/workspaces/${activeWorkspace.id}/search/visual`, {
+                          method: 'POST',
+                          body: formData,
+                        });
+                        
+                        if (response.results) {
+                          setSuggestions(response.results);
+                          setShowSuggestions(true);
+                        }
+                      } catch (err: any) {
+                        console.error('Visual search failed', err);
+                        if (err.status === 403) {
+                          alert('Visual search is only available on Silver, Gold, and Platinum plans.');
+                        } else {
+                          alert('Visual search failed. Please try again.');
+                        }
+                      } finally {
+                        setLoadingSuggestions(false);
+                        // Clear the input so it can be used again for the same file
+                        e.target.value = '';
                       }
-                    } catch (err: any) {
-                      console.error('Visual search failed', err);
-                      if (err.status === 403) {
-                        alert('Visual search is only available on Silver, Gold, and Platinum plans.');
-                      } else {
-                        alert('Visual search failed. Please try again.');
-                      }
-                    } finally {
-                      setLoadingSuggestions(false);
-                      // Clear the input so it can be used again for the same file
-                      e.target.value = '';
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => document.getElementById('visual-search-upload')?.click()}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 transition-all group/cam"
-                  title="Search by image (Reverse Search)"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 group-hover/cam:scale-110 transition-transform">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008H12V8.25Z" />
-                  </svg>
-                </button>
-              </div>
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('visual-search-upload')?.click()}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 transition-all group/cam"
+                    title="Search by image (Reverse Search)"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 group-hover/cam:scale-110 transition-transform">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008H12V8.25Z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
 
               <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1.5 font-sans text-[10px] font-medium text-gray-400 dark:text-gray-500 shadow-sm ml-1">
                 <span className="text-[8px]">⌘</span>K
