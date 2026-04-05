@@ -236,7 +236,7 @@ export default function Header() {
                         AI analysis can occasionally vary, so please verify results for critical workflows.
                       </p>
                       <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between">
-                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Powered by OpenDAM AI</span>
+                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Powered by Zuperix AI</span>
                         <div className="flex gap-1">
                           <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
                           <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse delay-75" />
