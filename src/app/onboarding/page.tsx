@@ -14,6 +14,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [stage, setStage] = useState<OnboardingStage>('form');
   const [companyName, setCompanyName] = useState(user?.customer?.name || '');
+  const [businessEmail, setBusinessEmail] = useState(user?.email || '');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [industry, setIndustry] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,7 @@ export default function OnboardingPage() {
         method: 'PATCH',
         body: JSON.stringify({
           name: companyName,
+          business_email: businessEmail,
           website_url: websiteUrl,
           industry,
         }),
@@ -131,6 +133,23 @@ export default function OnboardingPage() {
 
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <Building2 className="w-4 h-4" /> Business Email
+              </label>
+              <input
+                type="email"
+                required
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white outline-none transition-all"
+                placeholder="billing@acme.com"
+                value={businessEmail}
+                onChange={(e) => setBusinessEmail(e.target.value)}
+              />
+              <p className="mt-2 text-xs text-blue-500 dark:text-blue-400 font-medium">
+                Any communication will be on this email
+              </p>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 <Globe className="w-4 h-4" /> Website URL
               </label>
               <input
@@ -163,7 +182,7 @@ export default function OnboardingPage() {
 
           <button
             type="submit"
-            disabled={loading || !companyName}
+            disabled={loading || !companyName || !businessEmail}
             className="group relative w-full py-4 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-all active:scale-[0.98] overflow-hidden"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">

@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions, SystemRole } from '@/hooks/usePermissions';
 import { 
   IdentificationIcon, 
   TagIcon, 
@@ -7,11 +8,12 @@ import {
   QueueListIcon,
   AdjustmentsHorizontalIcon,
   CpuChipIcon,
-  TrashIcon
+  TrashIcon,
+  CreditCardIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
-const SETTINGS_SECTIONS = [
+const BASE_SETTINGS_SECTIONS = [
   {
     id: 'metadata',
     name: 'Metadata Management',
@@ -63,6 +65,21 @@ const SETTINGS_SECTIONS = [
 ];
 
 export default function SettingsPage() {
+  const { user } = usePermissions();
+  const isSuperAdmin = user?.system_role === SystemRole.SUPER_ADMIN;
+
+  const sections = [...BASE_SETTINGS_SECTIONS];
+  if (isSuperAdmin) {
+    sections.push({
+      id: 'billing',
+      name: 'Billing & Subscriptions',
+      description: 'Manage your plan, billing history, and payment methods.',
+      icon: CreditCardIcon,
+      href: '/settings/billing',
+      color: 'bg-rose-500/10 text-rose-400',
+    });
+  }
+
   return (
     <div className="max-w-5xl mx-auto py-10 px-6 animate-in fade-in duration-500">
       <div className="mb-10">
@@ -71,7 +88,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {SETTINGS_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <Link
             key={section.id}
             href={section.href}
