@@ -36,28 +36,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isLoginOrRegister = currentPath.startsWith('/login') || currentPath.startsWith('/register');
     const isOnboardingPage = currentPath.startsWith('/onboarding');
 
-    console.log('Redirecting user based on profile:', profile.email, 'Path:', currentPath);
 
-    if (profile.customer && !profile.customer.is_onboarding_completed) {
+    if (profile.customer && (!profile.customer.is_onboarding_completed || process.env.NEXT_PUBLIC_SHOW_ONBOARDING === 'true')) {
       if (!isOnboardingPage) {
-        console.log('Redirecting to onboarding...');
         router.push('/onboarding');
       }
     } else if (isLoginOrRegister || isOnboardingPage) {
-      console.log('Redirecting to dashboard...');
       router.push('/');
     }
   }, [router]);
 
   const fetchProfile = useCallback(async () => {
-    console.log('Fetching user profile...');
     try {
       const profile = await apiFetch<User>('/users/me');
       setUser(profile);
       console.log('Profile fetched successfully:', profile.email);
       return profile;
     } catch (error) {
-      console.error('Failed to fetch profile:', error);
       localStorage.removeItem('auth_token');
       setUser(null);
       return null;
