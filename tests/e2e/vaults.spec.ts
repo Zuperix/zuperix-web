@@ -6,7 +6,7 @@ const vaultName = `e2e test vault ${Date.now()}`;
 const updatedVaultName = `${vaultName} updated`;
 
 test('vaults page loads and shows UI elements', async ({ page }) => {
-  await page.goto('/dashboard/vaults');
+  await page.goto('/vaults');
 
   await expect(page.getByRole('heading', { name: /Vaults/i })).toBeVisible();
   await expect(page.getByText(/Securely group assets and manage member-level access controls/i)).toBeVisible();
@@ -15,7 +15,7 @@ test('vaults page loads and shows UI elements', async ({ page }) => {
 });
 
 test('create vault form opens and has expected fields', async ({ page }) => {
-  await page.goto('/dashboard/vaults');
+  await page.goto('/vaults');
   await expect(page.getByRole('heading', { name: /Vaults/i })).toBeVisible();
 
   await page.getByRole('button', { name: /New Vault/i }).click();
@@ -31,7 +31,7 @@ test('create vault form opens and has expected fields', async ({ page }) => {
 });
 
 test('create new vault', async ({ page }) => {
-  await page.goto('/dashboard/vaults');
+  await page.goto('/vaults');
 
   await page.getByRole('button', { name: /New Vault/i }).click();
   await page.getByPlaceholder('Marketing Assets, Q2 Product Launch, etc.').fill(vaultName);
@@ -42,7 +42,7 @@ test('create new vault', async ({ page }) => {
 });
 
 test('edit vault', async ({ page }) => {
-  await page.goto('/dashboard/vaults');
+  await page.goto('/vaults');
 
   const vaultCard = page.locator('.group.flex.flex-col').filter({ hasText: vaultName });
   await expect(vaultCard).toBeVisible({ timeout: 10000 });
@@ -58,18 +58,18 @@ test('edit vault', async ({ page }) => {
 });
 
 test('navigate to vault assets via Open button', async ({ page }) => {
-  await page.goto('/dashboard/vaults');
+  await page.goto('/vaults');
 
   const vaultCard = page.locator('.group.flex.flex-col').filter({ hasText: updatedVaultName });
-  await vaultCard.getByRole('link', { name: /Open/i }).click();
+  await vaultCard.getByText(/Open/i).click();
 
-  await expect(page).toHaveURL(/\/dashboard\/vaults\/[a-zA-Z0-9-]+/);
+  await expect(page).toHaveURL(/\/vaults\/[a-zA-Z0-9-]+/);
   await expect(page.getByRole('heading', { name: updatedVaultName })).toBeVisible({ timeout: 10000 });
   await expect(page.getByText(/Back to Vaults/i)).toBeVisible();
 });
 
 test('delete vault', async ({ page }) => {
-  await page.goto('/dashboard/vaults');
+  await page.goto('/vaults');
 
   const vaultCard = page.locator('.group.flex.flex-col').filter({ hasText: updatedVaultName });
   await expect(vaultCard).toBeVisible({ timeout: 10000 });

@@ -15,7 +15,6 @@ if (!email || !password) {
 setup('authenticate', async ({ page }) => {
   fs.mkdirSync(authDir, { recursive: true });
 
-  // Navigate to login
   await page.goto('/login');
   
   await page.getByPlaceholder('admin@acme.com').fill(email);

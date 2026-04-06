@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { 
   XMarkIcon, 
   FolderArrowDownIcon, 
+  FolderIcon,
   Square3Stack3DIcon,
   TrashIcon,
   ArchiveBoxIcon,
@@ -144,7 +145,7 @@ export default function BulkActionToolbar({
               className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group"
               title="Add to Categories"
             >
-              <FolderArrowDownIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              <FolderIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-medium hidden sm:inline">Categories</span>
             </button>
 

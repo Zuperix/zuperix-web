@@ -21,6 +21,7 @@ import {
   KeyIcon,
   UsersIcon,
   GlobeAltIcon,
+  CommandLineIcon,
   InboxIcon,
   ChartBarIcon,
   BuildingOfficeIcon
@@ -44,7 +45,7 @@ const ADMIN_NAV = [
   { name: 'Users', href: '/admin/users', icon: UsersIcon },
   { name: 'Roles', href: '/admin/roles', icon: ShieldCheckIcon },
   { name: 'API Keys', href: '/admin/api-keys', icon: KeyIcon },
-  { name: 'Webhooks', href: '/admin/webhooks', icon: GlobeAltIcon },
+  { name: 'Webhooks', href: '/admin/webhooks', icon: CommandLineIcon },
   { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
 ];
 
