@@ -57,6 +57,9 @@ function FilterChips({
     expiration_date: 'Expires',
     aspect_ratio: 'Aspect Ratio',
     category_paths: 'Category',
+    has_comments: 'Comments',
+    has_versions: 'Versions',
+    is_untagged: 'Tagging Status',
   };
 
   const chips: { key: string; label: string; value: any; displayValue: string; isRange?: boolean }[] = [];

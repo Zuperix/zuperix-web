@@ -17,7 +17,10 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   FolderIcon,
-  RectangleGroupIcon
+  RectangleGroupIcon,
+  ChatBubbleLeftRightIcon,
+  Square2StackIcon,
+  NoSymbolIcon
 } from '@heroicons/react/24/outline';
 
 interface FilterBucket {
@@ -334,6 +337,9 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     category_paths: { label: 'Category', icon: FolderIcon },
     collection_uuids: { label: 'Collections', icon: Square3Stack3DIcon },
     uploaded_by_id: { label: 'Uploaded By', icon: IdentificationIcon },
+    has_comments: { label: 'Has Comments', icon: ChatBubbleLeftRightIcon },
+    has_versions: { label: 'Has Versions', icon: Square2StackIcon },
+    is_untagged: { label: 'Tagging Status', icon: TagIcon },
   };
 
   const getGroupConfig = (key: string) => {

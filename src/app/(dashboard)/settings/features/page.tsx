@@ -14,7 +14,11 @@ import {
   InformationCircleIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  FolderIcon
+  FolderIcon,
+  ChatBubbleLeftRightIcon,
+  Square2StackIcon,
+  TagIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -32,6 +36,7 @@ interface Customer {
   geo_tagging_last_toggle_at: string | null;
   text_extraction_last_toggle_at: string | null;
   created_at: string;
+  advanced_filters: Record<string, boolean>;
 }
 
 interface LocalSettings {
@@ -39,6 +44,9 @@ interface LocalSettings {
   is_text_extraction_enabled: boolean;
   is_geo_tagging_enabled: boolean;
   is_single_category_enabled: boolean;
+  has_comments: boolean;
+  has_versions: boolean;
+  has_tags: boolean;
 }
 
 export default function ProjectFeaturesPage() {
@@ -59,6 +67,9 @@ export default function ProjectFeaturesPage() {
           is_text_extraction_enabled: data[0].is_text_extraction_enabled,
           is_geo_tagging_enabled: data[0].is_geo_tagging_enabled,
           is_single_category_enabled: data[0].is_single_category_enabled,
+          has_comments: !!data[0].advanced_filters?.has_comments,
+          has_versions: !!data[0].advanced_filters?.has_versions,
+          has_tags: !!data[0].advanced_filters?.has_tags,
         });
       } else {
         setError('No customer settings found.');
@@ -105,7 +116,7 @@ export default function ProjectFeaturesPage() {
 
     setLocalSettings({
       ...localSettings,
-      [feature]: !localSettings[feature as keyof typeof localSettings],
+      [feature]: !localSettings[feature as keyof LocalSettings],
     });
   };
 
@@ -138,6 +149,11 @@ export default function ProjectFeaturesPage() {
           isTextExtractionEnabled: localSettings.is_text_extraction_enabled,
           isGeoTaggingEnabled: localSettings.is_geo_tagging_enabled,
           isSingleCategoryEnabled: localSettings.is_single_category_enabled,
+          advancedFilters: {
+            has_comments: localSettings.has_comments,
+            has_versions: localSettings.has_versions,
+            has_tags: localSettings.has_tags,
+          }
         }),
       });
       
@@ -154,7 +170,16 @@ export default function ProjectFeaturesPage() {
     localSettings.is_ocr_enabled !== customer.is_ocr_enabled ||
     localSettings.is_text_extraction_enabled !== customer.is_text_extraction_enabled ||
     localSettings.is_geo_tagging_enabled !== customer.is_geo_tagging_enabled ||
-    localSettings.is_single_category_enabled !== customer.is_single_category_enabled
+    localSettings.is_single_category_enabled !== customer.is_single_category_enabled ||
+    localSettings.has_comments !== !!customer.advanced_filters?.has_comments ||
+    localSettings.has_versions !== !!customer.advanced_filters?.has_versions ||
+    localSettings.has_tags !== !!customer.advanced_filters?.has_tags
+  );
+
+  const showReindexWarning = localSettings && customer && (
+    localSettings.has_comments !== !!customer.advanced_filters?.has_comments ||
+    localSettings.has_versions !== !!customer.advanced_filters?.has_versions ||
+    localSettings.has_tags !== !!customer.advanced_filters?.has_tags
   );
 
   const showBackfillWarning = localSettings && customer && (
@@ -365,6 +390,90 @@ export default function ProjectFeaturesPage() {
             </div>
         </div>
 
+        {/* Advanced Filters Section */}
+        <div className="pt-8 border-t border-gray-800">
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <AdjustmentsHorizontalIcon className="h-6 w-6 text-indigo-400" />
+                Advanced Search Filters
+            </h2>
+            <div className="space-y-6">
+                {/* Comments Filter */}
+                <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.has_comments ? 'border-indigo-500/30' : 'border-gray-800'}`}>
+                    <div className="p-6 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-2.5 rounded-xl transition-colors ${localSettings.has_comments ? 'bg-indigo-500/20' : 'bg-gray-800'}`}>
+                                <ChatBubbleLeftRightIcon className={`h-6 w-6 ${localSettings.has_comments ? 'text-indigo-400' : 'text-gray-500'}`} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">Comments Filter</h3>
+                                <p className="text-sm text-gray-400">Filter assets that have active discussions (has:comments).</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => handleToggleLocal('has_comments')}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all focus:outline-none ${
+                                localSettings.has_comments ? 'bg-indigo-600 shadow-[0_0_15px_rgba(79,70,229,0.4)]' : 'bg-gray-700'
+                            }`}
+                        >
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                                localSettings.has_comments ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Versions Filter */}
+                <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.has_versions ? 'border-sky-500/30' : 'border-gray-800'}`}>
+                    <div className="p-6 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-2.5 rounded-xl transition-colors ${localSettings.has_versions ? 'bg-sky-500/20' : 'bg-gray-800'}`}>
+                                <Square2StackIcon className={`h-6 w-6 ${localSettings.has_versions ? 'text-sky-400' : 'text-gray-500'}`} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">Versions Filter</h3>
+                                <p className="text-sm text-gray-400">Filter assets with multiple historical versions (has:versions).</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => handleToggleLocal('has_versions')}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all focus:outline-none ${
+                                localSettings.has_versions ? 'bg-sky-600 shadow-[0_0_15px_rgba(14,165,233,0.4)]' : 'bg-gray-700'
+                            }`}
+                        >
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                                localSettings.has_versions ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Tagging Filter */}
+                <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.has_tags ? 'border-teal-500/30' : 'border-gray-800'}`}>
+                    <div className="p-6 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-2.5 rounded-xl transition-colors ${localSettings.has_tags ? 'bg-teal-500/20' : 'bg-gray-800'}`}>
+                                <TagIcon className={`h-6 w-6 ${localSettings.has_tags ? 'text-teal-400' : 'text-gray-500'}`} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">Tagging Status</h3>
+                                <p className="text-sm text-gray-400">Enable "Untagged Assets" discovery filter (is:untagged).</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => handleToggleLocal('has_tags')}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all focus:outline-none ${
+                                localSettings.has_tags ? 'bg-teal-600 shadow-[0_0_15px_rgba(20,184,166,0.4)]' : 'bg-gray-700'
+                            }`}
+                        >
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                                localSettings.has_tags ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {/* Quotas / Plan Info */}
         <div className="bg-gray-900/20 border border-gray-800/60 border-dashed rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 justify-between opacity-80">
             <div className="flex items-center gap-3">
@@ -407,6 +516,8 @@ export default function ProjectFeaturesPage() {
                 <p className="text-sm font-bold text-white">Unsaved Changes</p>
                 {showBackfillWarning ? (
                   <p className="text-xs text-amber-400/80 font-medium">Re-processing of existing assets will be triggered.</p>
+                ) : showReindexWarning ? (
+                  <p className="text-xs text-blue-400/80 font-medium">Search re-indexing will be triggered for advanced filters.</p>
                 ) : (
                   <p className="text-xs text-gray-400 font-medium">Click save to apply your project settings.</p>
                 )}
@@ -420,6 +531,9 @@ export default function ProjectFeaturesPage() {
                         is_text_extraction_enabled: customer.is_text_extraction_enabled,
                         is_geo_tagging_enabled: customer.is_geo_tagging_enabled,
                         is_single_category_enabled: customer.is_single_category_enabled,
+                        has_comments: !!customer.advanced_filters?.has_comments,
+                        has_versions: !!customer.advanced_filters?.has_versions,
+                        has_tags: !!customer.advanced_filters?.has_tags,
                     })}
                     className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
                     disabled={isSaving}
@@ -432,7 +546,9 @@ export default function ProjectFeaturesPage() {
                     className={`px-6 py-2 rounded-xl text-sm font-bold text-white transition-all active:scale-95 shadow-lg ${
                         showBackfillWarning 
                         ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20' 
-                        : 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20'
+                        : showReindexWarning
+                          ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20'
+                          : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/20'
                     } disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
                 >
                     {isSaving ? (
@@ -441,7 +557,7 @@ export default function ProjectFeaturesPage() {
                             Saving...
                         </>
                     ) : (
-                        'Save & Start Backfill'
+                        showBackfillWarning || showReindexWarning ? 'Save & Re-index' : 'Save Changes'
                     )}
                 </button>
             </div>
