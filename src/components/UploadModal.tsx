@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, DragEvent, useEffect } from 'react';
+import { useState, useRef, useCallback, DragEvent } from 'react';
 import {
   XMarkIcon,
   CloudArrowUpIcon,
@@ -17,10 +17,13 @@ import {
   ChevronUpIcon,
   ArrowTopRightOnSquareIcon,
   CubeTransparentIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { BASE_URL } from '@/lib/api';
 import { useCategories, Category } from '@/hooks/useCategories';
+import { useVaults } from '@/hooks/useVaults';
 import { useMetadataFields, MetadataField } from '@/hooks/useMetadataFields';
+import { LockClosedIcon } from '@heroicons/react/20/solid';
 import PdfPreview from './PdfPreview';
 
 const CONCURRENCY = 5;
@@ -58,12 +61,27 @@ function formatSize(bytes: number) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <div className="relative group inline-block">
+      <InformationCircleIcon className="h-3.5 w-3.5 text-gray-400 hover:text-blue-500 transition-colors cursor-help" />
+      <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 p-2.5 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[70] scale-95 group-hover:scale-100 origin-bottom">
+        <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
+          {content}
+        </p>
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-[4px] border-transparent border-t-gray-800" />
+      </div>
+    </div>
+  );
+}
+
 async function uploadFileSingle(
   file: File,
   workspaceId: string,
   token: string | null,
   onProgress: (pct: number) => void,
   categoryIds: string[] = [],
+  vaultId: string | null = null,
   force: boolean = false,
   metadata: Record<string, any> = {}
 ): Promise<void | { id: string; original_name: string }> {
@@ -81,6 +99,7 @@ async function uploadFileSingle(
           filename: file.name,
           mime_type: file.type || 'application/octet-stream',
           size: file.size,
+          vault_id: vaultId,
         }),
       });
 
@@ -135,6 +154,7 @@ async function uploadFileSingle(
           mime_type: file.type || 'application/octet-stream',
           size: file.size,
           category_ids: categoryIds,
+          vault_id: vaultId,
           metadata,
         }),
       });
@@ -157,6 +177,7 @@ async function uploadFileMultipart(
   token: string | null,
   onProgress: (pct: number) => void,
   categoryIds: string[] = [],
+  vaultId: string | null = null,
   force: boolean = false,
   metadata: Record<string, any> = {}
 ): Promise<void | { id: string; original_name: string }> {
@@ -175,6 +196,7 @@ async function uploadFileMultipart(
       filename: file.name,
       mime_type: file.type || 'application/octet-stream',
       size: file.size,
+      vault_id: vaultId,
     }),
   });
 
@@ -203,7 +225,6 @@ async function uploadFileMultipart(
   for (let i = 0; i < urlsData.length; i += CONCURRENCY_LIMIT) {
     const batch = urlsData.slice(i, i + CONCURRENCY_LIMIT);
     await Promise.all(batch.map(async (part: any) => {
-      // The backend global interceptor converts partNumber to part_number!
       const pNumber = part.part_number || part.partNumber;
       
       const start = (pNumber - 1) * CHUNK_SIZE;
@@ -224,10 +245,7 @@ async function uploadFileMultipart(
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             const rawEtag = xhr.getResponseHeader('ETag');
-            if (!rawEtag) {
-               console.error(`Missing ETag for part ${part.partNumber}. CORS issue!`);
-            }
-            const fallbackEtag = rawEtag || `"cf23df2207d99a74fbe169e3eba035e6"`; // Fake MD5 to prevent XML crash, but will cause InvalidPart
+            const fallbackEtag = rawEtag || `"cf23df2207d99a74fbe169e3eba035e6"`;
             completedParts.push({ partNumber: pNumber, etag: fallbackEtag });
             resolve();
           } else {
@@ -261,6 +279,7 @@ async function uploadFileMultipart(
         mime_type: file.type || 'application/octet-stream',
         size: file.size,
         category_ids: categoryIds,
+        vault_id: vaultId,
         metadata,
       }
     }),
@@ -278,14 +297,15 @@ function uploadFileXHR(
   token: string | null,
   onProgress: (pct: number) => void,
   categoryIds: string[] = [],
+  vaultId: string | null = null,
   force: boolean = false,
   metadata: Record<string, any> = {}
 ): Promise<void | { id: string; original_name: string }> {
   // If > 10MB, use Multipart
   if (file.size > 10 * 1024 * 1024) {
-    return uploadFileMultipart(file, workspaceId, token, onProgress, categoryIds, force, metadata);
+    return uploadFileMultipart(file, workspaceId, token, onProgress, categoryIds, vaultId, force, metadata);
   } else {
-    return uploadFileSingle(file, workspaceId, token, onProgress, categoryIds, force, metadata);
+    return uploadFileSingle(file, workspaceId, token, onProgress, categoryIds, vaultId, force, metadata);
   }
 }
 
@@ -320,9 +340,11 @@ export default function UploadModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
 
-  // Category selection state
+  // Category & Vault selection state
   const { categories } = useCategories();
+  const { vaults } = useVaults();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [selectedVaultId, setSelectedVaultId] = useState<string>('');
 
   // Metadata state
   const { fields: metadataFields } = useMetadataFields(workspaceId);
@@ -376,7 +398,7 @@ export default function UploadModal({
       try {
         await uploadFileXHR(entry.file, workspaceId, token, (pct) => {
           updateEntry(entry.id, { progress: pct });
-        }, categoryIds, entry.force, initialMetadata);
+        }, categoryIds, selectedVaultId || null, entry.force, initialMetadata);
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: any) {
         if (err instanceof DuplicateError) {
@@ -470,7 +492,10 @@ export default function UploadModal({
         <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/20 border-b dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Target Category</label>
+              <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                Target Category
+                <InfoTooltip content="Organize your assets into a specific category within the workspace." />
+              </label>
               <div className="relative">
                 <select
                   value={selectedCategoryId}
@@ -493,6 +518,36 @@ export default function UploadModal({
                 </div>
               </div>
             </div>
+
+            {vaults.length > 0 && (
+              <div className="flex-1">
+                <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
+                  Target Vault
+                  <InfoTooltip content="Vaults provide an extra layer of security with role-based access for sensitive assets." />
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedVaultId}
+                    onChange={(e) => setSelectedVaultId(e.target.value)}
+                    disabled={running}
+                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none disabled:opacity-50"
+                  >
+                    <option value="">No Vault (Direct Upload)</option>
+                    {vaults.map((vault) => (
+                      <option key={vault.id} value={vault.id}>
+                        {vault.name}
+                      </option>
+                    ))}
+                  </select>
+                  <LockClosedIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -505,8 +560,9 @@ export default function UploadModal({
             >
               <div className="flex items-center gap-2">
                 <TagIcon className={`h-4 w-4 ${showMetadata ? 'text-blue-500' : 'text-gray-400'}`} />
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   Initial Metadata (Apply to all)
+                  <InfoTooltip content="Common metadata values that will be automatically applied to all uploaded assets." />
                 </span>
                 {Object.keys(initialMetadata).length > 0 && (
                   <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] font-bold rounded-md">
@@ -576,7 +632,7 @@ export default function UploadModal({
                   ))}
                   {metadataFields.filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
                     <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
-                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching "{metadataSearch}"</p>
+                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching &quot;{metadataSearch}&quot;</p>
                     </div>
                   )}
                 </div>

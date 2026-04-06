@@ -11,13 +11,12 @@ import {
   FolderIcon,
   ArrowDownTrayIcon,
   ShareIcon,
+  ArrowUturnLeftIcon,
   LockClosedIcon,
-  ArrowUturnLeftIcon
 } from '@heroicons/react/24/outline';
 import { PermissionGate } from './PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { BASE_URL } from '@/lib/api';
 import ShareAssetModal from './ShareAssetModal';
 import ThreeDPreview from './ThreeDPreview';
 import PdfPreview from './PdfPreview';
@@ -79,16 +78,15 @@ const AssetCard = ({
   onDownload,
   onRestore,
   onShare,
-}: {
-  asset: Asset,
-  onDelete: (id: string) => void,
-  onSelect?: (id: string) => void,
+}: { 
+  asset: Asset, 
+  onDelete: (id: string) => void, 
+  onSelect?: (id: string) => void, 
   onToggleSelect?: (id: string, isShift: boolean) => void,
   isSelected: boolean,
   onDownload?: (asset: Asset) => void,
   onRestore?: (id: string) => void,
   onShare: (asset: Asset) => void,
-  signedUrl?: string
 }) => {
   const { activeWorkspace } = useWorkspace();
   const [imgError, setImgError] = useState(false);
@@ -321,10 +319,9 @@ export default function AssetGrid({
   onToggleSelect,
   onDownload,
   onRestore,
-  onSuccess,
   selectedIds = [],
   loading = false,
-  limit = 20
+  limit = 12
 }: {
   assets: Asset[],
   onDelete: (id: string) => void,
@@ -332,7 +329,6 @@ export default function AssetGrid({
   onToggleSelect?: (id: string, isShift: boolean) => void,
   onDownload?: (asset: Asset) => void,
   onRestore?: (id: string) => void,
-  onSuccess?: () => void,
   selectedIds?: string[],
   loading?: boolean,
   limit?: number

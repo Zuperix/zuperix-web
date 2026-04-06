@@ -17,12 +17,12 @@ import {
   RectangleGroupIcon,
   Square3Stack3DIcon,
   ShieldCheckIcon,
+  LockClosedIcon,
   KeyIcon,
   UsersIcon,
   GlobeAltIcon,
+  CommandLineIcon,
   InboxIcon,
-  QueueListIcon,
-  PaintBrushIcon,
   ChartBarIcon,
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
@@ -37,6 +37,7 @@ const NAV = [
   { name: 'Collections', href: '/collections', icon: Square3Stack3DIcon },
   // { name: 'Brand kits', href: '/brand', icon: PaintBrushIcon },
   { name: 'Portals', href: '/portals', icon: GlobeAltIcon },
+  { name: 'Vaults', href: '/vaults', icon: LockClosedIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
@@ -44,7 +45,7 @@ const ADMIN_NAV = [
   { name: 'Users', href: '/admin/users', icon: UsersIcon },
   { name: 'Roles', href: '/admin/roles', icon: ShieldCheckIcon },
   { name: 'API Keys', href: '/admin/api-keys', icon: KeyIcon },
-  { name: 'Webhooks', href: '/admin/webhooks', icon: GlobeAltIcon },
+  { name: 'Webhooks', href: '/admin/webhooks', icon: CommandLineIcon },
   { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
 ];
 

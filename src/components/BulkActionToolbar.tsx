@@ -4,11 +4,16 @@ import { useState } from 'react';
 import { 
   XMarkIcon, 
   FolderArrowDownIcon, 
+  FolderIcon,
   Square3Stack3DIcon,
   TrashIcon,
   ArchiveBoxIcon,
-  CheckBadgeIcon
+  CheckBadgeIcon,
+  ShieldCheckIcon,
+  ShieldExclamationIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
+import AddToVaultModal from './AddToVaultModal';
 import { toast } from 'sonner';
 import { apiFetch, apiDownload } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
@@ -21,17 +26,20 @@ interface BulkActionToolbarProps {
   selectedIds: string[];
   onClear: () => void;
   onSuccess: () => void;
+  onRemoveFromVault?: () => void;
 }
 
 export default function BulkActionToolbar({ 
   selectedIds, 
   onClear,
-  onSuccess 
+  onSuccess,
+  onRemoveFromVault
 }: BulkActionToolbarProps) {
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+  const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -137,7 +145,7 @@ export default function BulkActionToolbar({
               className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group"
               title="Add to Categories"
             >
-              <FolderArrowDownIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              <FolderIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-medium hidden sm:inline">Categories</span>
             </button>
 
@@ -151,16 +159,28 @@ export default function BulkActionToolbar({
               <span className="text-xs font-medium hidden sm:inline">Collection</span>
             </button>
 
+
+            {onRemoveFromVault && (
+              <button 
+                onClick={onRemoveFromVault}
+                disabled={isProcessing}
+                className="p-2.5 text-white/70 hover:text-orange-400 hover:bg-orange-400/10 rounded-xl transition-all flex items-center gap-2 group border-l border-white/10 ml-1 pl-3"
+                title="Remove from current Vault"
+              >
+                <ShieldExclamationIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-medium hidden sm:inline text-orange-400 font-bold uppercase tracking-tight">Remove from Vault</span>
+              </button>
+            )}
+
             <button 
               disabled={isProcessing}
               onClick={handleBulkDownload}
-              className="p-2.5 text-white/70 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all flex items-center gap-2 group"
+              className="p-2.5 text-white/70 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-xl transition-all flex items-center gap-2 group border-l border-white/10 ml-1 pl-3"
               title="Download Selected"
             >
               <FolderArrowDownIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-medium hidden sm:inline">Download</span>
             </button>
-
             <div className="w-px h-6 bg-white/10 mx-1" />
 
             <button 
@@ -200,6 +220,7 @@ export default function BulkActionToolbar({
           onSuccess={onSuccess}
         />
       )}
+
 
       <DeleteConfirmationModal 
         isOpen={isDeleteModalOpen}

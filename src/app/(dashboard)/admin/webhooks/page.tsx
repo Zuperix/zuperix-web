@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { 
-  GlobeAltIcon, 
+  CommandLineIcon, 
   PlusIcon, 
   TrashIcon, 
   ClipboardDocumentCheckIcon,
@@ -167,7 +167,7 @@ export default function WebhooksPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-indigo-500/10 rounded-xl">
-            <GlobeAltIcon className="h-6 w-6 text-indigo-400" />
+            <CommandLineIcon className="h-6 w-6 text-indigo-400" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Webhook Management</h1>
@@ -364,7 +364,7 @@ export default function WebhooksPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
                     <div className="space-y-1.5">
                       <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
-                        <GlobeAltIcon className="h-3.5 w-3.5 text-indigo-400" /> Payload URL
+                        <CommandLineIcon className="h-3.5 w-3.5 text-indigo-400" /> Payload URL
                       </label>
                       <input
                         type="url" required value={newWebhook.url}
@@ -394,7 +394,7 @@ export default function WebhooksPage() {
                     </label>
                     <div className="grid grid-cols-3 gap-4">
                       {[
-                        { id: 'generic', name: 'Generic', icon: GlobeAltIcon, color: 'text-gray-400', activeBg: 'bg-gray-100/5', activeBorder: 'border-white/20' },
+                        { id: 'generic', name: 'Generic', icon: CommandLineIcon, color: 'text-gray-400', activeBg: 'bg-gray-100/5', activeBorder: 'border-white/20' },
                         { id: 'slack', name: 'Slack', icon: SlackIcon, color: 'text-orange-400', activeBg: 'bg-orange-500/5', activeBorder: 'border-orange-500/40' },
                         { id: 'discord', name: 'Discord', icon: DiscordIcon, color: 'text-indigo-400', activeBg: 'bg-indigo-500/5', activeBorder: 'border-indigo-500/40' }
                       ].map(type => (

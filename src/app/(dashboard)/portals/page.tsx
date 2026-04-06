@@ -20,9 +20,11 @@ import { toast } from 'sonner';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useRouter } from 'next/navigation';
 import { getPortalUrl } from '@/lib/constants';
 
 export default function PortalsPage() {
+  const router = useRouter();
   const { portals, createPortal, deletePortal, loading, refresh } = usePortals();
   const { activeWorkspace } = useWorkspace();
   const [isAdding, setIsAdding] = useState(false);
@@ -195,13 +197,18 @@ export default function PortalsPage() {
           ) : (
             filteredPortals.map(portal => (
               <div 
-                key={portal.id} 
-                className="group flex flex-col p-6 rounded-[32px] bg-gray-900/40 border border-gray-800/60 hover:border-blue-500/30 hover:bg-gray-800/40 transition-all duration-300 relative overflow-hidden"
+                key={portal.id}
+                onClick={() => router.push(`/dashboard/portals/${portal.id}`)}
+                className="group flex flex-col p-6 rounded-[32px] bg-gray-900/40 border border-gray-800/60 hover:border-blue-500/30 hover:bg-gray-800/40 transition-all duration-300 relative overflow-hidden cursor-pointer"
               >
                 <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                    <PermissionGate action={Action.Delete} subject="Portal" workspaceId={activeWorkspace?.id}>
                      <button 
-                      onClick={() => setPortalToDelete(portal)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPortalToDelete(portal);
+                      }}
                       className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
                      >
                         <TrashIcon className="h-4 w-4" />
@@ -236,12 +243,13 @@ export default function PortalsPage() {
                       href={getPortalUrl(portal.slug)} 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       className="p-2 rounded-xl text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 transition-all"
                       title="View Public Portal"
                      >
                        <GlobeAltIcon className="h-5 w-5" />
                      </a>
-                     <Link href={`/portals/${portal.id}`}>
+                     <Link href={`/dashboard/portals/${portal.id}`}>
                        <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white text-xs font-bold rounded-xl transition-all uppercase tracking-widest active:scale-95">
                           Assets
                           <ArrowRightIcon className="h-3 w-3" />
