@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { 
-  ShieldCheckIcon, 
+  LockClosedIcon, 
   TrashIcon, 
   PencilSquareIcon,
   CalendarIcon,
@@ -26,7 +26,7 @@ export default function VaultCard({ vault, workspaceId, onEdit, onDelete }: Vaul
 
   return (
     <div 
-      onClick={() => router.push(`/dashboard/vaults/${vault.id}`)}
+      onClick={() => router.push(`/vaults/${vault.id}`)}
       className="group flex flex-col p-6 rounded-[32px] bg-gray-900/40 border border-gray-800/60 hover:border-blue-500/30 hover:bg-gray-800/40 transition-all duration-300 relative overflow-hidden cursor-pointer"
     >
       <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 z-10">
@@ -58,7 +58,7 @@ export default function VaultCard({ vault, workspaceId, onEdit, onDelete }: Vaul
 
       <div className="flex items-center gap-4 mb-4">
         <div className="h-12 w-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-          <ShieldCheckIcon className="h-6 w-6 text-blue-400" />
+          <LockClosedIcon className="h-6 w-6 text-blue-400" />
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-base font-bold text-white truncate group-hover:text-blue-400 transition-colors uppercase tracking-tight">{vault.name}</h3>

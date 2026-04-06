@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useVaults, Vault } from '@/hooks/useVaults';
 import { 
   PlusIcon, 
-  ShieldCheckIcon, 
+  LockClosedIcon, 
   TrashIcon, 
   MagnifyingGlassIcon,
   XMarkIcon,
@@ -76,7 +76,7 @@ export default function VaultsPage() {
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-4">
-            <ShieldCheckIcon className="h-9 w-9 text-blue-500" />
+            <LockClosedIcon className="h-9 w-9 text-blue-500" />
             Vaults
           </h1>
           <p className="text-gray-500 text-sm mt-1 mx-1">Securely group assets and manage member-level access controls.</p>
@@ -169,7 +169,7 @@ export default function VaultsPage() {
         ) : filteredVaults.length === 0 ? (
           <div className="col-span-full text-center py-32 bg-gray-900/20 rounded-[48px] border-2 border-dashed border-gray-800 flex flex-col items-center justify-center gap-6">
              <div className="h-20 w-20 rounded-full bg-gray-800/50 flex items-center justify-center">
-                <ShieldCheckIcon className="h-10 w-10 text-gray-700" />
+                <LockClosedIcon className="h-10 w-10 text-gray-700" />
              </div>
              <div className="space-y-1">
                  <p className="text-white font-bold text-lg">No vaults found</p>

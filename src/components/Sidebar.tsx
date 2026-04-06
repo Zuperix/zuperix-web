@@ -17,12 +17,11 @@ import {
   RectangleGroupIcon,
   Square3Stack3DIcon,
   ShieldCheckIcon,
+  LockClosedIcon,
   KeyIcon,
   UsersIcon,
   GlobeAltIcon,
   InboxIcon,
-  QueueListIcon,
-  PaintBrushIcon,
   ChartBarIcon,
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
@@ -31,14 +30,14 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Action } from '@/types/auth';
 
 const NAV = [
-  { name: 'Assets', href: '/dashboard', icon: FolderIcon },
-  { name: 'My Tasks', href: '/dashboard/tasks', icon: InboxIcon },
-  { name: 'Categories', href: '/dashboard/categories', icon: FolderIcon },
-  { name: 'Collections', href: '/dashboard/collections', icon: Square3Stack3DIcon },
-  // { name: 'Brand kits', href: '/dashboard/brand', icon: PaintBrushIcon },
-  { name: 'Portals', href: '/dashboard/portals', icon: GlobeAltIcon },
-  { name: 'Vaults', href: '/dashboard/vaults', icon: ShieldCheckIcon },
-  { name: 'Settings', href: '/dashboard/settings', icon: Cog6ToothIcon },
+  { name: 'Assets', href: '/', icon: RectangleGroupIcon },
+  { name: 'My Tasks', href: '/tasks', icon: InboxIcon },
+  { name: 'Categories', href: '/categories', icon: FolderIcon },
+  { name: 'Collections', href: '/collections', icon: Square3Stack3DIcon },
+  // { name: 'Brand kits', href: '/brand', icon: PaintBrushIcon },
+  { name: 'Portals', href: '/portals', icon: GlobeAltIcon },
+  { name: 'Vaults', href: '/vaults', icon: LockClosedIcon },
+  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
 const ADMIN_NAV = [

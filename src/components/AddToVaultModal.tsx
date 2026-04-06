@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { 
   XMarkIcon, 
-  ShieldCheckIcon,
+  LockClosedIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/lib/api';
@@ -71,7 +71,7 @@ export default function AddToVaultModal({
         <div className="p-8 border-b border-gray-100 dark:border-gray-800/60 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/40">
           <div>
             <h2 className="text-xl font-extrabold text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-              <ShieldCheckIcon className="h-6 w-6 text-blue-500" />
+              <LockClosedIcon className="h-6 w-6 text-blue-500" />
               Add to Vault
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Protect {selectedIds.length} assets with secure access</p>
@@ -114,7 +114,7 @@ export default function AddToVaultModal({
                   >
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-xl ${selectedVaultId === vault.id ? 'bg-white/20' : 'bg-blue-500/10 dark:bg-blue-500/20'}`}>
-                        <ShieldCheckIcon className={`h-5 w-5 ${selectedVaultId === vault.id ? 'text-white' : 'text-blue-500'}`} />
+                        <LockClosedIcon className={`h-5 w-5 ${selectedVaultId === vault.id ? 'text-white' : 'text-blue-500'}`} />
                       </div>
                       <div className="text-left flex-1">
                         <p className="text-sm font-bold uppercase tracking-tight">{vault.name}</p>
@@ -130,7 +130,7 @@ export default function AddToVaultModal({
                 ))}
                 {filteredVaults.length === 0 && (
                   <div className="text-center py-12 px-4 rounded-3xl bg-gray-50 dark:bg-gray-900/40 border border-dashed border-gray-200 dark:border-gray-800 flex flex-col items-center gap-3">
-                    <ShieldCheckIcon className="h-8 w-8 text-gray-300" />
+                    <LockClosedIcon className="h-8 w-8 text-gray-300" />
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No vaults found</p>
                   </div>
                 )}

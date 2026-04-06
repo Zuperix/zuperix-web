@@ -9,7 +9,8 @@ import {
   ArchiveBoxIcon,
   CheckBadgeIcon,
   ShieldCheckIcon,
-  ShieldExclamationIcon
+  ShieldExclamationIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 import AddToVaultModal from './AddToVaultModal';
 import { toast } from 'sonner';
@@ -157,15 +158,6 @@ export default function BulkActionToolbar({
               <span className="text-xs font-medium hidden sm:inline">Collection</span>
             </button>
 
-            <button 
-              onClick={() => setIsVaultModalOpen(true)}
-              disabled={isProcessing}
-              className="p-2.5 text-white/70 hover:text-blue-400 hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group"
-              title="Add to Vault"
-            >
-              <ShieldCheckIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-medium hidden sm:inline text-blue-400 font-bold uppercase tracking-tight">Add to Vault</span>
-            </button>
 
             {onRemoveFromVault && (
               <button 
@@ -228,16 +220,6 @@ export default function BulkActionToolbar({
         />
       )}
 
-      {isVaultModalOpen && (
-        <AddToVaultModal 
-          selectedIds={selectedIds}
-          onClose={() => setIsVaultModalOpen(false)}
-          onSuccess={() => {
-            onSuccess();
-            onClear();
-          }}
-        />
-      )}
 
       <DeleteConfirmationModal 
         isOpen={isDeleteModalOpen}
