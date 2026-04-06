@@ -6,7 +6,7 @@ const portalName = `e2e test portal ${Date.now()}`;
 const portalSlug = `e2e-test-portal-${Date.now()}`;
 
 test('portals page loads and shows UI elements', async ({ page }) => {
-  await page.goto('/dashboard/portals');
+  await page.goto('/portals');
 
   await expect(page.getByRole('heading', { name: /Public Portals/i })).toBeVisible();
   await expect(page.getByText(/Create and manage public access portals for your assets/i)).toBeVisible();
@@ -15,7 +15,7 @@ test('portals page loads and shows UI elements', async ({ page }) => {
 });
 
 test('create portal form opens and has expected fields', async ({ page }) => {
-  await page.goto('/dashboard/portals');
+  await page.goto('/portals');
   await expect(page.getByRole('heading', { name: /Public Portals/i })).toBeVisible();
 
   await page.getByRole('button', { name: /New Portal/i }).click();
@@ -32,7 +32,7 @@ test('create portal form opens and has expected fields', async ({ page }) => {
 });
 
 test('create portal with timestamped name', async ({ page }) => {
-  await page.goto('/dashboard/portals');
+  await page.goto('/portals');
   await expect(page.getByRole('heading', { name: /Public Portals/i })).toBeVisible();
 
   await page.getByRole('button', { name: /New Portal/i }).click();
@@ -51,7 +51,7 @@ test('create portal with timestamped name', async ({ page }) => {
 });
 
 test('navigate to portal detail page via Assets button', async ({ page }) => {
-  await page.goto('/dashboard/portals');
+  await page.goto('/portals');
   await expect(page.getByRole('heading', { name: /Public Portals/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: portalName })).toBeVisible({ timeout: 10000 });
 
@@ -65,7 +65,7 @@ test('navigate to portal detail page via Assets button', async ({ page }) => {
 });
 
 test('portal detail page has Page Builder and Raw Assets tabs', async ({ page }) => {
-  await page.goto('/dashboard/portals');
+  await page.goto('/portals');
   
   const slugText = `/p/${portalSlug}`;
   const portalCard = page.locator('.group.flex.flex-col').filter({ hasText: slugText });
@@ -85,7 +85,7 @@ test('portal detail page has Page Builder and Raw Assets tabs', async ({ page })
 });
 
 test('search and add 3 assets to portal', async ({ page }) => {
-  await page.goto('/dashboard/portals');
+  await page.goto('/portals');
   
   const slugText = `/p/${portalSlug}`;
   const portalCard = page.locator('.group.flex.flex-col').filter({ hasText: slugText });
@@ -117,7 +117,7 @@ test('search and add 3 assets to portal', async ({ page }) => {
 });
 
 test('delete created portal (cleanup)', async ({ page }) => {
-  await page.goto('/dashboard/portals');
+  await page.goto('/portals');
   await expect(page.getByRole('heading', { name: /Public Portals/i })).toBeVisible();
 
   const slugText = `/p/${portalSlug}`;

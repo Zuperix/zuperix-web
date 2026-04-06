@@ -69,6 +69,3 @@ export async function apiDownload(
 
   return response.blob();
 }
-// Helper to handle snake_case to camelCase conversion if needed, 
-// but for now we'll stick to the backend's snake_case in the types 
-// as they are generated that way.

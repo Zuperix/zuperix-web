@@ -9,7 +9,7 @@ function newRoleModal(page: import('@playwright/test').Page) {
 }
 
 test('roles page shows built-in role inventory', async ({ page }) => {
-  await page.goto('/dashboard/admin/roles');
+  await page.goto('/admin/roles');
 
   await expect(page.getByRole('heading', { name: /Role Management/i })).toBeVisible();
   await expect(page.getByText(/Manage system-wide and workspace-specific roles and permissions\./i)).toBeVisible();
@@ -25,7 +25,7 @@ test('roles page shows built-in role inventory', async ({ page }) => {
 });
 
 test('create and delete workspace role (cleanup)', async ({ page }) => {
-  await page.goto('/dashboard/admin/roles');
+  await page.goto('/admin/roles');
   await expect(page.getByRole('heading', { name: /Role Management/i })).toBeVisible();
 
   const roleName = `E2E Role ${Date.now()}`;

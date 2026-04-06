@@ -1,6 +1,6 @@
 'use client';
 
-import { MagnifyingGlassIcon, Bars3Icon, BellIcon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, Bars3Icon, BellIcon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon, SparklesIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -8,6 +8,9 @@ import { useEffect, useState, useRef } from 'react';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import NotificationCenter from './NotificationCenter';
+import CustomImage from './CustomImage';
+import { useFliptBoolean } from '@flipt-io/flipt-client-react';
+import { FEATURES } from '@/constants/features';
 
 export default function Header() {
   const { sidebarCollapsed, setSidebarCollapsed, searchQuery, setSearchQuery } = useLayout();
@@ -24,6 +27,19 @@ export default function Header() {
   const [showSearchInfo, setShowSearchInfo] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const reverseSearchEnabled = useFliptBoolean(
+    FEATURES.REVERSE_IMAGE_SEARCH.key,
+    false,
+    user?.id || 'anonymous'
+  );
+
+  // Diagnostic logging for feature flags
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Flipt] ${FEATURES.REVERSE_IMAGE_SEARCH.name} status:`, reverseSearchEnabled);
+    }
+  }, [reverseSearchEnabled]);
 
   const formatSize = (bytes: number) => {
     if (!bytes || isNaN(bytes)) return '0 Bytes';
@@ -69,7 +85,7 @@ export default function Header() {
     localStorage.setItem('isSemantic', String(newState));
     
     // If on dashboard or search results, update the URL to trigger re-fetch
-    if (pathname === '/dashboard') {
+    if (pathname === '/') {
       const params = new URLSearchParams(searchParams.toString());
       if (newState) {
         params.set('is_semantic', 'true');
@@ -89,12 +105,12 @@ export default function Header() {
     e.preventDefault();
     setShowSuggestions(false);
     if (searchQuery.trim()) {
-      router.push(`/dashboard?q=${encodeURIComponent(searchQuery)}${isSemantic ? '&is_semantic=true' : ''}`);
+      router.push(`/?q=${encodeURIComponent(searchQuery)}${isSemantic ? '&is_semantic=true' : ''}`);
     }
   };
 
   const fetchSuggestions = async (query: string, semanticState = isSemantic) => {
-    if (!activeWorkspace || !query.trim() || query.length < 2 || pathname === '/dashboard/search') {
+    if (!activeWorkspace || !query.trim() || query.length < 2 || pathname === '/search') {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -220,7 +236,7 @@ export default function Header() {
                         AI analysis can occasionally vary, so please verify results for critical workflows.
                       </p>
                       <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between">
-                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Powered by OpenDAM AI</span>
+                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Powered by Zuperix AI</span>
                         <div className="flex gap-1">
                           <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
                           <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse delay-75" />
@@ -231,6 +247,59 @@ export default function Header() {
                   )}
                 </div>
               </div>
+
+              {/* Visual Search Trigger */}
+              {reverseSearchEnabled && (
+                <div className="flex items-center ml-1">
+                  <input
+                    type="file"
+                    id="visual-search-upload"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !activeWorkspace) return;
+                      
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      
+                      try {
+                        setLoadingSuggestions(true);
+                        const response = await apiFetch<any>(`/workspaces/${activeWorkspace.id}/search/visual`, {
+                          method: 'POST',
+                          body: formData,
+                        });
+                        
+                        if (response.results) {
+                          setSuggestions(response.results);
+                          setShowSuggestions(true);
+                        }
+                      } catch (err: any) {
+                        console.error('Visual search failed', err);
+                        if (err.status === 403) {
+                          alert('Visual search is only available on Silver, Gold, and Platinum plans.');
+                        } else {
+                          alert('Visual search failed. Please try again.');
+                        }
+                      } finally {
+                        setLoadingSuggestions(false);
+                        // Clear the input so it can be used again for the same file
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('visual-search-upload')?.click()}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 transition-all group/cam"
+                    title="Search by image (Reverse Search)"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 group-hover/cam:scale-110 transition-transform">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008H12V8.25Z" />
+                    </svg>
+                  </button>
+                </div>
+              )}
 
               <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1.5 font-sans text-[10px] font-medium text-gray-400 dark:text-gray-500 shadow-sm ml-1">
                 <span className="text-[8px]">⌘</span>K
@@ -252,17 +321,22 @@ export default function Header() {
                     key={asset.id}
                     onClick={() => {
                       setShowSuggestions(false);
-                      router.push(`/dashboard/assets/${asset.id}`);
+                      router.push(`/assets/${asset.id}`);
                     }}
                     className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-blue-50/80 dark:hover:bg-blue-900/10 flex items-center gap-4 transition-all group/item"
                   >
                     <div className="h-12 w-12 rounded-xl bg-gray-50 dark:bg-gray-900/40 overflow-hidden flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-800 group-hover/item:border-blue-500/30 transition-all shadow-sm" title={`Score: ${asset.score?.toFixed(4) || 'N/A'}`}>
                       {asset.mime_type?.startsWith('image/') ? (
-                        <img 
-                          src={`${BASE_URL}/assets/${asset.id}/view`} 
-                          alt="" 
-                          className="h-full w-full object-cover group-hover/item:scale-110 transition-transform duration-500"
-                        />
+                        <div className="relative h-full w-full">
+                          <CustomImage 
+                            src={asset.thumbnail_lg_url || asset.asset_live_url} 
+                            alt="" 
+                            fill
+                            shimmerWidth={48}
+                            shimmerHeight={48}
+                            className="object-cover group-hover/item:scale-110 transition-transform duration-500"
+                          />
+                        </div>
                       ) : (
                         <DocumentIcon className="h-6 w-6 text-gray-400 dark:text-gray-600 group-hover/item:text-blue-500 transition-colors" />
                       )}
@@ -318,6 +392,16 @@ export default function Header() {
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? <SunIcon className="h-4.5 w-4.5" /> : <MoonIcon className="h-4.5 w-4.5" />}
+          </button>
+          
+          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
+
+          <button
+            onClick={() => router.push('/upload-status')}
+            className={`p-1.5 rounded-lg transition-all duration-200 ${pathname === '/upload-status' ? 'bg-blue-500/10 text-blue-500' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800'}`}
+            title="Upload Status"
+          >
+            <CloudArrowUpIcon className="h-4.5 w-4.5" />
           </button>
           
           <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />

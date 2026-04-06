@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { 
   XMarkIcon, 
-  RectangleGroupIcon,
+  Square3Stack3DIcon,
   GlobeAmericasIcon
 } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/lib/api';
@@ -94,7 +94,7 @@ export default function BulkAddCollectionModal({
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${selectedCollectionId === collection.id ? 'bg-purple-100 dark:bg-purple-800' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                      <RectangleGroupIcon className="h-4 w-4" />
+                      <Square3Stack3DIcon className="h-4 w-4" />
                     </div>
                     <div className="text-left flex-1">
                       <div className="flex items-center gap-2">

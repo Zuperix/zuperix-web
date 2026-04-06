@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe.configure({ mode: 'serial' });
 
 test('category page shows taxonomy hierarchy', async ({ page }) => {
-  await page.goto('/dashboard/categories');
+  await page.goto('/categories');
 
   await expect(page.getByRole('heading', { name: /Taxonomy Management/i })).toBeVisible();
   await expect(page.getByText(/Manage hierarchical labels to organize your global asset library\./i)).toBeVisible();
@@ -54,7 +54,7 @@ test('category page shows taxonomy hierarchy', async ({ page }) => {
 });
 
 test('create and delete category (cleanup)', async ({ page }) => {
-  await page.goto('/dashboard/categories');
+  await page.goto('/categories');
   await expect(page.getByRole('heading', { name: /Taxonomy Management/i })).toBeVisible();
 
   const categoryName = `e2e-cat-${Date.now()}-${Math.random().toString(36).slice(2)}`;

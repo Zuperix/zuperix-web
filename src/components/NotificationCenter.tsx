@@ -81,7 +81,7 @@ export default function NotificationCenter() {
 
     const assetId = n.data?.assetId || n.data?.asset_id;
     if (assetId) {
-      router.push(`/dashboard/assets/${assetId}`);
+      router.push(`/assets/${assetId}`);
     }
   };
 

@@ -17,7 +17,7 @@ const AVAILABLE_WIDGETS = [
   { type: 'search', label: 'Search Bar', icon: MagnifyingGlassIcon, desc: 'Add a global search bar to help users find assets quickly.' },
   { type: 'assets_grid', label: 'Assets Grid', icon: Square3Stack3DIcon, desc: 'Display a dynamic, responsive grid of all portal assets.' },
   { type: 'collection', label: 'Collection', icon: FolderIcon, desc: 'Showcase assets from a specific folder or collection.' },
-  { type: 'category', label: 'Category', icon: TagIcon, desc: 'Filter and display assets belonging to a specific category.' },
+  { type: 'category', label: 'Category', icon: FolderIcon, desc: 'Filter and display assets belonging to a specific category.' },
   { type: 'banner', label: 'Banner', icon: PhotoIcon, desc: 'Add a high-impact visual header with custom titles.' },
   { type: 'text', label: 'Text/Heading', icon: DocumentTextIcon, desc: 'Insert rich text contents, headings, or descriptions.' },
   { type: 'spacer', label: 'Spacer', icon: ArrowsUpDownIcon, desc: 'Add vertical breathing room between your page components.' },

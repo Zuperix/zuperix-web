@@ -1,14 +1,19 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import CustomImage from './CustomImage';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import { components } from '@/types/api';
+import PdfPreview from './PdfPreview';
+import ThreeDPreview from './ThreeDPreview';
+import { is3D } from '@/lib/format';
 import { 
   XMarkIcon, 
   CheckIcon, 
   ArrowPathIcon,
   InformationCircleIcon,
   TagIcon,
+  FolderIcon,
   DocumentDuplicateIcon,
   PhotoIcon,
   VideoCameraIcon,
@@ -31,6 +36,8 @@ type AssetDetails = {
   release_date: string | null;
   expiration_date: string | null;
   ocr_text?: string | null;
+  asset_live_url: string;
+  thumbnail_lg_url?: string;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -213,21 +220,40 @@ export default function MetadataPanel({
         {/* Preview Section */}
         <div className="p-4 bg-gray-950/20 border-b border-gray-800/50">
           <div className="aspect-video rounded-xl overflow-hidden bg-gray-800 border border-gray-700/50 relative group">
-            <img 
-              src={`${BASE_URL}/assets/${assetId}/view`} 
-              className="w-full h-full object-contain"
-              alt="Asset preview"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                if (target.nextElementSibling) {
-                  (target.nextElementSibling as HTMLElement).style.display = 'flex';
-                }
-              }}
-            />
-            <div className="hidden absolute inset-0 items-center justify-center bg-gray-800">
-              <DocumentIcon className="h-12 w-12 text-gray-600" />
-            </div>
+            {is3D(asset?.mime_type, asset?.original_name) ? (
+              <ThreeDPreview 
+                src={asset?.asset_live_url || ''} 
+                alt={asset?.original_name || ''}
+                className="w-full h-full"
+              />
+            ) : asset?.mime_type === 'application/pdf' ? (
+              <PdfPreview 
+                src={asset?.asset_live_url || ''} 
+                assetId={asset?.id} 
+                className="w-full h-full"
+              />
+            ) : (
+              <>
+                <CustomImage 
+                  src={asset?.thumbnail_lg_url || asset?.asset_live_url!} 
+                  fill
+                  shimmerWidth={350}
+                  shimmerHeight={200}
+                  className="object-contain"
+                  alt="Asset preview"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    if (target.nextElementSibling) {
+                      (target.nextElementSibling as HTMLElement).style.display = 'flex';
+                    }
+                  }}
+                />
+                <div className="hidden absolute inset-0 items-center justify-center bg-gray-800">
+                  <DocumentIcon className="h-12 w-12 text-gray-600" />
+                </div>
+              </>
+            )}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               <p className="text-[10px] font-bold text-white uppercase tracking-widest">Preview</p>
             </div>
@@ -242,7 +268,7 @@ export default function MetadataPanel({
                   disabled={!!activeWorkflow}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700/60 rounded-2xl text-xs font-bold text-white uppercase tracking-widest transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <TagIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
+                  <FolderIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />
                   Organize
                 </button>
                 

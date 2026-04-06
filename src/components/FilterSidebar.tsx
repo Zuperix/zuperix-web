@@ -330,9 +330,9 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     aspect_ratio: { label: 'Aspect Ratio', icon: PhotoIcon },
     created_at: { label: 'Upload Date', icon: CalendarIcon },
     lifecycle: { label: 'Asset Lifecycle', icon: ClockIcon },
-    category_uuids: { label: 'Categories', icon: TagIcon },
-    category_paths: { label: 'Category', icon: TagIcon },
-    collection_uuids: { label: 'Collections', icon: FolderIcon },
+    category_uuids: { label: 'Categories', icon: FolderIcon },
+    category_paths: { label: 'Category', icon: FolderIcon },
+    collection_uuids: { label: 'Collections', icon: Square3Stack3DIcon },
     uploaded_by_id: { label: 'Uploaded By', icon: IdentificationIcon },
   };
 

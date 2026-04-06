@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import PublicAssetCard from './PublicAssetCard';
+import DownloadModal from './DownloadModal';
 import { PhotoIcon } from '@heroicons/react/24/outline';
+
 import WidgetRenderer from './portals/builder/WidgetRenderer';
 
 interface PortalData {
@@ -44,6 +46,8 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
   const [loading, setLoading] = useState(!initialData && !initialError);
   const [error, setError] = useState<string | null>(initialError || null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [downloadAsset, setDownloadAsset] = useState<any>(null);
+
   
   // OS Search & Pagination State
   const [searchResults, setSearchResults] = useState<any[]>(initialAssets?.results || []);
@@ -162,9 +166,11 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
                       categories: data.categories,
                       collections: data.collections,
                       searchQuery,
-                      onSearchChange: setSearchQuery
+                      onSearchChange: setSearchQuery,
+                      onDownload: setDownloadAsset
                     }} 
                  />
+
               </div>
             ))}
             
@@ -266,8 +272,9 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
               <>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {searchResults.map((asset: any) => (
-                  <PublicAssetCard key={asset.id} asset={asset} />
+                  <PublicAssetCard key={asset.id} asset={asset} onDownload={setDownloadAsset} />
                 ))}
+
               </div>
               {/* Pagination Controls */}
               {totalPages > 1 && (
@@ -307,6 +314,21 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
           </p>
         </footer>
       </div>
+
+      {downloadAsset && (
+        <DownloadModal
+          isOpen={!!downloadAsset}
+          onClose={() => setDownloadAsset(null)}
+          assetId={downloadAsset.id}
+          originalName={downloadAsset.name || downloadAsset.original_name}
+          width={downloadAsset.width}
+          height={downloadAsset.height}
+          mimeType={downloadAsset.type || downloadAsset.mime_type}
+          previewUrl={downloadAsset.asset_live_url}
+          portalSlug={slug}
+        />
+      )}
     </div>
   );
 }
+

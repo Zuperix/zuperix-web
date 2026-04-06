@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { 
   XMarkIcon, 
   FolderArrowDownIcon, 
-  RectangleGroupIcon,
+  Square3Stack3DIcon,
   TrashIcon,
   ArchiveBoxIcon,
   CheckBadgeIcon,
@@ -13,8 +13,9 @@ import {
 } from '@heroicons/react/24/outline';
 import AddToVaultModal from './AddToVaultModal';
 import { toast } from 'sonner';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiDownload } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useAuth } from '@/context/AuthContext';
 import BulkAddCategoryModal from '@/components/BulkAddCategoryModal';
 import BulkAddCollectionModal from '@/components/BulkAddCollectionModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
@@ -32,12 +33,54 @@ export default function BulkActionToolbar({
   onSuccess,
   onRemoveFromVault
 }: BulkActionToolbarProps) {
+  const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleBulkDownload = async () => {
+    if (!activeWorkspace) return;
+    try {
+      setIsProcessing(true);
+      if (selectedIds.length > 50) {
+        await apiFetch(`/assets/bulk/download`, {
+          method: 'POST',
+          body: JSON.stringify({
+            asset_ids: selectedIds,
+            email: user?.email
+          })
+        });
+        toast.success(`We're preparing your ${selectedIds.length} assets. You'll receive an email with a download link shortly.`);
+      } else {
+        toast.loading('Preparing your download...', { id: 'download-progress' });
+        const blob = await apiDownload(`/assets/bulk/download`, {
+          method: 'POST',
+          body: JSON.stringify({
+            asset_ids: selectedIds
+          })
+        });
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `zuperix-assets-${new Date().getTime()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.dismiss('download-progress');
+        toast.success('Download started');
+      }
+    } catch (error: any) {
+      toast.dismiss('download-progress');
+      toast.error(error.message || 'Failed to start download');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleBulkStatusChange = async (status: string) => {
     if (!activeWorkspace) return;
@@ -110,7 +153,7 @@ export default function BulkActionToolbar({
               className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group"
               title="Add to Collection"
             >
-              <RectangleGroupIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              <Square3Stack3DIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-medium hidden sm:inline">Collection</span>
             </button>
 
@@ -118,7 +161,7 @@ export default function BulkActionToolbar({
               onClick={() => setIsVaultModalOpen(true)}
               disabled={isProcessing}
               className="p-2.5 text-white/70 hover:text-blue-400 hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group"
-              title="Add to Another Vault"
+              title="Add to Vault"
             >
               <ShieldCheckIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
               <span className="text-xs font-medium hidden sm:inline text-blue-400 font-bold uppercase tracking-tight">Add to Vault</span>
@@ -136,6 +179,15 @@ export default function BulkActionToolbar({
               </button>
             )}
 
+            <button 
+              disabled={isProcessing}
+              onClick={handleBulkDownload}
+              className="p-2.5 text-white/70 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-xl transition-all flex items-center gap-2 group border-l border-white/10 ml-1 pl-3"
+              title="Download Selected"
+            >
+              <FolderArrowDownIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+              <span className="text-xs font-medium hidden sm:inline">Download</span>
+            </button>
             <div className="w-px h-6 bg-white/10 mx-1" />
 
             <button 

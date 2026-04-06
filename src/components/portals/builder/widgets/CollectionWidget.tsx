@@ -50,8 +50,13 @@ export default function CollectionWidget({ widget, isEditMode, context }: { widg
       }`}>
         {filteredAssets.length > 0 ? (
           filteredAssets.map((asset: any) => (
-            <PublicAssetCard key={asset.id} asset={asset} />
+            <PublicAssetCard 
+              key={asset.id} 
+              asset={asset} 
+              onDownload={context?.onDownload} 
+            />
           ))
+
         ) : isEditMode ? (
           placeholders.map((_, i) => (
             <div key={i} className="aspect-[4/3] bg-gray-900 border border-gray-800 rounded-2xl flex items-center justify-center opacity-60">

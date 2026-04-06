@@ -9,7 +9,7 @@ function tagCard(page: Page, name: RegExp) {
 }
 
 test('tags page shows tag inventory', async ({ page }) => {
-  await page.goto('/dashboard/settings/tags');
+  await page.goto('/settings/tags');
 
   await expect(page.getByRole('link', { name: /Back to Settings/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Tags & Labels/i })).toBeVisible();
@@ -29,7 +29,7 @@ test('tags page shows tag inventory', async ({ page }) => {
 });
 
 test('tags page search filters visible tags', async ({ page }) => {
-  await page.goto('/dashboard/settings/tags');
+  await page.goto('/settings/tags');
 
   const search = page.getByPlaceholder('Find a tag...');
   await search.fill('messi');

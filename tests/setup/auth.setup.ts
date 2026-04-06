@@ -22,7 +22,7 @@ setup('authenticate', async ({ page }) => {
   await page.getByPlaceholder('••••••••').fill(password);
   await page.getByRole('button', { name: /Sign In/i }).click();
 
-  await expect(page).toHaveURL(/.*dashboard/);
+  await expect(page).toHaveURL(/\/$/);
   
   await page.waitForTimeout(2000);
 

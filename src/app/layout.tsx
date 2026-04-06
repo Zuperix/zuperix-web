@@ -4,6 +4,7 @@ import "./globals.css";
 import Script from "next/script";
 
 import { AuthProvider } from "@/context/AuthContext";
+import { FliptProvider } from "@/providers/FliptProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +39,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <FliptProvider>
+            {children}
+          </FliptProvider>
+        </AuthProvider>
         <Toaster position="top-right" richColors expand={false} />
         <Script
           type="module"

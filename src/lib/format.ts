@@ -13,3 +13,15 @@ export function formatDate(date: string | Date) {
     day: 'numeric',
   });
 }
+
+export function is3D(mime?: string, filename?: string) {
+  const m = (mime || '').toLowerCase();
+  const f = (filename || '').toLowerCase();
+  return (
+    m === 'model/gltf-binary' || 
+    m === 'model/gltf+json' || 
+    m.includes('model/') ||
+    f.endsWith('.glb') || 
+    f.endsWith('.gltf')
+  );
+}

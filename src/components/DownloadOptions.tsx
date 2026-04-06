@@ -23,6 +23,7 @@ interface DownloadOptionsProps {
   aspectRatioType: string;
   onAspectRatioChange: (type: string) => void;
   onCropChange: (crop: { x: number; y: number; width: number; height: number }) => void;
+  portalSlug?: string;
 }
 
 const ASPECT_RATIOS = [
@@ -42,10 +43,14 @@ export default function DownloadOptions({
   crop,
   aspectRatioType,
   onAspectRatioChange,
-  onCropChange
+  onCropChange,
+  portalSlug,
 }: DownloadOptionsProps) {
+
   const [isCustomizing, setIsCustomizing] = useState(true);
   const [loading, setLoading] = useState<string | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+
   
   // Customization state
   const [width, setWidth] = useState<number | string>(originalWidth || '');
@@ -68,7 +73,9 @@ export default function DownloadOptions({
   }, [crop, originalWidth, originalHeight]);
 
   const handleWidthChange = (val: string) => {
+    setSelectedPreset(null);
     const num = parseInt(val);
+
     setWidth(val);
     if (!num || !originalWidth || !originalHeight) return;
 
@@ -87,7 +94,9 @@ export default function DownloadOptions({
   };
 
   const handleHeightChange = (val: string) => {
+    setSelectedPreset(null);
     const num = parseInt(val);
+
     setHeight(val);
     if (!num || !originalWidth || !originalHeight) return;
 
@@ -128,6 +137,7 @@ export default function DownloadOptions({
 
   const handlePresetDownload = (preset: string) => {
     setIsCustomizing(true);
+    setSelectedPreset(preset.toLowerCase());
     switch (preset.toLowerCase()) {
       case 'small':
         setWidth(800);
@@ -153,8 +163,8 @@ export default function DownloadOptions({
       default:
         break;
     }
-    toast.success(`${preset.toUpperCase()} preset applied. You can now customize further.`);
   };
+
 
   const handleCustomDownload = async () => {
     setLoading('custom');
@@ -167,10 +177,15 @@ export default function DownloadOptions({
       if (width) options.width = parseInt(width as string);
       if (height) options.height = parseInt(height as string);
 
-      const blob = await apiDownload(`/assets/${assetId}/download/custom`, {
+      const endpoint = portalSlug 
+        ? `/p/${portalSlug}/assets/${assetId}/download/custom`
+        : `/assets/${assetId}/download/custom`;
+
+      const blob = await apiDownload(endpoint, {
         method: 'POST',
         body: JSON.stringify(options),
       });
+
       downloadBlob(blob, `${originalName.split('.')[0]}_custom.${format}`);
       toast.success('Custom version downloaded');
     } catch (err: any) {
@@ -196,10 +211,15 @@ export default function DownloadOptions({
       if (width) options.width = parseInt(width as string);
       if (height) options.height = parseInt(height as string);
 
-      await apiFetch(`/assets/${assetId}/download/email`, {
+      const endpoint = portalSlug
+        ? `/p/${portalSlug}/assets/${assetId}/download/email`
+        : `/assets/${assetId}/download/email`;
+
+      await apiFetch(endpoint, {
         method: 'POST',
         body: JSON.stringify(options),
       });
+
       toast.success(`Asset is being sent to ${email}`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to send email');
@@ -216,8 +236,13 @@ export default function DownloadOptions({
           <button
             onClick={() => handlePresetDownload('small')}
             disabled={!!loading}
-            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-white/5 border border-transparent hover:border-blue-500/50 rounded-2xl transition-all group"
+            className={`flex items-center gap-3 p-3 rounded-2xl transition-all group border-2 ${
+              selectedPreset === 'small' 
+                ? 'bg-blue-500/10 border-blue-500/50 shadow-lg shadow-blue-500/10' 
+                : 'bg-gray-50 dark:bg-white/5 border-transparent hover:border-blue-500/30'
+            }`}
           >
+
             <div className="h-8 w-8 bg-blue-500/10 rounded-xl flex items-center justify-center group-hover:bg-blue-500/20">
               <span className="text-[10px] font-black text-blue-500">800</span>
             </div>
@@ -230,8 +255,13 @@ export default function DownloadOptions({
           <button
             onClick={() => handlePresetDownload('large')}
             disabled={!!loading}
-            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-white/5 border border-transparent hover:border-blue-500/50 rounded-2xl transition-all group"
+            className={`flex items-center gap-3 p-3 rounded-2xl transition-all group border-2 ${
+              selectedPreset === 'large' 
+                ? 'bg-indigo-500/10 border-indigo-500/50 shadow-lg shadow-indigo-500/10' 
+                : 'bg-gray-50 dark:bg-white/5 border-transparent hover:border-indigo-500/30'
+            }`}
           >
+
             <div className="h-8 w-8 bg-indigo-500/10 rounded-xl flex items-center justify-center group-hover:bg-indigo-500/20">
               <span className="text-[10px] font-black text-indigo-500">2.4K</span>
             </div>
@@ -244,8 +274,13 @@ export default function DownloadOptions({
           <button
             onClick={() => handlePresetDownload('transparent')}
             disabled={!!loading}
-            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-white/5 border border-transparent hover:border-purple-500/50 rounded-2xl transition-all group"
+            className={`flex items-center gap-3 p-3 rounded-2xl transition-all group border-2 ${
+              selectedPreset === 'transparent' 
+                ? 'bg-purple-500/10 border-purple-500/50 shadow-lg shadow-purple-500/10' 
+                : 'bg-gray-50 dark:bg-white/5 border-transparent hover:border-purple-500/30'
+            }`}
           >
+
             <div className="h-8 w-8 bg-purple-500/10 rounded-xl flex items-center justify-center group-hover:bg-purple-500/20">
               <span className="text-[10px] font-black text-purple-500">PNG</span>
             </div>
@@ -258,8 +293,13 @@ export default function DownloadOptions({
           <button
             onClick={() => handlePresetDownload('high_res')}
             disabled={!!loading}
-            className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-white/5 border border-transparent hover:border-emerald-500/50 rounded-2xl transition-all group"
+            className={`flex items-center gap-3 p-3 rounded-2xl transition-all group border-2 ${
+              selectedPreset === 'high_res' 
+                ? 'bg-emerald-500/10 border-emerald-500/50 shadow-lg shadow-emerald-500/10' 
+                : 'bg-gray-50 dark:bg-white/5 border-transparent hover:border-emerald-500/30'
+            }`}
           >
+
             <div className="h-8 w-8 bg-emerald-500/10 rounded-xl flex items-center justify-center group-hover:bg-emerald-500/20">
               <span className="text-[10px] font-black text-emerald-500">HQ</span>
             </div>
@@ -292,9 +332,13 @@ export default function DownloadOptions({
                 <div className="relative group">
                   <select
                     value={format}
-                    onChange={(e) => setFormat(e.target.value)}
+                    onChange={(e) => {
+                      setFormat(e.target.value);
+                      setSelectedPreset(null);
+                    }}
                     className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none transition-all"
                   >
+
                     <option value="webp">WebP</option>
                     <option value="jpg">JPEG</option>
                     <option value="png">PNG</option>
@@ -309,9 +353,13 @@ export default function DownloadOptions({
                 <div className="relative group">
                   <select
                     value={aspectRatioType}
-                    onChange={(e) => onAspectRatioChange(e.target.value)}
+                    onChange={(e) => {
+                      onAspectRatioChange(e.target.value);
+                      setSelectedPreset(null);
+                    }}
                     className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none transition-all"
                   >
+
                     {ASPECT_RATIOS.map(ratio => (
                       <option key={ratio.label} value={ratio.value}>{ratio.label}</option>
                     ))}
@@ -364,9 +412,13 @@ export default function DownloadOptions({
                 min="1"
                 max="100"
                 value={quality}
-                onChange={(e) => setQuality(parseInt(e.target.value))}
+                onChange={(e) => {
+                  setQuality(parseInt(e.target.value));
+                  setSelectedPreset(null);
+                }}
                 className="w-full h-1.5 bg-gray-100 dark:bg-white/10 rounded-full appearance-none cursor-pointer accent-blue-500"
               />
+
             </div>
 
             {/* Email Field with explicit styling */}

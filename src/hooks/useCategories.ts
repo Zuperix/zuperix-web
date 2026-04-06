@@ -12,6 +12,7 @@ export interface Category {
   depth: number;
   is_smart: boolean;
   smart_filter: any;
+  asset_count: number;
   children?: Category[];
 }
 

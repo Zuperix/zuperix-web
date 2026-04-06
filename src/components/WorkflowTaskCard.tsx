@@ -11,6 +11,7 @@ import {
 import Link from 'next/link';
 import { WorkflowTask, WorkflowTaskStatus } from '@/types/workflow';
 import { useWorkflows } from '@/hooks/useWorkflows';
+import CustomImage from './CustomImage';
 import { toast } from 'sonner';
 
 interface WorkflowTaskCardProps {
@@ -42,11 +43,18 @@ export default function WorkflowTaskCard({ task, onRefresh }: WorkflowTaskCardPr
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       
       <div className="p-6 relative">
-        <Link href={`/dashboard/assets/${asset?.id}`} className="flex items-start gap-4 cursor-pointer">
+        <Link href={`/assets/${asset?.id}`} className="flex items-start gap-4 cursor-pointer">
           {/* Asset Preview Placeholder */}
           <div className="w-20 h-20 rounded-2xl bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-blue-500/20 transition-all shadow-inner">
-             {asset?.thumbnail_url ? (
-               <img src={asset.thumbnail_url} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
+             {asset?.thumbnail_lg_url ? (
+               <div className="relative w-full h-full">
+                 <CustomImage 
+                   src={asset.thumbnail_lg_url} 
+                   alt={asset.original_name}
+                   fill
+                   className="object-cover transform group-hover:scale-110 transition-transform duration-500" 
+                 />
+               </div>
              ) : (
                <DocumentIcon className="h-8 w-8 text-gray-600 group-hover:text-blue-500 transition-colors" />
              )}

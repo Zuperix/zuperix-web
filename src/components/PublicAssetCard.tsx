@@ -8,6 +8,7 @@ import {
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import { BASE_URL } from '@/lib/api';
+import CustomImage from './CustomImage';
 
 interface PublicAsset {
   id: string;
@@ -15,6 +16,11 @@ interface PublicAsset {
   type: string;
   thumbnail_url: string;
   download_url: string;
+  asset_live_url?: string;
+  width?: number;
+  height?: number;
+  original_name?: string;
+  mime_type?: string;
 }
 
 const getIcon = (mime: string) => {
@@ -23,22 +29,30 @@ const getIcon = (mime: string) => {
   return DocumentIcon;
 };
 
-export default function PublicAssetCard({ asset }: { asset: PublicAsset }) {
+export default function PublicAssetCard({ 
+  asset, 
+  onDownload 
+}: { 
+  asset: PublicAsset, 
+  onDownload: (asset: PublicAsset) => void 
+}) {
   const [imgError, setImgError] = useState(false);
   const Icon = getIcon(asset.type);
 
   // Use the full URL if it's a relative path from the backend
   const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || BASE_URL.replace('/api/v1', '');
-  const imageUrl = asset.thumbnail_url.startsWith('http') ? asset.thumbnail_url : `${backendUrl}${asset.thumbnail_url}`;
-  const downloadUrl = asset.download_url.startsWith('http') ? asset.download_url : `${backendUrl}${asset.download_url}`;
+  
+  // Prioritize CloudFront signed URL (asset_live_url)
+  const imageUrl = asset.asset_live_url!;
 
   return (
     <div className="group relative bg-white dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all duration-300 overflow-hidden hover:border-blue-400 dark:hover:border-blue-500/50 hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-blue-900/10">
       <div className="aspect-square bg-gray-50 dark:bg-gray-950 flex items-center justify-center relative overflow-hidden">
         {asset.type.startsWith('image/') && !imgError ? (
-          <img 
+          <CustomImage 
             src={imageUrl} 
             alt={asset.name}
+            fill
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
             onError={() => setImgError(true)}
           />
@@ -52,17 +66,17 @@ export default function PublicAssetCard({ asset }: { asset: PublicAsset }) {
         {/* Overlay on hover */}
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-4 z-10">
           <div className="flex justify-end gap-2">
-            <a 
-              href={downloadUrl}
-              download={asset.name}
+            <button 
+              onClick={() => onDownload(asset)}
               className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg transition-all flex items-center justify-center"
               title="Download asset"
             >
               <ArrowDownTrayIcon className="h-5 w-5" />
-            </a>
+            </button>
           </div>
         </div>
       </div>
+
       
       <div className="p-4 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/50">
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate" title={asset.name}>

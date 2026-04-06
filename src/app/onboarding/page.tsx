@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
-import { CheckCircle2, Loader2, Rocket, Building2, Globe, Sparkles, Database, Search, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Loader2, Rocket, Building2, Globe, Sparkles, Database, Search, ShieldCheck, Mail, Briefcase } from 'lucide-react';
 import { clsx } from 'clsx';
+
+import OnboardingBackground from '@/components/OnboardingBackground';
 
 type OnboardingStage = 'form' | 'setup';
 
@@ -14,6 +16,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [stage, setStage] = useState<OnboardingStage>('form');
   const [companyName, setCompanyName] = useState(user?.customer?.name || '');
+  const [businessEmail, setBusinessEmail] = useState(user?.email || '');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [industry, setIndustry] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,6 +47,7 @@ export default function OnboardingPage() {
         method: 'PATCH',
         body: JSON.stringify({
           name: companyName,
+          business_email: businessEmail,
           website_url: websiteUrl,
           industry,
         }),
@@ -68,7 +72,7 @@ export default function OnboardingPage() {
         if (is_onboarding_completed) {
           setSetupProgress(100);
           setTimeout(() => {
-            window.location.href = '/dashboard';
+            window.location.href = '/';
           }, 1500);
         } else {
           setSetupProgress(prev => Math.min(prev + 5, 95));
@@ -82,7 +86,7 @@ export default function OnboardingPage() {
     return () => clearInterval(intervalId);
   }, [stage]);
 
-  if (authLoading || (user?.customer?.is_onboarding_completed)) {
+  if (authLoading || (user?.customer?.is_onboarding_completed && process.env.NEXT_PUBLIC_SHOW_ONBOARDING !== 'true')) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -95,87 +99,118 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-lg p-8 space-y-8 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
-        <div className="text-center space-y-2">
-          <div className="flex justify-center mb-4">
-            <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
-              <Rocket className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden font-sans">
+      <OnboardingBackground />
+
+      {/* Main Card */}
+      <div className="relative z-10 w-full max-w-xl mx-4 animate-in fade-in zoom-in duration-700">
+        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-3xl border border-white/20 dark:border-gray-800/50 rounded-[2.5rem] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.15)] dark:shadow-[0_48px_128px_-16px_rgba(0,0,0,0.5)] p-10 md:p-14 space-y-10">
+          
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center p-4 bg-blue-600/10 rounded-3xl mb-2 group shadow-inner">
+              <Rocket className="w-10 h-10 text-blue-600 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500" />
             </div>
+            <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-tight">
+              Welcome, {user?.name?.split(' ')[0] || 'there'}!
+            </h1>
+            <p className="text-lg text-gray-500 dark:text-gray-400 font-medium max-w-sm mx-auto">
+              We&apos;re excited to have you. Let&apos;s personalize your new creative workspace.
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome, {user?.name}!</h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">Let&apos;s personalize your Zuperix environment.</p>
+
+          {error && (
+            <div className="p-4 text-sm font-bold text-red-600 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 animate-shake">
+              <div className="w-1.5 h-8 bg-red-600 rounded-full" />
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-400 dark:text-gray-500 flex items-center gap-2 px-1">
+                  <Building2 className="w-3.5 h-3.5" /> Company Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 dark:text-white outline-none transition-all placeholder-gray-400 font-medium shadow-sm"
+                  placeholder="Acme Global"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-400 dark:text-gray-500 flex items-center gap-2 px-1">
+                  <Mail className="w-3.5 h-3.5" /> Business Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 dark:text-white outline-none transition-all placeholder-gray-400 font-medium shadow-sm"
+                  placeholder="billing@acme.com"
+                  value={businessEmail}
+                  onChange={(e) => setBusinessEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-400 dark:text-gray-500 flex items-center gap-2 px-1">
+                  <Globe className="w-3.5 h-3.5" /> Website
+                </label>
+                <input
+                  type="url"
+                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 dark:text-white outline-none transition-all placeholder-gray-400 font-medium shadow-sm"
+                  placeholder="https://acme.com"
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-400 dark:text-gray-500 flex items-center gap-2 px-1">
+                  <Briefcase className="w-3.5 h-3.5" /> Industry
+                </label>
+                <div className="relative">
+                  <select
+                    className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 dark:text-white outline-none transition-all appearance-none font-medium shadow-sm"
+                    value={industry}
+                    onChange={(e) => setIndustry(e.target.value)}
+                  >
+                    <option value="">Select industry</option>
+                    <option value="technology">Technology</option>
+                    <option value="marketing">Marketing & Creative</option>
+                    <option value="manufacturing">Manufacturing</option>
+                    <option value="retail">Retail & E-commerce</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !companyName || !businessEmail}
+              className="group relative w-full py-5 font-black uppercase tracking-widest text-sm text-white bg-blue-600 rounded-[1.5rem] hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transition-all active:scale-[0.98] overflow-hidden shadow-2xl shadow-blue-600/20"
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Complete Setup'}
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-indigo-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            </button>
+          </form>
+
+          <div className="flex items-center justify-center gap-2 py-4 px-6 bg-gray-50/50 dark:bg-gray-800/20 rounded-3xl border border-gray-100 dark:border-gray-800/40">
+            <div className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tighter">
+              We&apos;ll auto-populate some sample assets for you.
+            </p>
+          </div>
         </div>
-
-        {error && (
-          <div className="p-4 text-sm text-red-600 bg-red-100 rounded-xl dark:bg-red-900/30 dark:text-red-400">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                <Building2 className="w-4 h-4" /> Company Name
-              </label>
-              <input
-                type="text"
-                required
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white outline-none transition-all"
-                placeholder="Acme Global"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                <Globe className="w-4 h-4" /> Website URL
-              </label>
-              <input
-                type="url"
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white outline-none transition-all"
-                placeholder="https://acme.com"
-                value={websiteUrl}
-                onChange={(e) => setWebsiteUrl(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                <Sparkles className="w-4 h-4" /> Industry
-              </label>
-              <select
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:text-white outline-none transition-all appearance-none"
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-              >
-                <option value="">Select an industry</option>
-                <option value="technology">Technology</option>
-                <option value="marketing">Marketing & Creative</option>
-                <option value="manufacturing">Manufacturing</option>
-                <option value="retail">Retail & E-commerce</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !companyName}
-            className="group relative w-full py-4 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-all active:scale-[0.98] overflow-hidden"
-          >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Get Started'}
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500 dark:text-gray-500">
-          We&apos;ll populate your workspace with some sample assets to show you around.
-        </p>
       </div>
     </div>
   );

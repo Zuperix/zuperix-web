@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useLayout } from '@/context/LayoutContext';
 import {
-  FolderIcon,
   MagnifyingGlassIcon,
   TrashIcon,
   ArrowLeftOnRectangleIcon,
@@ -14,7 +13,8 @@ import {
   ChevronUpDownIcon,
   CheckIcon,
   PlusIcon,
-  TagIcon,
+  FolderIcon,
+  RectangleGroupIcon,
   Square3Stack3DIcon,
   ShieldCheckIcon,
   KeyIcon,
@@ -33,7 +33,7 @@ import { Action } from '@/types/auth';
 const NAV = [
   { name: 'Assets', href: '/dashboard', icon: FolderIcon },
   { name: 'My Tasks', href: '/dashboard/tasks', icon: InboxIcon },
-  { name: 'Categories', href: '/dashboard/categories', icon: TagIcon },
+  { name: 'Categories', href: '/dashboard/categories', icon: FolderIcon },
   { name: 'Collections', href: '/dashboard/collections', icon: Square3Stack3DIcon },
   // { name: 'Brand kits', href: '/dashboard/brand', icon: PaintBrushIcon },
   { name: 'Portals', href: '/dashboard/portals', icon: GlobeAltIcon },
@@ -42,11 +42,11 @@ const NAV = [
 ];
 
 const ADMIN_NAV = [
-  { name: 'Users', href: '/dashboard/admin/users', icon: UsersIcon },
-  { name: 'Roles', href: '/dashboard/admin/roles', icon: ShieldCheckIcon },
-  { name: 'API Keys', href: '/dashboard/admin/api-keys', icon: KeyIcon },
-  { name: 'Webhooks', href: '/dashboard/admin/webhooks', icon: GlobeAltIcon },
-  { name: 'Analytics', href: '/dashboard/admin/analytics', icon: ChartBarIcon },
+  { name: 'Users', href: '/admin/users', icon: UsersIcon },
+  { name: 'Roles', href: '/admin/roles', icon: ShieldCheckIcon },
+  { name: 'API Keys', href: '/admin/api-keys', icon: KeyIcon },
+  { name: 'Webhooks', href: '/admin/webhooks', icon: GlobeAltIcon },
+  { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
 ];
 
 export default function Sidebar() {
@@ -63,6 +63,7 @@ export default function Sidebar() {
     return NAV.filter(item => {
       // Basic visibility rules:
       if (item.name === 'Assets') return true; // Everyone sees assets, service handles filtering
+      if (item.name === 'Upload Status') return true; // Everyone sees upload status for their assets
       if (item.name === 'My Tasks') return true; // Personalized
       if (item.name === 'Settings') return true; // General settings
       
@@ -106,14 +107,14 @@ export default function Sidebar() {
         <div className={`flex items-center h-14 border-b border-gray-800/60 flex-shrink-0 ${collapsed ? 'justify-center' : 'px-4 gap-2.5'}`}>
           <div 
             className="h-9 w-9 flex items-center justify-center flex-shrink-0 cursor-pointer"
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/')}
           >
             <img src="/logo_transparant.png" alt="Zuperix Logo" className="h-full w-full object-contain" />
           </div>
           {!collapsed && (
             <span 
               className="text-sm font-semibold text-white tracking-wide cursor-pointer"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/')}
             >
               Zuperix
             </span>

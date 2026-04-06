@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import CustomImage from './CustomImage';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
   DocumentIcon,
-  TagIcon,
+  FolderIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -17,6 +18,8 @@ interface SimilarAsset {
   mime_type: string;
   size: number;
   created_at: string;
+  asset_live_url?: string;
+  thumbnail_lg_url?: string;
 }
 
 type SimilarityType = 'metadata' | 'visual';
@@ -92,7 +95,7 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
                         : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
             >
-                <TagIcon className="h-3.5 w-3.5" />
+                <FolderIcon className="h-3.5 w-3.5" />
                 By Metadata
             </button>
             <button
@@ -127,15 +130,18 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
                 return (
                 <Link
                     key={asset.id}
-                    href={`/dashboard/assets/${asset.id}`}
+                    href={`/assets/${asset.id}`}
                     className="min-w-[260px] max-w-[260px] group/card snap-start flex flex-col bg-white dark:bg-[#151720] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden hover:border-blue-500/50 hover:shadow-2xl transition-all duration-500"
                 >
                     <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-50 dark:bg-gray-950/50">
                     {isImage ? (
-                        <img
-                        src={`${BASE_URL}/assets/${asset.id}/view`}
-                        alt={asset.original_name}
-                        className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-1000 ease-out"
+                        <CustomImage
+                          src={asset.thumbnail_lg_url || asset.asset_live_url!}
+                          alt={asset.original_name}
+                          fill
+                          shimmerWidth={260}
+                          shimmerHeight={180}
+                          className="object-cover group-hover/card:scale-110 transition-transform duration-1000 ease-out"
                         />
                     ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-3">

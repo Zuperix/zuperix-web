@@ -24,33 +24,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const isSyncing = useRef(false);
+  const lastSyncedToken = useRef<string | null>(null);
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   const redirectUser = useCallback((profile: User) => {
-    const isLoginOrRegister = pathname.startsWith('/login') || pathname.startsWith('/register');
-    const isOnboardingPage = pathname.startsWith('/onboarding');
+    const currentPath = pathnameRef.current;
+    const isLoginOrRegister = currentPath.startsWith('/login') || currentPath.startsWith('/register');
+    const isOnboardingPage = currentPath.startsWith('/onboarding');
 
-    console.log('Redirecting user based on profile:', profile.email, 'Path:', pathname);
 
-    if (profile.customer && !profile.customer.is_onboarding_completed) {
+    if (profile.customer && (!profile.customer.is_onboarding_completed || process.env.NEXT_PUBLIC_SHOW_ONBOARDING === 'true')) {
       if (!isOnboardingPage) {
-        console.log('Redirecting to onboarding...');
         router.push('/onboarding');
       }
     } else if (isLoginOrRegister || isOnboardingPage) {
-      console.log('Redirecting to dashboard...');
-      router.push('/dashboard');
+      router.push('/');
     }
-  }, [router, pathname]);
+  }, [router]);
 
   const fetchProfile = useCallback(async () => {
-    console.log('Fetching user profile...');
     try {
       const profile = await apiFetch<User>('/users/me');
       setUser(profile);
       console.log('Profile fetched successfully:', profile.email);
       return profile;
     } catch (error) {
-      console.error('Failed to fetch profile:', error);
       localStorage.removeItem('auth_token');
       setUser(null);
       return null;
@@ -100,23 +102,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initAuth();
+  }, [fetchProfile]); // Only on mount or when fetchProfile changes
 
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Supabase Auth Event:', event, 'Session:', !!session);
 
       if (session?.access_token) {
         const currentBackendToken = localStorage.getItem('auth_token');
 
-        // Sync if it's a fresh login or if we are missing the backend token entirely.
-        // We skip syncing on INITIAL_SESSION if a token already exists to avoid redundant calls.
-        if (!currentBackendToken || event === 'SIGNED_IN') {
+        // Only sync if the token has actually changed or we are missing the backend token.
+        // This prevents "constant sync" on tab focus or re-renders.
+        if (session.access_token !== lastSyncedToken.current || !currentBackendToken) {
           console.log('Triggering backend sync for event:', event);
+          lastSyncedToken.current = session.access_token;
           await syncWithBackend(session.access_token);
         } else if (!user && !isSyncing.current) {
           // If we have a backend token but no user profile state, load it.
           await fetchProfile();
         }
       } else if (event === 'SIGNED_OUT') {
+        lastSyncedToken.current = null;
         localStorage.removeItem('auth_token');
         setUser(null);
         setLoading(false);
@@ -124,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile, syncWithBackend]); // user removed from dependencies to avoid loop
+  }, [fetchProfile, syncWithBackend, user]); // Stabilized dependencies
 
   useEffect(() => {
     if (!loading && user) {
