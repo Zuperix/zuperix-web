@@ -5,6 +5,7 @@ import { useLayout } from '@/context/LayoutContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useCallback, useEffect, useState, useRef } from 'react';
+import posthog from 'posthog-js';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch } from '@/lib/api';
 import NotificationCenter from './NotificationCenter';
@@ -122,6 +123,11 @@ export default function Header() {
     e.preventDefault();
     setShowSuggestions(false);
     if (searchQuery.trim()) {
+      posthog.capture('frontend_search_performed', {
+        query: searchQuery,
+        is_semantic: isSemantic,
+        workspace_id: activeWorkspace?.id,
+      });
       router.push(`/?q=${encodeURIComponent(searchQuery)}${isSemantic ? '&is_semantic=true' : ''}`);
     }
   };
@@ -137,6 +143,13 @@ export default function Header() {
     try {
       const response = await apiFetch<{ assets?: SearchAsset[] }>(`/workspaces/${activeWorkspace.id}/search/assets/quick?q=${encodeURIComponent(query)}&limit=6&is_semantic=${semanticState}`);
       setSuggestions(response.assets || []);
+      
+      posthog.capture('frontend_quick_search_suggestions', {
+        query,
+        is_semantic: semanticState,
+        results_count: (response.assets || []).length,
+      });
+
       setShowSuggestions((response.assets || []).length > 0);
     } catch (err) {
       console.error('Failed to fetch suggestions', err);
@@ -292,6 +305,11 @@ export default function Header() {
                         });
                         
                         if (response.results) {
+                          posthog.capture('frontend_visual_search_performed', {
+                            file_name: file.name,
+                            file_size: file.size,
+                            results_count: response.results.length,
+                          });
                           setSuggestions(response.results);
                           setShowSuggestions(true);
                         }

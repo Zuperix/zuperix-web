@@ -5,6 +5,8 @@ import Script from "next/script";
 
 import { AuthProvider } from "@/context/AuthContext";
 import { FliptProvider } from "@/providers/FliptProvider";
+import { PostHogProvider } from "@/providers/PostHogProvider";
+import { ConsentBanner } from "@/components/ConsentBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,9 +42,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <FliptProvider>
-            {children}
-          </FliptProvider>
+          <PostHogProvider>
+            <FliptProvider>
+              {children}
+            </FliptProvider>
+            <ConsentBanner />
+          </PostHogProvider>
         </AuthProvider>
         <Toaster position="top-right" richColors expand={false} />
         <Script

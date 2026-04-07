@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/api';
 import PublicAssetCard from './PublicAssetCard';
 import DownloadModal from './DownloadModal';
 import { PhotoIcon } from '@heroicons/react/24/outline';
+import posthog from 'posthog-js';
 
 import WidgetRenderer from './portals/builder/WidgetRenderer';
 
@@ -99,6 +100,14 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
         if (response.pagination) {
            setTotalPages(response.pagination.total_pages || 1);
            setTotalResults(response.pagination.total_results || 0);
+        }
+
+        if (searchQuery.trim()) {
+          posthog.capture('portal_search_performed', {
+            slug,
+            query: searchQuery,
+            results_count: response.pagination?.total_results || 0,
+          });
         }
       } catch (err) {
         console.error('Portal search failed:', err);
