@@ -872,7 +872,7 @@ export default function AssetDetailPage() {
                 <PdfPreview src={asset?.asset_live_url} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-2xl md:rounded-[32px]" />
               ) : asset?.mime_type?.startsWith('image/') ? (
                 <img
-                  src={asset?.thumbnail_lg_url || asset?.asset_live_url}
+                  src={asset?.asset_live_url || asset?.thumbnail_lg_url}
                   alt={asset?.original_name}
                   loading="lazy"
                   className="max-w-full max-h-[70vh] object-contain transition-transform duration-700 group-hover:scale-[1.01] pointer-events-none"
