@@ -23,6 +23,7 @@ interface DownloadOptionsProps {
   aspectRatioType: string;
   onAspectRatioChange: (type: string) => void;
   onCropChange: (crop: { x: number; y: number; width: number; height: number }) => void;
+  mimeType: string;
   portalSlug?: string;
 }
 
@@ -44,6 +45,7 @@ export default function DownloadOptions({
   aspectRatioType,
   onAspectRatioChange,
   onCropChange,
+  mimeType,
   portalSlug,
 }: DownloadOptionsProps) {
 
@@ -58,6 +60,7 @@ export default function DownloadOptions({
   const [format, setFormat] = useState('webp');
   const [quality, setQuality] = useState(90);
   const [email, setEmail] = useState('');
+  const [pageRange, setPageRange] = useState('');
 
   const originalAspectRatio = originalWidth && originalHeight ? originalWidth / originalHeight : 1;
 
@@ -173,6 +176,7 @@ export default function DownloadOptions({
         format,
         quality: parseInt(quality as any),
         crop: getCropPayload(),
+        pageRange: pageRange.trim() || undefined,
       };
       if (width) options.width = parseInt(width as string);
       if (height) options.height = parseInt(height as string);
@@ -186,7 +190,8 @@ export default function DownloadOptions({
         body: JSON.stringify(options),
       });
 
-      downloadBlob(blob, `${originalName.split('.')[0]}_custom.${format}`);
+      const downloadExt = mimeType === 'application/pdf' ? 'pdf' : format;
+      downloadBlob(blob, `${originalName.split('.')[0]}_custom.${downloadExt}`);
       toast.success('Custom version downloaded');
     } catch (err: any) {
       toast.error(err.message || 'Download failed');
@@ -207,6 +212,7 @@ export default function DownloadOptions({
         format,
         quality: parseInt(quality as any),
         crop: getCropPayload(),
+        pageRange: pageRange.trim() || undefined,
       };
       if (width) options.width = parseInt(width as string);
       if (height) options.height = parseInt(height as string);
@@ -229,8 +235,9 @@ export default function DownloadOptions({
   };
   return (
     <div className="space-y-5">
-      {/* Quick Presets */}
-      <div className="space-y-2.5">
+      {/* Quick Presets - Only for images */}
+      {mimeType.startsWith('image/') && (
+        <div className="space-y-2.5">
         <h2 className="text-[10px] font-black text-gray-400 dark:text-gray-500 tracking-[0.15em] uppercase px-1">Presets</h2>
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -310,116 +317,141 @@ export default function DownloadOptions({
           </button>
         </div>
       </div>
+      )}
 
       {/* Customize Download Section */}
       <div className="space-y-4 pt-2">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-[10px] font-black text-gray-400 dark:text-gray-500 tracking-[0.15em] uppercase">Customize</h2>
-          <button
-            onClick={() => setIsCustomizing(!isCustomizing)}
-            className="text-[10px] font-bold text-blue-500 hover:text-blue-600 transition-colors"
-          >
-            {isCustomizing ? 'Hide' : 'Show'}
-          </button>
+          <h2 className="text-[10px] font-black text-gray-400 dark:text-gray-500 tracking-[0.15em] uppercase">
+            {mimeType.startsWith('image/') ? 'Customize' : 'Download Options'}
+          </h2>
+          {mimeType.startsWith('image/') && (
+            <button
+              onClick={() => setIsCustomizing(!isCustomizing)}
+              className="text-[10px] font-bold text-blue-500 hover:text-blue-600 transition-colors"
+            >
+              {isCustomizing ? 'Hide' : 'Show'}
+            </button>
+          )}
         </div>
 
         {isCustomizing && (
           <div className="space-y-5 animate-in slide-in-from-top-2 duration-300">
-            {/* Format & Aspect Ratio Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Format</label>
+            {/* Format & Aspect Ratio Grid - Only for images */}
+            {mimeType.startsWith('image/') && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Format</label>
+                    <div className="relative group">
+                      <select
+                        value={format}
+                        onChange={(e) => {
+                          setFormat(e.target.value);
+                          setSelectedPreset(null);
+                        }}
+                        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none transition-all"
+                      >
+                        <option value="webp">WebP</option>
+                        <option value="jpg">JPEG</option>
+                        <option value="png">PNG</option>
+                        <option value="tiff">TIFF</option>
+                      </select>
+                      <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none group-hover:text-gray-200 transition-colors" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Aspect Ratio</label>
+                    <div className="relative group">
+                      <select
+                        value={aspectRatioType}
+                        onChange={(e) => {
+                          onAspectRatioChange(e.target.value);
+                          setSelectedPreset(null);
+                        }}
+                        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none transition-all"
+                      >
+                        {ASPECT_RATIOS.map(ratio => (
+                          <option key={ratio.label} value={ratio.value}>{ratio.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none group-hover:text-gray-200 transition-colors" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Output Dimensions</label>
+                    {(originalWidth && width) && (
+                      <span className="text-[9px] font-bold text-blue-500/80 uppercase">
+                        {Math.round((parseInt(width as string) / originalWidth) * 100)}% of original
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 p-1 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={width}
+                        onChange={(e) => handleWidthChange(e.target.value)}
+                        className="w-full bg-transparent border-none rounded-xl px-3 py-1.5 text-xs font-black outline-none placeholder:text-gray-600 focus:ring-0"
+                        placeholder="W"
+                      />
+                    </div>
+                    <div className="h-4 w-px bg-gray-200 dark:bg-white/10" />
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        value={height}
+                        onChange={(e) => handleHeightChange(e.target.value)}
+                        className="w-full bg-transparent border-none rounded-xl px-3 py-1.5 text-xs font-black outline-none placeholder:text-gray-600 focus:ring-0"
+                        placeholder="H"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Quality Slider - Only for images */}
+            {mimeType.startsWith('image/') && (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Image Quality</label>
+                  <span className="text-[10px] font-black text-blue-500">{quality}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={quality}
+                  onChange={(e) => {
+                    setQuality(parseInt(e.target.value));
+                    setSelectedPreset(null);
+                  }}
+                  className="w-full h-1.5 bg-gray-100 dark:bg-white/10 rounded-full appearance-none cursor-pointer accent-blue-500"
+                />
+              </div>
+            )}
+
+            {/* PDF Page Range - Only for PDFs */}
+            {mimeType === 'application/pdf' && (
+              <div className="space-y-1.5 pt-1">
+                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Page Range</label>
                 <div className="relative group">
-                  <select
-                    value={format}
-                    onChange={(e) => {
-                      setFormat(e.target.value);
-                      setSelectedPreset(null);
-                    }}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none transition-all"
-                  >
-
-                    <option value="webp">WebP</option>
-                    <option value="jpg">JPEG</option>
-                    <option value="png">PNG</option>
-                    <option value="tiff">TIFF</option>
-                  </select>
-                  <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none group-hover:text-gray-200 transition-colors" />
+                   <input
+                      type="text"
+                      value={pageRange}
+                      onChange={(e) => setPageRange(e.target.value)}
+                      placeholder="e.g. 1, 3-5, 10 (Leave empty for all)"
+                      className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-500"
+                    />
                 </div>
+                <p className="text-[8px] text-gray-400 font-medium px-1 uppercase tracking-wider">Example: 1 for page 1, 1-10 for range, or 1, 3 for specific pages</p>
               </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Aspect Ratio</label>
-                <div className="relative group">
-                  <select
-                    value={aspectRatioType}
-                    onChange={(e) => {
-                      onAspectRatioChange(e.target.value);
-                      setSelectedPreset(null);
-                    }}
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none transition-all"
-                  >
-
-                    {ASPECT_RATIOS.map(ratio => (
-                      <option key={ratio.label} value={ratio.value}>{ratio.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none group-hover:text-gray-200 transition-colors" />
-                </div>
-              </div>
-            </div>
-            {/* Scale/Dimensions */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Output Dimensions</label>
-                {(originalWidth && width) && (
-                  <span className="text-[9px] font-bold text-blue-500/80 uppercase">
-                    {Math.round((parseInt(width as string) / originalWidth) * 100)}% of original
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 p-1 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    value={width}
-                    onChange={(e) => handleWidthChange(e.target.value)}
-                    className="w-full bg-transparent border-none rounded-xl px-3 py-1.5 text-xs font-black outline-none placeholder:text-gray-600 focus:ring-0"
-                    placeholder="W"
-                  />
-                </div>
-                <div className="h-4 w-px bg-gray-200 dark:bg-white/10" />
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    value={height}
-                    onChange={(e) => handleHeightChange(e.target.value)}
-                    className="w-full bg-transparent border-none rounded-xl px-3 py-1.5 text-xs font-black outline-none placeholder:text-gray-600 focus:ring-0"
-                    placeholder="H"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Quality Slider */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Image Quality</label>
-                <span className="text-[10px] font-black text-blue-500">{quality}%</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="100"
-                value={quality}
-                onChange={(e) => {
-                  setQuality(parseInt(e.target.value));
-                  setSelectedPreset(null);
-                }}
-                className="w-full h-1.5 bg-gray-100 dark:bg-white/10 rounded-full appearance-none cursor-pointer accent-blue-500"
-              />
-
-            </div>
+            )}
 
             {/* Email Field with explicit styling */}
             <div className="space-y-2 pt-2">
@@ -456,7 +488,7 @@ export default function DownloadOptions({
                 ) : (
                   <ArrowDownTrayIcon className="h-4 w-4" />
                 )}
-                <span>{crop ? 'Download Cropped' : 'Download Custom'}</span>
+                <span>{mimeType.startsWith('image/') ? (crop ? 'Download Cropped' : 'Download Custom') : `Download Original ${mimeType.split('/')[1]?.toUpperCase() || ''}`}</span>
               </button>
             </div>
           </div>

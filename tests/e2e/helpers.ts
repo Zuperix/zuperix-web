@@ -14,3 +14,17 @@ export async function clearAllFilters(page: Page) {
   await expect(page).toHaveURL(/\/$/);
   await expectShowing(page, 20, 535);
 }
+
+export async function expectImageToLoad(page: Page, selector: string) {
+  const img = page.locator(selector);
+  await expect(img).toBeVisible({ timeout: 20000 });
+  
+  await expect(async () => {
+    const isLoaded = await img.evaluate((el: HTMLImageElement) => {
+      return el.complete && el.naturalWidth > 0;
+    });
+    if (!isLoaded) {
+      throw new Error(`Image at selector "${selector}" did not load correctly (naturalWidth is 0)`);
+    }
+  }).toPass({ timeout: 10000 });
+}

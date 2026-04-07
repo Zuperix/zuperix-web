@@ -73,10 +73,10 @@ interface MetadataValue {
 type Tab = 'file-info' | 'attachments' | 'versions' | 'comments' | 'history' | 'workflow';
 
 const STATUS_STYLING: Record<string, string> = {
-  draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  pending_review: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30',
-  approved: 'bg-green-500/20 text-green-500 border-green-500/30',
-  archived: 'bg-red-500/20 text-red-400 border-red-500/30',
+  draft: 'bg-gray-900/40 text-gray-300 border-white/10 backdrop-blur-md shadow-sm',
+  pending_review: 'bg-amber-500/60 text-white border-white/20 backdrop-blur-md shadow-md shadow-amber-900/10',
+  approved: 'bg-emerald-500/60 text-white border-white/20 backdrop-blur-md shadow-md shadow-emerald-900/10',
+  archived: 'bg-rose-500/60 text-white border-white/20 backdrop-blur-md shadow-md shadow-rose-900/10',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -634,7 +634,7 @@ export default function AssetDetailPage() {
         </button>
       </div>
 
-      <header className="flex flex-wrap items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-white dark:bg-[#0f111a] border-b border-gray-200 dark:border-gray-800/60 sticky top-16 z-[40] gap-3">
+      <header className="flex flex-wrap items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-white dark:bg-[#0f111a] border-b border-gray-200 dark:border-gray-800/60 sticky top-16 z-30 gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 md:gap-3 group/title">
             {isEditingName ? (
@@ -680,7 +680,7 @@ export default function AssetDetailPage() {
             )}
             
             {asset?.status && (
-              <span className={`px-2 py-0.5 shrink-0 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+              <span className={`px-2 py-0.5 shrink-0 rounded-lg text-[9px] font-bold uppercase tracking-wider border backdrop-blur-md ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
                 {STATUS_LABELS[asset.status] || asset.status}
               </span>
             )}

@@ -2,6 +2,8 @@ import { XMarkIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import DownloadOptions from './DownloadOptions';
 import CustomImage from './CustomImage';
+import PdfPreview from './PdfPreview';
+import ThreeDPreview from './ThreeDPreview';
 import { BASE_URL } from '@/lib/api';
 
 interface Crop {
@@ -237,12 +239,26 @@ export default function DownloadModal({
                   </div>
                 )}
               </div>
+            ) : mimeType === 'application/pdf' ? (
+              <div className="relative w-full h-full flex items-center justify-center p-4">
+                <PdfPreview 
+                  src={previewUrl || ''} 
+                  className="max-w-full max-h-[70vh] rounded-xl shadow-2xl ring-1 ring-white/10" 
+                />
+              </div>
+            ) : mimeType.startsWith('model/') || originalName.endsWith('.glb') || originalName.endsWith('.gltf') ? (
+              <div className="relative w-full h-full flex items-center justify-center p-4">
+                <ThreeDPreview 
+                  src={previewUrl || ''} 
+                  className="max-w-full max-h-[70vh] rounded-xl shadow-2xl ring-1 ring-white/10" 
+                />
+              </div>
             ) : (
                <div className="flex flex-col items-center gap-4">
                  <div className="p-6 bg-white dark:bg-white/5 rounded-3xl shadow-xl ring-1 ring-black/5 dark:ring-white/10">
-                   <span className="text-4xl">📄</span>
+                   <span className="text-4xl text-gray-400 group-hover:scale-110 transition-transform duration-500">📄</span>
                  </div>
-                 <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{mimeType}</span>
+                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">{mimeType.split('/')[1] || 'FILE'}</span>
                </div>
             )}
           </div>
@@ -297,6 +313,7 @@ export default function DownloadModal({
               aspectRatioType={aspectRatioType}
               onAspectRatioChange={setAspectRatioType}
               onCropChange={setCrop}
+              mimeType={mimeType}
               portalSlug={portalSlug}
             />
 

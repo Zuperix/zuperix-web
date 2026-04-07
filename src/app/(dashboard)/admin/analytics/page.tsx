@@ -13,14 +13,14 @@ export default function AnalyticsPage() {
             <ChartBarIcon className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-white tracking-tight">System Analytics</h1>
+            <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">System Analytics</h1>
             <p className="text-gray-500 text-sm mt-1 font-medium">Real-time performance and system growth metrics</p>
           </div>
         </div>
         
         <div className="flex items-center gap-3">
            {/* Placeholder for date range selector or export */}
-           <div className="px-4 py-2 bg-gray-900 border border-gray-800 rounded-xl text-xs font-bold text-gray-400 uppercase tracking-widest shadow-xl">
+           <div className="px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest shadow-sm dark:shadow-xl">
              Last 30 Days
            </div>
         </div>

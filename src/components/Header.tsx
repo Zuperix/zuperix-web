@@ -1,31 +1,48 @@
 'use client';
 
-import { MagnifyingGlassIcon, Bars3Icon, BellIcon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon, SparklesIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, Bars3Icon, SunIcon, MoonIcon, ArrowPathIcon, DocumentIcon, SparklesIcon, CloudArrowUpIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { apiFetch, BASE_URL } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 import NotificationCenter from './NotificationCenter';
 import CustomImage from './CustomImage';
 import { useFliptBoolean } from '@flipt-io/flipt-client-react';
 import { FEATURES } from '@/constants/features';
+import LogoutConfirmationModal from './LogoutConfirmationModal';
+
+type SearchAsset = {
+  id: string;
+  original_name?: string;
+  mime_type?: string;
+  thumbnail_lg_url?: string;
+  asset_live_url?: string;
+  score?: number;
+  size?: number;
+  is_semantic_match?: boolean;
+  is_ocr_match?: boolean;
+  is_text_extraction_match?: boolean;
+};
 
 export default function Header() {
   const { sidebarCollapsed, setSidebarCollapsed, searchQuery, setSearchQuery } = useLayout();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<SearchAsset[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [isSemantic, setIsSemantic] = useState(false);
   const [showSearchInfo, setShowSearchInfo] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   const reverseSearchEnabled = useFliptBoolean(
@@ -109,7 +126,7 @@ export default function Header() {
     }
   };
 
-  const fetchSuggestions = async (query: string, semanticState = isSemantic) => {
+  const fetchSuggestions = useCallback(async (query: string, semanticState = isSemantic) => {
     if (!activeWorkspace || !query.trim() || query.length < 2 || pathname === '/search') {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -118,7 +135,7 @@ export default function Header() {
 
     setLoadingSuggestions(true);
     try {
-      const response = await apiFetch<any>(`/workspaces/${activeWorkspace.id}/search/assets/quick?q=${encodeURIComponent(query)}&limit=6&is_semantic=${semanticState}`);
+      const response = await apiFetch<{ assets?: SearchAsset[] }>(`/workspaces/${activeWorkspace.id}/search/assets/quick?q=${encodeURIComponent(query)}&limit=6&is_semantic=${semanticState}`);
       setSuggestions(response.assets || []);
       setShowSuggestions((response.assets || []).length > 0);
     } catch (err) {
@@ -126,7 +143,7 @@ export default function Header() {
     } finally {
       setLoadingSuggestions(false);
     }
-  };
+  }, [activeWorkspace, isSemantic, pathname]);
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -143,12 +160,15 @@ export default function Header() {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [searchQuery, activeWorkspace]);
+  }, [searchQuery, activeWorkspace, fetchSuggestions]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -156,7 +176,8 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="h-16 bg-white/70 dark:bg-[#0f111a]/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/40 flex items-center gap-4 px-6 sticky top-0 z-30 transition-all duration-300">
+    <>
+    <header className="h-16 bg-white/70 dark:bg-[#0f111a]/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/40 flex items-center gap-4 px-6 sticky top-0 z-50 transition-all duration-300">
       {/* Sidebar Toggle & Logo/Context */}
       <div className="flex items-center gap-4">
         <button
@@ -265,7 +286,7 @@ export default function Header() {
                       
                       try {
                         setLoadingSuggestions(true);
-                        const response = await apiFetch<any>(`/workspaces/${activeWorkspace.id}/search/visual`, {
+                        const response = await apiFetch<{ results?: SearchAsset[] }>(`/workspaces/${activeWorkspace.id}/search/visual`, {
                           method: 'POST',
                           body: formData,
                         });
@@ -274,9 +295,10 @@ export default function Header() {
                           setSuggestions(response.results);
                           setShowSuggestions(true);
                         }
-                      } catch (err: any) {
+                      } catch (err) {
                         console.error('Visual search failed', err);
-                        if (err.status === 403) {
+                        const status = typeof err === 'object' && err && 'status' in err ? (err as { status?: number }).status : undefined;
+                        if (status === 403) {
                           alert('Visual search is only available on Silver, Gold, and Platinum plans.');
                         } else {
                           alert('Visual search failed. Please try again.');
@@ -309,7 +331,7 @@ export default function Header() {
 
           {/* Suggestions Dropdown - Enhanced */}
           {showSuggestions && (
-            <div className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-[#0f111a] border border-gray-200 dark:border-gray-800/60 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-[#0f111a] border border-gray-200 dark:border-gray-800/60 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="p-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
                 <div className="px-3 py-2 mb-1 flex items-center justify-between">
                   <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">{isSemantic ? 'Semantic Matches' : 'Suggested Assets'}</span>
@@ -329,7 +351,7 @@ export default function Header() {
                       {asset.mime_type?.startsWith('image/') ? (
                         <div className="relative h-full w-full">
                           <CustomImage 
-                            src={asset.thumbnail_lg_url || asset.asset_live_url} 
+                            src={asset.thumbnail_lg_url || asset.asset_live_url || '/logo_transparant.png'} 
                             alt="" 
                             fill
                             shimmerWidth={48}
@@ -363,7 +385,7 @@ export default function Header() {
                         )}
                       </div>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider mt-0.5">
-                        {(asset.mime_type || 'file').split('/')[1]} • {formatSize(asset.size)}
+                        {(asset.mime_type || 'file').split('/')[1]} • {formatSize(asset.size ?? 0)}
                       </span>
                     </div>
                   </button>
@@ -374,7 +396,7 @@ export default function Header() {
                     onClick={handleSearch}
                     className="w-full text-center py-3 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors tracking-widest uppercase"
                   >
-                    Search all for "{searchQuery}"
+                    Search all for &ldquo;{searchQuery}&rdquo;
                   </button>
                 </div>
               </div>
@@ -410,26 +432,58 @@ export default function Header() {
         </div>
 
         {/* User Profile - Premium Avatar */}
-        <button className="flex items-center gap-3 p-1 pl-1 pr-2 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 rounded-xl transition-all duration-200 group">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-500 to-teal-400 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/20 ring-2 ring-white dark:ring-gray-900 group-hover:scale-105 transition-transform duration-300">
-            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-          </div>
-          <div className="hidden md:flex flex-col items-start">
-            <span className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-none">
-              {user?.name || 'User'}
-            </span>
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium capitalize">
-              {(() => {
-                if (user?.system_role === 'SUPER_ADMIN') return 'Super Admin';
-                const membership = user?.workspace_members?.find(
-                  (m) => m.workspace_id === activeWorkspace?.id
-                );
-                return membership?.role?.name?.toLowerCase() || 'Member';
-              })()}
-            </span>
-          </div>
-        </button>
+        <div className="relative" ref={userMenuRef}>
+          <button
+            onClick={() => setShowUserMenu((open) => !open)}
+            className="flex items-center gap-3 p-1 pl-1 pr-2 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 rounded-xl transition-all duration-200 group"
+            aria-haspopup="menu"
+            aria-expanded={showUserMenu}
+          >
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-500 to-teal-400 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/20 ring-2 ring-white dark:ring-gray-900 group-hover:scale-105 transition-transform duration-300">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <div className="hidden md:flex flex-col items-start">
+              <span className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-none">
+                {user?.name || 'User'}
+              </span>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium capitalize">
+                {(() => {
+                  if (user?.system_role === 'SUPER_ADMIN') return 'Super Admin';
+                  const membership = user?.workspace_members?.find(
+                    (m) => m.workspace_id === activeWorkspace?.id
+                  );
+                  return membership?.role?.name?.toLowerCase() || 'Member';
+                })()}
+              </span>
+            </div>
+          </button>
+
+          {showUserMenu && (
+            <div className="absolute right-0 top-full mt-3 w-52 rounded-2xl border border-gray-200 dark:border-gray-800/60 bg-white dark:bg-[#0f111a] shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] overflow-hidden z-50">
+              <button
+                onClick={() => {
+                  setShowUserMenu(false);
+                  setShowLogoutModal(true);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              >
+                <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
     </header>
+    <LogoutConfirmationModal
+      isOpen={showLogoutModal}
+      onClose={() => setShowLogoutModal(false)}
+      onConfirm={async () => {
+        setShowLogoutModal(false);
+        await logout();
+      }}
+    />
+  </>
   );
 }

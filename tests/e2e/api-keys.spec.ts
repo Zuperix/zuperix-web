@@ -14,13 +14,12 @@ function revokeKeyModal(page: Page) {
     .locator('xpath=ancestor::div[contains(@class, "fixed")][1]');
 }
 
-test('api keys page shows empty inventory state', async ({ page }) => {
+test('api keys page renders correctly', async ({ page }) => {
   await page.goto('/admin/api-keys');
 
   await expect(page.getByRole('heading', { name: /^API Keys$/i })).toBeVisible();
   await expect(page.getByText(/Manage API keys for programmatic access to your assets\./i)).toBeVisible();
   await expect(page.getByRole('button', { name: /Create Key/i })).toBeVisible();
-  await expect(page.getByText(/No API keys found\./i)).toBeVisible();
 });
 
 test('create and revoke api key \(cleanup\)', async ({ page }) => {

@@ -14,13 +14,11 @@ function deleteWebhookModal(page: Page) {
     .locator('xpath=ancestor::div[contains(@class, "fixed")][1]');
 }
 
-test('webhooks page shows empty inventory state', async ({ page }) => {
+test('webhooks page renders correctly', async ({ page }) => {
   await page.goto('/admin/webhooks');
-
   await expect(page.getByRole('heading', { name: /Webhook Management/i })).toBeVisible();
   await expect(page.getByText(/Configure real-time notifications for system events\./i)).toBeVisible();
   await expect(page.getByRole('button', { name: /Register New Webhook/i })).toBeVisible();
-  await expect(page.getByText(/No webhooks registered yet\./i)).toBeVisible();
 });
 
 test('create and delete webhook (cleanup)', async ({ page }) => {

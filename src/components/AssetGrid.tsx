@@ -50,10 +50,10 @@ const is3D = (mime: string, filename: string) => {
 };
 
 const STATUS_STYLING: Record<string, string> = {
-  draft: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  pending_review: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30',
-  approved: 'bg-green-500/20 text-green-500 border-green-500/30',
-  archived: 'bg-red-500/20 text-red-400 border-red-500/30',
+  draft: 'bg-gray-900/40 text-gray-300 border-white/10 backdrop-blur-md shadow-sm',
+  pending_review: 'bg-amber-500/60 text-white border-white/20 backdrop-blur-md shadow-md shadow-amber-900/10',
+  approved: 'bg-emerald-500/60 text-white border-white/20 backdrop-blur-md shadow-md shadow-emerald-900/10',
+  archived: 'bg-rose-500/60 text-white border-white/20 backdrop-blur-md shadow-md shadow-rose-900/10',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -176,8 +176,8 @@ const AssetCard = ({
             {/* Status Badge */}
             <div className="flex flex-col gap-1 items-end">
               {asset.status && (
-                <div className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border backdrop-blur-xl flex items-center gap-1.5 ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
-                  {asset.status === 'pending_review' && <LockClosedIcon className="h-3 w-3" />}
+                <div className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border backdrop-blur-xl flex items-center gap-1 ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                  {asset.status === 'pending_review' && <LockClosedIcon className="h-2.5 w-2.5" />}
                   {STATUS_LABELS[asset.status] || asset.status}
                 </div>
               )}

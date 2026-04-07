@@ -12,10 +12,12 @@ import {
   CircleStackIcon, 
   DocumentDuplicateIcon,
   ArrowUpIcon,
-  ArrowDownIcon
+  ArrowDownIcon,
+  DocumentIcon
 } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/lib/api';
 import { formatBytes } from '@/lib/format';
+import CustomImage from '../CustomImage';
 
 interface OverviewStats {
   total_storage: number;
@@ -45,6 +47,9 @@ interface TopAsset {
     id: string;
     original_name: string;
     mime_type: string;
+    thumbnail_lg_url?: string;
+    asset_live_url?: string;
+    size?: number;
   };
   total_views: number;
   total_downloads: number;
@@ -115,13 +120,13 @@ export default function AnalyticsDashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpis.map((kpi) => (
-          <div key={kpi.name} className="bg-gray-900 border border-gray-800 rounded-3xl p-6 shadow-xl relative overflow-hidden group hover:border-gray-700 transition-all">
+          <div key={kpi.name} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm dark:shadow-xl relative overflow-hidden group hover:border-gray-200 dark:hover:border-gray-700 transition-all">
             <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform`}>
-              <kpi.icon className="h-20 w-20" />
+              <kpi.icon className="h-20 w-20 text-gray-400 dark:text-gray-500" />
             </div>
             <div className="relative z-10">
               <p className="text-sm font-medium text-gray-500 uppercase tracking-widest">{kpi.name}</p>
-              <h3 className="mt-2 text-3xl font-bold text-white tracking-tight">{kpi.value}</h3>
+              <h3 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white tracking-tight">{kpi.value}</h3>
             </div>
           </div>
         ))}
@@ -129,10 +134,10 @@ export default function AnalyticsDashboard() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-3 lg:col-span-2 bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-xl">
+        <div className="col-span-3 lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-8 shadow-sm dark:shadow-xl">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-xl font-bold text-white tracking-tight">System Performance</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">System Performance</h3>
               <p className="text-sm text-gray-500 mt-1">Asset views and downloads over the last 30 days</p>
             </div>
             <div className="flex items-center gap-6">
@@ -160,7 +165,7 @@ export default function AnalyticsDashboard() {
                     <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-gray-100 dark:text-gray-800" vertical={false} />
                 <XAxis 
                   dataKey="date" 
                   stroke="#4B5563" 
@@ -178,7 +183,12 @@ export default function AnalyticsDashboard() {
                   dx={-10}
                 />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '16px' }}
+                  contentStyle={{ 
+                    backgroundColor: document.documentElement.classList.contains('dark') ? '#111827' : '#ffffff', 
+                    border: '1px solid currentColor',
+                    borderColor: document.documentElement.classList.contains('dark') ? '#374151' : '#e5e7eb',
+                    borderRadius: '16px' 
+                  }}
                   itemStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}
                 />
                 <Area 
@@ -205,8 +215,8 @@ export default function AnalyticsDashboard() {
         </div>
 
         {/* Recent Work Activity (Logins) */}
-        <div className="col-span-3 lg:col-span-1 bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-xl flex flex-col">
-          <h3 className="text-xl font-bold text-white tracking-tight mb-2">Recent Work Activity</h3>
+        <div className="col-span-3 lg:col-span-1 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-8 shadow-sm dark:shadow-xl flex flex-col">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight mb-2">Recent Work Activity</h3>
           <p className="text-sm text-gray-500 mb-6">Latest user login sessions</p>
           
           <div className="space-y-6 flex-1 overflow-y-auto pr-2">
@@ -214,13 +224,13 @@ export default function AnalyticsDashboard() {
               <Link 
                 key={login.id} 
                 href="/admin/users"
-                className="flex items-center gap-4 group hover:bg-gray-800/30 p-2 rounded-2xl transition-all block"
+                className="flex items-center gap-4 group hover:bg-gray-50 dark:hover:bg-gray-800/30 p-2 rounded-2xl transition-all block"
               >
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-800 to-gray-950 border border-gray-700 flex items-center justify-center text-sm font-bold text-blue-400">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-950 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-sm font-bold text-blue-500 dark:text-blue-400">
                   {login.user.name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{login.user.name}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{login.user.name}</p>
                   <p className="text-xs text-gray-500 truncate">{login.user.email}</p>
                 </div>
                 <div className="text-[10px] font-medium text-gray-500 uppercase tracking-tighter whitespaces-nowrap">
@@ -238,8 +248,8 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Popular Assets (Bottom Row) */}
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-xl">
-        <h3 className="text-xl font-bold text-white tracking-tight mb-2">Most Popular Assets</h3>
+      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-8 shadow-sm dark:shadow-xl">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight mb-2">Most Popular Assets</h3>
         <p className="text-sm text-gray-500 mb-8">Assets with highest engagement across the system</p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -247,21 +257,39 @@ export default function AnalyticsDashboard() {
             <Link 
               key={asset.asset.id} 
               href={`/assets/${asset.asset.id}`}
-              className="bg-gray-800/50 border border-gray-700/50 rounded-2xl p-4 hover:border-blue-500/50 transition-all group block"
+              className="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 rounded-2xl p-4 hover:border-blue-500/50 hover:shadow-xl shadow-blue-500/5 transition-all group block"
             >
-              <div className="aspect-square rounded-xl bg-gray-900 mb-4 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Square3Stack3DIcon className="h-10 w-10 text-gray-700 group-hover:text-blue-500 transition-colors" />
+              <div className="aspect-square rounded-xl bg-white dark:bg-gray-900 mb-4 flex items-center justify-center relative overflow-hidden border border-gray-100 dark:border-gray-800">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+                
+                {asset.asset.mime_type?.startsWith('image/') ? (
+                   <CustomImage 
+                    src={asset.asset.thumbnail_lg_url || asset.asset.asset_live_url || '/logo_transparant.png'} 
+                    alt={asset.asset.original_name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <DocumentIcon className="h-10 w-10 text-gray-300 dark:text-gray-700 group-hover:text-blue-500 transition-colors" />
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{asset.asset.mime_type?.split('/')[1] || 'FILE'}</span>
+                  </div>
+                )}
+
+                <div className="absolute bottom-3 left-3 right-3 z-20 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                   <p className="text-[10px] font-bold text-white truncate leading-none mb-1">{asset.asset.original_name}</p>
+                   <p className="text-[8px] font-medium text-white/70 uppercase tracking-widest">{formatBytes(asset.asset.size || 0)}</p>
+                </div>
               </div>
-              <p className="text-sm font-semibold text-white truncate px-1">{asset.asset.original_name}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate px-1">{asset.asset.original_name}</p>
               <div className="flex items-center justify-between mt-4 px-1">
                 <div className="flex items-center gap-1.5">
-                  <ArrowUpIcon className="h-3 w-3 text-blue-400" />
-                  <span className="text-[10px] font-bold text-gray-400">{asset.total_views} views</span>
+                  <ArrowUpIcon className="h-3 w-3 text-blue-400 transition-transform group-hover:-translate-y-0.5" />
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{asset.total_views} views</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <ArrowDownIcon className="h-3 w-3 text-indigo-400" />
-                  <span className="text-[10px] font-bold text-gray-400">{asset.total_downloads}DL</span>
+                  <ArrowDownIcon className="h-3 w-3 text-indigo-400 transition-transform group-hover:translate-y-0.5" />
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{asset.total_downloads} DL</span>
                 </div>
               </div>
             </Link>
