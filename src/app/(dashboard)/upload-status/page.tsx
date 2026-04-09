@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
 import Pagination from '@/components/Pagination';
 import { 
@@ -43,6 +44,8 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function UploadStatusContent() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.system_role === 'SUPER_ADMIN';
   const { activeWorkspace } = useWorkspace();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -113,7 +116,6 @@ function UploadStatusContent() {
             <thead>
               <tr className="border-b border-gray-100 dark:border-gray-800/60 bg-gray-50/50 dark:bg-gray-900/20">
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">File</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Workspace</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Status</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Size</th>
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Uploaded At</th>
@@ -122,7 +124,7 @@ function UploadStatusContent() {
             <tbody>
               {data?.results?.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-20 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={4} className="px-6 py-20 text-center text-gray-500 dark:text-gray-400">
                     No recent uploads found.
                   </td>
                 </tr>
@@ -147,11 +149,6 @@ function UploadStatusContent() {
                           </span>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/50 px-2.5 py-1 rounded-lg">
-                        {asset.workspace?.name || 'Unknown'}
-                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <StatusBadge status={asset.processing_status} />

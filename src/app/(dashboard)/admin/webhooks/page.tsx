@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import FeatureLocked from '@/components/FeatureLocked';
 import { 
   CommandLineIcon, 
   PlusIcon, 
@@ -23,6 +24,12 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import type { Webhook, WebhookLog, WebhookStats } from '@/types/webhooks';
 import { toast } from 'sonner';
+
+interface Customer {
+  id: string;
+  name: string;
+  plan: string;
+}
 
 const SlackIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
   <svg className={className} viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
@@ -53,6 +60,7 @@ export default function WebhooksPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
+  const [customerPlan, setCustomerPlan] = useState<string | null>(null);
 
   const [newWebhook, setNewWebhook] = useState({
     url: '',
@@ -76,7 +84,19 @@ export default function WebhooksPage() {
 
   useEffect(() => {
     fetchWebhooks();
+    fetchCustomerPlan();
   }, [activeWorkspace]);
+
+  const fetchCustomerPlan = async () => {
+    try {
+      const data = await apiFetch<Customer[]>('/customers');
+      if (data && data.length > 0) {
+        setCustomerPlan(data[0].plan);
+      }
+    } catch (e) {
+      console.error('Failed to fetch plan:', e);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,6 +181,17 @@ export default function WebhooksPage() {
   };
 
   if (!activeWorkspace) return <div className="p-8 text-center text-gray-400">Please select a workspace</div>;
+
+  if (customerPlan?.toLowerCase() === 'bronze') {
+    return (
+      <div className="max-w-7xl mx-auto py-10 px-6">
+        <FeatureLocked 
+          featureName="Webhooks" 
+          description="Sync your ecosystem in real-time. Unlock powerful webhook integrations with Slack, Discord, and custom endpoints to stay notified instantly."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -319,11 +350,11 @@ export default function WebhooksPage() {
                   </div>
                 </div>
 
-                <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-start gap-3 text-left">
-                  <InformationCircleIcon className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-500/80 leading-relaxed">
-                    <span className="font-bold block mb-1 uppercase tracking-tight text-[10px]">Security Warning</span>
-                    This is the only time you will see this secret in full. Treat it like a password and save it in a secure location.
+                <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl flex items-start gap-3 text-left">
+                  <InformationCircleIcon className="h-5 w-5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    <span className="font-bold block mb-1 uppercase tracking-tight text-[10px] text-indigo-400">Webhook Security</span>
+                    Use this secret token to verify that payloads are genuinely sent from Zuperix. You can always view or copy this secret later from the webhook management list.
                   </p>
                 </div>
 
@@ -375,15 +406,43 @@ export default function WebhooksPage() {
                       <p className="text-[10px] text-gray-600 px-1 font-medium italic">HTTPS Recommended</p>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
-                        <KeyIcon className="h-3.5 w-3.5 text-indigo-400" /> Secret Token
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2">
+                          <KeyIcon className="h-3.5 w-3.5 text-indigo-400" /> Secret Token
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            const newSecret = Array.from(crypto.getRandomValues(new Uint8Array(24)))
+                              .map(b => b.toString(16).padStart(2, '0'))
+                              .join('');
+                            setNewWebhook({ ...newWebhook, secret: newSecret });
+                          }}
+                          className="text-[9px] text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-tight underline underline-offset-4"
+                        >
+                          Generate New
+                        </button>
                       </label>
-                      <input
-                        type="text" value={newWebhook.secret}
-                        onChange={e => setNewWebhook({ ...newWebhook, secret: e.target.value })}
-                        className="w-full bg-gray-950/50 border border-gray-800 rounded-2xl px-5 py-3 text-sm text-white focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 outline-none transition-all placeholder:text-gray-700 font-mono"
-                        placeholder="Auto-generate"
-                      />
+                      <div className="relative group/input">
+                        <input
+                          type="text" value={newWebhook.secret}
+                          onChange={e => setNewWebhook({ ...newWebhook, secret: e.target.value })}
+                          className="w-full bg-gray-950/50 border border-gray-800 rounded-2xl px-5 py-3 text-sm text-white focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/50 outline-none transition-all placeholder:text-gray-700 font-mono pr-12"
+                          placeholder="Auto-generate"
+                        />
+                        {newWebhook.secret && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(newWebhook.secret);
+                              toast.success('Secret copied');
+                            }}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-indigo-400 transition-colors"
+                          >
+                            <ClipboardDocumentIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                       <p className="text-[10px] text-gray-600 px-1 font-medium italic">Payload Authentication</p>
                     </div>
                   </div>

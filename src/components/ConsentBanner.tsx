@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import posthog from 'posthog-js'
+import { useAuth } from '@/context/AuthContext'
 
 export function ConsentBanner() {
   const [showBanner, setShowBanner] = useState(false)
+  const { user } = useAuth()
 
   useEffect(() => {
     // Check if PostHog is disabled globally
@@ -36,7 +38,8 @@ export function ConsentBanner() {
     setShowBanner(false)
   }
 
-  if (!showBanner) return null
+  // Only show if the user is authenticated
+  if (!user || !showBanner) return null
 
   return (
     <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full animate-in fade-in slide-in-from-bottom-5 duration-700 ease-out">

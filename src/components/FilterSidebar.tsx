@@ -17,8 +17,12 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   FolderIcon,
-  RectangleGroupIcon
+  RectangleGroupIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
+
+
 
 interface FilterBucket {
   value: string | number;
@@ -334,7 +338,9 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     category_paths: { label: 'Category', icon: FolderIcon },
     collection_uuids: { label: 'Collections', icon: Square3Stack3DIcon },
     uploaded_by_id: { label: 'Uploaded By', icon: IdentificationIcon },
+    average_rating: { label: 'Rating', icon: StarIcon },
   };
+
 
   const getGroupConfig = (key: string) => {
     if (filterConfig[key]) return filterConfig[key];
@@ -378,7 +384,16 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
 
   const hasActiveFilters = Object.keys(activeFilters).length > 0 && Object.values(activeFilters).some(v => v !== undefined && (Array.isArray(v) ? v.length > 0 : true));
 
+  const ratingTiers = [
+    { label: '5 Stars', min: 5, max: 5 },
+    { label: '4 Stars & Up', min: 4, max: 5 },
+    { label: '3 Stars & Up', min: 3, max: 5 },
+    { label: '2 Stars & Up', min: 2, max: 5 },
+    { label: '1 Star & Up', min: 1, max: 5 },
+  ];
+
   if (!filters || Object.keys(filters).length === 0) return null;
+
 
   const filteredFilterEntries = Object.entries(filters).filter(([key, data]) => {
     // Hide empty array filters
@@ -386,6 +401,9 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
 
     // Hide date filters if they are empty/01-01-1970
     if (!Array.isArray(data)) {
+      // Hide total_ratings as requested by user
+      if (key === 'total_ratings') return false;
+
       if (data.min === 0 && data.max === 0) return false;
       // If it's a date and the range is basically empty (1970)
       if ((key.endsWith('_date') || key.endsWith('_at')) && data.max < 20000) return false; 
@@ -489,7 +507,59 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                     </button>
                     {isExpanded && (
                       <div className="pt-4 px-1">
-                        {!Array.isArray(data) ? (
+                        {key === 'average_rating' ? (
+                          <div className="space-y-3 px-1">
+                            {ratingTiers.map((tier) => {
+                              const isActive = Number(activeFilters[`${key}[gte]`]) === tier.min && Number(activeFilters[`${key}[lte]`]) === tier.max;
+                              const ratingData = data as any[];
+                              const bucketKey = tier.min === 5 ? '5_stars' : (tier.min === 1 ? '1_star_up' : `${tier.min}_stars_up`);
+                              const bucket = Array.isArray(ratingData) 
+                                ? ratingData.find((b: any) => b.value === bucketKey)
+                                : null;
+                              const count = bucket?.count || 0;
+
+                              return (
+                                <label key={tier.label} className="flex items-center group cursor-pointer justify-between">
+                                  <div className="flex items-center overflow-hidden pr-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={isActive}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          onFilterChange({
+                                            [`${key}[gte]`]: tier.min,
+                                            [`${key}[lte]`]: tier.max
+                                          });
+                                        } else {
+                                          onFilterChange({
+                                            [`${key}[gte]`]: undefined,
+                                            [`${key}[lte]`]: undefined
+                                          });
+                                        }
+                                      }}
+                                      className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                                    />
+                                    <div className="ml-3 flex items-center gap-1.5">
+                                      <div className="flex items-center gap-0.5">
+                                        {[1, 2, 3, 4, 5].map((i) => (
+                                          <StarSolid key={i} className={`h-3 w-3 ${i <= tier.min ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
+                                        ))}
+                                      </div>
+                                      <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">
+                                        {tier.min} Stars{tier.min < 5 ? '+' : ''}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {count > 0 && (
+                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md min-w-[20px] text-center">
+                                      {count}
+                                    </span>
+                                  )}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : !Array.isArray(data) ? (
                           <div className="px-2">
                             {key.endsWith('_date') || key.endsWith('_at') ? (
                               <DateRangePicker 

@@ -57,6 +57,9 @@ import PdfPreview from '@/components/PdfPreview';
 import { splitFileName, joinFileName } from '@/lib/naming';
 import ShareAssetModal from '@/components/ShareAssetModal';
 import { is3D } from '@/lib/format';
+import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
+import StarRating from '@/components/StarRating';
 
 interface Field {
   id: string;
@@ -385,6 +388,25 @@ export default function AssetDetailPage() {
       toast.error('Failed to rename asset');
     } finally {
       setIsSavingName(false);
+    }
+  };
+
+  const handleRate = async (rating: number) => {
+    if (!assetId) return;
+    try {
+      const result = await apiFetch<any>(`/assets/${assetId}/rate`, {
+        method: 'PATCH',
+        body: JSON.stringify({ rating })
+      });
+      setAsset((prev: any) => ({
+        ...prev,
+        average_rating: result.average_rating,
+        total_ratings: result.total_ratings,
+        user_rating: rating
+      }));
+      toast.success('Rating updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update rating');
     }
   };
 
@@ -1596,6 +1618,38 @@ export default function AssetDetailPage() {
                   </div>
                   <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Technical specifications</h2>
                 </div>
+
+                <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                  <div className="bg-gray-50/30 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl mb-6 transition-all hover:bg-white dark:hover:bg-gray-800/60 group/rating border-b-2 hover:border-b-yellow-500/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <StarIconOutline className="h-3.5 w-3.5 text-yellow-500" />
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Rating</span>
+                      </div>
+                      {asset?.average_rating > 0 && (
+                        <div className="flex items-center gap-1.5">
+                          <StarSolid className="h-3 w-3 text-yellow-400" />
+                          <span className="text-xs font-black text-gray-900 dark:text-gray-100">{Number(asset.average_rating).toFixed(1)}</span>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter ml-1">
+                            ({asset.total_ratings} {asset.total_ratings === 1 ? 'review' : 'reviews'})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between bg-white/40 dark:bg-gray-950/20 p-2.5 rounded-xl border border-gray-100/50 dark:border-gray-800/30">
+                      <StarRating 
+                        value={asset?.user_rating || 0} 
+                        onRate={handleRate} 
+                        size="md"
+                        interactive={true}
+                      />
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">
+                        {asset?.user_rating > 0 ? `${asset.user_rating} / 5` : 'Rate this'}
+                      </span>
+                    </div>
+                  </div>
+                </PermissionGate>
 
                 <div className="grid grid-cols-2 gap-4">
                   {[

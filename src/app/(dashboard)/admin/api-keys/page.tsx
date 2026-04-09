@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch } from '@/lib/api';
-import { 
-  KeyIcon, 
-  PlusIcon, 
-  TrashIcon, 
+import FeatureLocked from '@/components/FeatureLocked';
+import {
+  KeyIcon,
+  PlusIcon,
+  TrashIcon,
   ClipboardDocumentCheckIcon,
   ClipboardDocumentIcon,
   ChartBarIcon,
@@ -23,6 +24,12 @@ interface ApiKey {
   last_used_at: string | null;
   is_active: boolean;
   scopes: string[];
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  plan: string;
 }
 
 interface UsageStat {
@@ -60,6 +67,7 @@ export default function ApiKeysPage() {
   const [showUsageModal, setShowUsageModal] = useState<ApiKey | null>(null);
   const [usageStats, setUsageStats] = useState<UsageStat[]>([]);
   const [loadingUsage, setLoadingUsage] = useState(false);
+  const [customerPlan, setCustomerPlan] = useState<string | null>(null);
 
   const [showRevokeModal, setShowRevokeModal] = useState<{ id: string, name: string } | null>(null);
   const [revokeConfirmation, setRevokeConfirmation] = useState('');
@@ -67,8 +75,20 @@ export default function ApiKeysPage() {
   useEffect(() => {
     if (activeWorkspace) {
       fetchKeys();
+      fetchCustomerPlan();
     }
   }, [activeWorkspace]);
+
+  const fetchCustomerPlan = async () => {
+    try {
+      const data = await apiFetch<Customer[]>('/customers');
+      if (data && data.length > 0) {
+        setCustomerPlan(data[0].plan);
+      }
+    } catch (e) {
+      console.error('Failed to fetch plan:', e);
+    }
+  };
 
   const fetchKeys = async () => {
     try {
@@ -87,9 +107,9 @@ export default function ApiKeysPage() {
     try {
       const { api_key } = await apiFetch<{ api_key: string }>(`/workspaces/${activeWorkspace.id}/api-keys`, {
         method: 'POST',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: newKeyName,
-          scopes: selectedScopes 
+          scopes: selectedScopes
         }),
       });
       setCreatedKey(api_key);
@@ -143,6 +163,17 @@ export default function ApiKeysPage() {
     }
   };
 
+  if (customerPlan?.toLowerCase() === 'bronze') {
+    return (
+      <div className="max-w-5xl mx-auto py-10 px-6">
+        <FeatureLocked 
+          featureName="API Access" 
+          description="Elevate your workflow with programmatic access. Unlock dedicated API keys to automate asset management and build custom integrations."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto py-10 px-6 animate-in fade-in duration-500 pb-20">
       <div className="flex justify-between items-center mb-10">
@@ -169,17 +200,17 @@ export default function ApiKeysPage() {
           <div className="absolute top-0 right-0 p-8 opacity-10">
             <KeyIcon className="h-24 w-24 text-amber-400 rotate-12" />
           </div>
-          
+
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4 text-amber-400 font-black text-xl">
               <KeyIcon className="h-8 w-8" />
               API Key Created Successfully
             </div>
-            
+
             <div className="mb-6 p-4 bg-amber-950/30 border border-amber-500/10 rounded-2xl">
               <p className="text-amber-200/80 font-medium mb-1">⚠️ Security Warning</p>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Copy this key now. For your security, <span className="font-bold text-amber-200">it will never be shown again</span>. 
+                Copy this key now. For your security, <span className="font-bold text-amber-200">it will never be shown again</span>.
                 If you lose it, you will need to revoke it and create a new one.
               </p>
             </div>
@@ -209,7 +240,7 @@ export default function ApiKeysPage() {
               </button>
             </div>
           </div>
-          
+
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500/40" />
         </div>
       )}
@@ -296,7 +327,7 @@ export default function ApiKeysPage() {
                   </span>
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => {
                   setShowUsageModal(null);
                   setUsageStats([]);
@@ -366,12 +397,12 @@ export default function ApiKeysPage() {
             <div className="absolute top-0 right-0 p-12 opacity-[0.03] -mr-8 -mt-8">
               <PlusIcon className="h-48 w-48 text-blue-400" />
             </div>
-            
+
             <h2 className="text-3xl font-black text-white mb-2">New API Key</h2>
             <p className="text-gray-400 text-sm mb-8">
               Configure access permissions and identification for your new key.
             </p>
-            
+
             <div className="space-y-6 relative z-10">
               <div>
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-3">Friendly Name</label>
@@ -393,24 +424,21 @@ export default function ApiKeysPage() {
                     <button
                       key={scope.id}
                       onClick={() => toggleScope(scope.id)}
-                      className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group w-full ${
-                        selectedScopes.includes(scope.id)
+                      className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group w-full ${selectedScopes.includes(scope.id)
                           ? 'bg-blue-500/10 border-blue-500/40 text-blue-100'
                           : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-gray-900/40'
-                      }`}
+                        }`}
                     >
-                      <div className={`p-2 rounded-lg transition-colors ${
-                        selectedScopes.includes(scope.id) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500'
-                      }`}>
+                      <div className={`p-2 rounded-lg transition-colors ${selectedScopes.includes(scope.id) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500'
+                        }`}>
                         <ShieldCheckIcon className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
                         <div className={`text-sm font-bold ${selectedScopes.includes(scope.id) ? 'text-white' : ''}`}>{scope.label}</div>
                         <div className="text-[10px] opacity-60">{scope.description}</div>
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                        selectedScopes.includes(scope.id) ? 'border-blue-500 bg-blue-500' : 'border-gray-700'
-                      }`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selectedScopes.includes(scope.id) ? 'border-blue-500 bg-blue-500' : 'border-gray-700'
+                        }`}>
                         {selectedScopes.includes(scope.id) && <ChevronRightIcon className="h-3 w-3 text-white" />}
                       </div>
                     </button>
@@ -429,24 +457,21 @@ export default function ApiKeysPage() {
                             <button
                               key={scope.id}
                               onClick={() => toggleScope(scope.id)}
-                              className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left group ${
-                                selectedScopes.includes(scope.id)
+                              className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left group ${selectedScopes.includes(scope.id)
                                   ? 'bg-blue-500/10 border-blue-500/40 text-blue-100'
                                   : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-gray-900/40'
-                              }`}
+                                }`}
                             >
-                              <div className={`p-1.5 rounded-md transition-colors ${
-                                selectedScopes.includes(scope.id) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500'
-                              }`}>
+                              <div className={`p-1.5 rounded-md transition-colors ${selectedScopes.includes(scope.id) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500'
+                                }`}>
                                 <ShieldCheckIcon className="h-4 w-4" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className={`text-xs font-bold truncate ${selectedScopes.includes(scope.id) ? 'text-white' : ''}`}>{scope.label}</div>
                                 <div className="text-[9px] opacity-60 truncate">{scope.description}</div>
                               </div>
-                              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                                selectedScopes.includes(scope.id) ? 'border-blue-500 bg-blue-500' : 'border-gray-700'
-                              }`}>
+                              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${selectedScopes.includes(scope.id) ? 'border-blue-500 bg-blue-500' : 'border-gray-700'
+                                }`}>
                                 {selectedScopes.includes(scope.id) && <ChevronRightIcon className="h-2.5 w-2.5 text-white" />}
                               </div>
                             </button>
@@ -482,12 +507,12 @@ export default function ApiKeysPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-950 border border-red-500/20 rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in zoom-in duration-300 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-red-500/40" />
-            
+
             <div className="flex flex-col items-center text-center">
               <div className="p-4 bg-red-500/10 rounded-full mb-4">
                 <TrashIcon className="h-8 w-8 text-red-500" />
               </div>
-              
+
               <h2 className="text-2xl font-bold text-white mb-2">Revoke API Key?</h2>
               <div className="bg-red-950/20 border border-red-500/10 rounded-2xl p-4 mb-6">
                 <p className="text-sm text-red-200/80 mb-2 font-bold uppercase tracking-tight text-center">Serious Impact Warning</p>
@@ -495,7 +520,7 @@ export default function ApiKeysPage() {
                   Revoking <span className="font-bold text-white">"{showRevokeModal.name}"</span> will immediately break any active integrations or SDK clients using this key. This action is <span className="font-bold text-red-400">permanent</span>.
                 </p>
               </div>
-              
+
               <div className="w-full space-y-4">
                 <div>
                   <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
@@ -510,7 +535,7 @@ export default function ApiKeysPage() {
                     autoFocus
                   />
                 </div>
-                
+
                 <div className="flex gap-4 pt-2">
                   <button
                     onClick={() => {

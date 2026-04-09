@@ -17,7 +17,7 @@ setup('authenticate', async ({ page }) => {
 
   await page.goto('/login');
   
-  await page.getByPlaceholder('admin@acme.com').fill(email);
+  await page.getByPlaceholder('name@company.com').fill(email);
   await page.getByPlaceholder('••••••••').fill(password);
   await page.getByRole('button', { name: /Sign In/i }).click();
 
