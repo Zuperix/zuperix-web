@@ -64,9 +64,7 @@ export default function Error({
           </a>
         </div>
 
-        <div className="pt-12 text-[10px] font-bold text-gray-700 uppercase tracking-[0.4em]">
-          Zuperix Chaos Management Division
-        </div>
+
       </div>
 
       {/* Grid pattern overlay */}

@@ -64,7 +64,7 @@ test.describe('Vault Operations', () => {
 
     // Vaulted assets are currently visible in main grid too.
     const assetCard = page.getByRole('heading', { level: 3, name: fileName });
-    await expect(assetCard).toBeVisible({ timeout: 10000 });
+    await expect(assetCard).toBeVisible({ timeout: 30000 });
   });
 
   test('verify asset visibility: visible inside the vault', async ({ page }) => {

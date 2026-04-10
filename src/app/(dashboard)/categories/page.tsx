@@ -296,7 +296,7 @@ export default function CategoriesPage() {
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
             <FolderIcon className="h-7 w-7 text-blue-500" />
-            Cateogry Management
+            Category Management
           </h1>
           <p className="text-gray-500 text-sm mt-1">Manage hierarchical labels to organize your global asset library.</p>
         </div>

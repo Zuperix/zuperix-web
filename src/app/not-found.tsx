@@ -40,10 +40,6 @@ export default function NotFound() {
             Take me back to civilization
           </Link>
         </div>
-
-        <p className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.3em] pt-12">
-          Zuperix Lost & Found Department
-        </p>
       </div>
 
       {/* Grid pattern overlay */}

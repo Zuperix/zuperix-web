@@ -39,7 +39,7 @@ test('create and delete workspace role (cleanup)', async ({ page }) => {
   await modal.getByPlaceholder('e.g. Asset Reviewer').fill(roleName);
   await modal.locator('select').selectOption({ label: 'Workspace Role' });
   await modal.getByRole('checkbox').first().check();
-  await modal.getByRole('button', { name: /^Create Role$/i }).click();
+  await modal.getByRole('button', { name: /^Create Role$/i }).click({ force: true });
   await expect(modal).toBeHidden();
 
   const row = page.getByRole('row', { name: new RegExp(roleName, 'i') });
@@ -48,7 +48,7 @@ test('create and delete workspace role (cleanup)', async ({ page }) => {
   await row.getByRole('button', { name: `Delete ${roleName}` }).click();
   const deleteModal = page.getByRole('dialog');
   await expect(deleteModal).toBeVisible();
-  await deleteModal.getByRole('button', { name: /^Delete permanently$/i }).click();
+  await deleteModal.getByRole('button', { name: /^Delete permanently$/i }).click({ force: true });
 
   await expect(page.getByRole('row', { name: new RegExp(roleName, 'i') })).toBeHidden({ timeout: 20000 });
 });

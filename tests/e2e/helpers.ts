@@ -32,6 +32,18 @@ export async function dismissTransientOverlays(page: Page) {
   if (await savedSecret.isVisible()) {
     await savedSecret.click();
   }
+
+  // Dismiss any sonner toasts that might be overlapping buttons
+  const toasts = page.locator('li[data-sonner-toast]');
+  const toastCount = await toasts.count();
+  for (let i = 0; i < toastCount; i++) {
+    const closeBtn = toasts.nth(i).locator('button[data-close-button]');
+    if (await closeBtn.isVisible()) {
+      await closeBtn.click();
+    } else {
+      await toasts.nth(i).click({ force: true });
+    }
+  }
 }
 
 export async function clearAllFilters(page: Page) {

@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 
-const categoriesHeadingPattern = /Cat(?:eogry|egory) Management/i;
+const categoriesHeadingPattern = /Category Management/i;
 
-test('category page shows cateogry hierarchy', async ({ page }) => {
+test('category page shows category hierarchy', async ({ page }) => {
   await page.goto('/categories');
 
   await expect(page.getByRole('heading', { name: categoriesHeadingPattern })).toBeVisible();

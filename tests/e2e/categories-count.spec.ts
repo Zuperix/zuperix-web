@@ -27,11 +27,11 @@ test.describe('category asset counts', () => {
         if (!nameText) continue;
 
         const name = nameText.trim();
-        
+
         // 2. Expand if it has children and is not expanded
         const toggleBtn = row.locator('button').first();
         const hasChildren = (await toggleBtn.getAttribute('class')) || '';
-        
+
         // If it's visible (not opacity-0) it has sub-categories
         if (!hasChildren.includes('opacity-0')) {
           // If we haven't visited this name's sub-tree yet, expand it
@@ -46,7 +46,7 @@ test.describe('category asset counts', () => {
         // 3. Check for assets and "View" button
         const viewBtn = row.getByRole('link', { name: /^View$/i });
         const hasView = await viewBtn.isVisible();
-        
+
         if (hasView) {
           const countBadge = row.locator('span.px-2.py-0\\.5');
           const countTextValue = await countBadge.textContent();
@@ -64,17 +64,17 @@ test.describe('category asset counts', () => {
 
           await page.goto('/categories');
           await expect(page.getByRole('heading', { name: categoriesHeadingPattern })).toBeVisible();
-          
+
           await exploreAndVerify();
           return;
         }
-        
+
         checkedNames.add(name);
       }
     }
 
     await exploreAndVerify();
-    
+
     console.log(`Verified ${verifiedCount} categories.`);
   });
 });
