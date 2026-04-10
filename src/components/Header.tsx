@@ -435,16 +435,6 @@ export default function Header() {
           </button>
           
           <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
-
-          <button
-            onClick={() => router.push('/upload-status')}
-            className={`p-1.5 rounded-lg transition-all duration-200 ${pathname === '/upload-status' ? 'bg-blue-500/10 text-blue-500' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white dark:hover:bg-gray-800'}`}
-            title="Upload Status"
-          >
-            <CloudArrowUpIcon className="h-4.5 w-4.5" />
-          </button>
-          
-          <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700/50 mx-1" />
           
           <NotificationCenter />
         </div>

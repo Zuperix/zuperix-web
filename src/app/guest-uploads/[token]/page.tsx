@@ -6,7 +6,7 @@ export const metadata = {
   description: 'Upload assets directly to a Zuperix workspace.',
 };
 
-export default async function GuestUploadPage({ params }: { params: { token: string } }) {
-  // Optionals: we can fetch link data server-side or client-side. Client-side is fine for this demo.
-  return <GuestUploadPortal token={params.token} />;
+export default async function GuestUploadPage({ params }: { params: Promise<{ token: string }> }) {
+  const resolvedParams = await params;
+  return <GuestUploadPortal token={resolvedParams.token} />;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, DragEvent } from 'react';
-import { BASE_URL } from '@/lib/api';
+import { apiFetch, BASE_URL } from '@/lib/api';
 import {
   CloudArrowUpIcon,
   CheckCircleIcon,
@@ -49,7 +49,6 @@ async function uploadFileGuest(
   file: File,
   token: string,
   onProgress: (pct: number) => void,
-  metadata: Record<string, any> = {},
 ): Promise<void> {
   const isMultipart = file.size > CHUNK_SIZE;
 
@@ -57,30 +56,21 @@ async function uploadFileGuest(
     const totalParts = Math.ceil(file.size / CHUNK_SIZE);
     
     // 1. Init multipart
-    const initRes = await fetch(`${BASE_URL}/guest-uploads/public/${token}/upload/multipart/init`, {
+    const initData = await apiFetch<any>(`/guest-uploads/public/${token}/upload/multipart/init`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         filename: file.name,
         mime_type: file.type || 'application/octet-stream',
         size: file.size,
       })
     });
-    if (!initRes.ok) {
-      const errBody = await initRes.json().catch(() => ({}));
-      throw new Error(errBody.message || 'Multipart Init failed');
-    }
-    const initData = await initRes.json();
-    const { upload_id, key } = initData.data;
+    const { upload_id, key } = initData;
 
     // 2. URLs
-    const urlsRes = await fetch(`${BASE_URL}/guest-uploads/public/${token}/upload/multipart/urls`, {
+    const urlsData = await apiFetch<any[]>(`/guest-uploads/public/${token}/upload/multipart/urls`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key, upload_id, parts: totalParts }),
     });
-    if (!urlsRes.ok) throw new Error('Failed to get multipart URLs');
-    const urlsData = (await urlsRes.json()).data;
 
     // 3. Upload parts concurrently
     let uploadedBytes = 0;
@@ -123,14 +113,12 @@ async function uploadFileGuest(
     }
 
     // 4. Complete
-    const finalizeRes = await fetch(`${BASE_URL}/guest-uploads/public/${token}/upload/multipart/complete`, {
+    await apiFetch(`/guest-uploads/public/${token}/upload/multipart/complete`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         key,
         upload_id,
         parts: completedParts,
-        metadata,
         finalize_data: {
           key,
           filename: file.name,
@@ -141,28 +129,17 @@ async function uploadFileGuest(
       }),
     });
 
-    if (!finalizeRes.ok) {
-      const errBody = await finalizeRes.json().catch(() => ({}));
-      throw new Error(errBody.message || 'Complete failed');
-    }
-
   } else {
     // Direct upload
-    const initRes = await fetch(`${BASE_URL}/guest-uploads/public/${token}/upload/init`, {
+    const initData = await apiFetch<any>(`/guest-uploads/public/${token}/upload/init`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         filename: file.name,
         mime_type: file.type || 'application/octet-stream',
         size: file.size,
       })
     });
-    if (!initRes.ok) {
-      const errBody = await initRes.json().catch(() => ({}));
-      throw new Error(errBody.message || 'Init failed');
-    }
-    const initData = await initRes.json();
-    const { url, key, method } = initData.data;
+    const { url, key, method } = initData;
 
     await new Promise<void>((uploadResolve, uploadReject) => {
       const xhr = new XMLHttpRequest();
@@ -185,23 +162,16 @@ async function uploadFileGuest(
       xhr.send(file);
     });
 
-    const finalizeRes = await fetch(`${BASE_URL}/guest-uploads/public/${token}/upload/finalize`, {
+    await apiFetch(`/guest-uploads/public/${token}/upload/finalize`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         key,
         filename: file.name,
         original_name: file.name,
         mime_type: file.type || 'application/octet-stream',
         size: file.size,
-        metadata,
       })
     });
-
-    if (!finalizeRes.ok) {
-      const errBody = await finalizeRes.json().catch(() => ({}));
-      throw new Error(errBody.message || 'Finalize failed');
-    }
   }
 }
 
@@ -214,21 +184,20 @@ export default function GuestUploadPortal({ token }: { token: string }) {
   const [running, setRunning] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [guestMetadata, setGuestMetadata] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    fetch(`${BASE_URL}/guest-uploads/public/${token}`)
-      .then(res => res.json())
+    if (!token || token === 'undefined') {
+      setLoading(false);
+      setError('Invalid upload link');
+      return;
+    }
+
+    apiFetch<any>(`/guest-uploads/public/${token}`)
       .then(data => {
-        if (data.statusCode && data.statusCode >= 400) {
-          setError(data.message || 'Link is invalid or has expired');
-        } else {
-          setConfig(data);
-        }
+        setConfig(data);
       })
       .catch((err) => {
-        setError('Failed to load link details');
+        setError(err.message || 'Failed to load link details');
       })
       .finally(() => setLoading(false));
   }, [token]);
@@ -237,10 +206,10 @@ export default function GuestUploadPortal({ token }: { token: string }) {
     const arr = Array.from(files);
     const valid = arr.filter((f) => {
       // client-side validation
-      if (config.maxFileSize && f.size > config.maxFileSize) return false;
-      if (config.allowedTypes && config.allowedTypes.length > 0 && !config.allowedTypes.includes('all')) {
+      if (config.max_file_size && f.size > config.max_file_size) return false;
+      if (config.allowed_types && config.allowed_types.length > 0 && !config.allowed_types.includes('all')) {
         const fileTypeCategory = f.type.split('/')[0];
-        if (!config.allowedTypes.includes(fileTypeCategory) && !config.allowedTypes.includes(f.type)) {
+        if (!config.allowed_types.includes(fileTypeCategory) && !config.allowed_types.includes(f.type)) {
           return false;
         }
       }
@@ -281,7 +250,7 @@ export default function GuestUploadPortal({ token }: { token: string }) {
       try {
         await uploadFileGuest(entry.file, token, (pct) => {
           updateEntry(entry.id, { progress: pct });
-        }, guestMetadata);
+        });
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: any) {
         updateEntry(entry.id, { status: 'error', progress: 0, error: err.message });
@@ -326,12 +295,11 @@ export default function GuestUploadPortal({ token }: { token: string }) {
         <div className="text-center space-y-4">
           <div className="flex justify-center mb-6">
             <div className="h-12 flex items-center gap-2">
-              <SparklesIcon className="w-8 h-8 text-blue-600" />
               <span className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 tracking-tight">Zuperix</span>
             </div>
           </div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            Upload to {config.workspaceName}
+            Upload to {config.workspace_name}
           </h1>
           <p className="text-gray-500 max-w-xl mx-auto font-medium">
             You&apos;ve been invited to directly upload assets. Drag and drop your files securely below.
@@ -346,7 +314,7 @@ export default function GuestUploadPortal({ token }: { token: string }) {
              <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Complete!</h2>
              <p className="text-gray-500 font-medium">Your assets have been securely transferred to the workspace.</p>
              <button 
-               onClick={() => { setEntries([]); setGuestMetadata({}); }}
+               onClick={() => { setEntries([]); }}
                className="mt-8 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl transition-colors"
              >
                Upload More
@@ -354,40 +322,6 @@ export default function GuestUploadPortal({ token }: { token: string }) {
           </div>
         ) : (
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500">
-            {/* Metadata Fields section if allowed */}
-            {config.allowMetadataEdit && config.metadataFields?.length > 0 && (
-              <div className="p-8 border-b border-gray-100 bg-gray-50/50">
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-4">Required Details</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {config.metadataFields.map((field: any) => (
-                    <div key={field.id}>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-                        {field.label}
-                      </label>
-                      {field.field_type === 'boolean' ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={guestMetadata[field.key] || false}
-                            onChange={(e) => setGuestMetadata(prev => ({ ...prev, [field.key]: e.target.checked }))}
-                            className="h-4 w-4 text-blue-600 rounded"
-                          />
-                          <span className="text-sm text-gray-700">Enabled</span>
-                        </div>
-                      ) : (
-                        <input
-                          type={field.field_type === 'integer' || field.field_type === 'float' ? 'number' : 'text'}
-                          value={guestMetadata[field.key] || ''}
-                          onChange={(e) => setGuestMetadata(prev => ({ ...prev, [field.key]: e.target.value }))}
-                          placeholder={`Enter ${field.label}...`}
-                          className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="p-8">
               <div
@@ -406,8 +340,8 @@ export default function GuestUploadPortal({ token }: { token: string }) {
                   {dragging ? 'Drop files here to upload' : 'Click or drop files here'}
                 </p>
                 <p className="text-sm text-gray-500 mt-2 font-medium">
-                  {config.allowedTypes?.includes('all') ? 'Any file type supported' : `Supported: ${config.allowedTypes?.join(', ')}`}
-                  {config.maxFileSize && ` (Max ${formatSize(config.maxFileSize)})`}
+                  {config.allowed_types?.includes('all') ? 'Any file type supported' : `Supported: ${config.allowed_types?.join(', ')}`}
+                  {config.max_file_size && ` (Max ${formatSize(config.max_file_size)})`}
                 </p>
                 <input
                   ref={fileInputRef}

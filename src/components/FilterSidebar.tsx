@@ -365,8 +365,12 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const clearAll = () => {
-    onClearAll();
+  const collapseAll = () => {
+    const newExpanded: Record<string, boolean> = {};
+    Object.keys(filters).forEach(key => {
+      newExpanded[key] = false;
+    });
+    setExpanded(newExpanded);
   };
 
   const handleCheckboxChange = (groupKey: string, value: string | number, checked: boolean) => {
@@ -452,16 +456,14 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                 </button>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Filters</h2>
               </div>
-              {hasActiveFilters && (
-                <button 
-                  type="button"
-                  disabled={disabled}
-                  onClick={clearAll}
-                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
-                >
-                  Clear all
-                </button>
-              )}
+              <button 
+                type="button"
+                disabled={disabled}
+                onClick={collapseAll}
+                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+              >
+                Collapse all
+              </button>
             </div>
 
             {/* Filter Search */}

@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { apiFetch } from '@/lib/api';
-import { 
-  PlusIcon, 
-  TagIcon, 
-  TrashIcon, 
+import {
+  PlusIcon,
+  TagIcon,
+  TrashIcon,
   PencilSquareIcon,
   ChevronRightIcon,
   ChevronDownIcon,
@@ -119,12 +119,12 @@ export default function CategoriesPage() {
 
     return (
       <div key={cat.id} className="space-y-1">
-        <div 
+        <div
           className="group flex items-center justify-between p-3 rounded-2xl bg-gray-900/40 border border-gray-800/60 hover:border-blue-500/30 hover:bg-gray-800/40 transition-all duration-200"
           style={{ marginLeft: `${depth * 24}px` }}
         >
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={() => toggleExpand(cat.id)}
               className={`p-1 rounded-md hover:bg-gray-800 transition-colors ${!hasChildren ? 'opacity-0 cursor-default' : 'opacity-100'}`}
               disabled={!hasChildren}
@@ -155,7 +155,7 @@ export default function CategoriesPage() {
 
           <div className="flex items-center gap-3">
             {cat.asset_count > 0 && (
-              <Link 
+              <Link
                 href={`/?category_uuids=${cat.id}`}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/5 hover:bg-indigo-500 text-indigo-400 hover:text-white border border-indigo-500/10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all group/view"
               >
@@ -163,10 +163,10 @@ export default function CategoriesPage() {
                 <ArrowRightIcon className="h-3 w-3 group-hover/view:translate-x-0.5 transition-transform" />
               </Link>
             )}
-            
+
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <PermissionGate action={Action.Update} subject="Category" workspaceId={activeWorkspace?.id}>
-                <button 
+                <button
                   onClick={() => setIsAddingTo(cat.id)}
                   className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all"
                   title="Add sub-category"
@@ -176,7 +176,7 @@ export default function CategoriesPage() {
               </PermissionGate>
               {cat.name !== 'Global' && (
                 <PermissionGate action={Action.Update} subject="Category" workspaceId={activeWorkspace?.id}>
-                  <button 
+                  <button
                     onClick={() => startEdit(cat)}
                     className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-xl transition-all"
                     title="Edit"
@@ -187,7 +187,7 @@ export default function CategoriesPage() {
               )}
               {cat.name !== 'Global' && (
                 <PermissionGate action={Action.Delete} subject="Category" workspaceId={activeWorkspace?.id}>
-                  <button 
+                  <button
                     onClick={() => handleDeleteRequest(cat)}
                     className="p-2 hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded-xl transition-all"
                     title="Delete"
@@ -203,7 +203,7 @@ export default function CategoriesPage() {
         {editingId === cat.id && (
           <div className="p-6 bg-gray-900/60 border border-blue-500/30 rounded-3xl mt-2 space-y-4 animate-in zoom-in-95 duration-200" style={{ marginLeft: `${depth * 24}px` }}>
             <div className="space-y-4">
-              <input 
+              <input
                 autoFocus
                 type="text"
                 placeholder="Category Name"
@@ -211,7 +211,7 @@ export default function CategoriesPage() {
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
               />
-              
+
               <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700">
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div className={`p-2 rounded-lg transition-all ${isSmart ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-gray-700 text-gray-400 group-hover:bg-gray-600'}`}>
@@ -221,14 +221,14 @@ export default function CategoriesPage() {
                     <p className="text-sm font-bold text-white tracking-tight">Smart Category</p>
                     <p className="text-[10px] text-gray-500 font-medium uppercase tracking-widest">Automatically associate assets via rules</p>
                   </div>
-                  <input 
-                    type="checkbox" 
-                    checked={isSmart} 
-                    onChange={e => setIsSmart(e.target.checked)} 
+                  <input
+                    type="checkbox"
+                    checked={isSmart}
+                    onChange={e => setIsSmart(e.target.checked)}
                     className="h-5 w-5 rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-blue-500/20"
                   />
                 </label>
-                
+
                 {isSmart && (
                   <div className="mt-4 pt-4 border-t border-gray-700 animate-in slide-in-from-top-2 duration-300">
                     <SmartFilterBuilder filter={smartFilter} onChange={setSmartFilter} />
@@ -237,13 +237,13 @@ export default function CategoriesPage() {
               </div>
 
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={() => handleUpdate(cat.id)}
                   className="flex-[2] py-3 bg-blue-600 text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
                 >
                   Save Changes
                 </button>
-                <button 
+                <button
                   onClick={() => { setEditingId(null); setNewName(''); setIsSmart(false); setSmartFilter({}); }}
                   className="flex-1 py-3 bg-gray-800 text-gray-400 hover:text-white rounded-2xl text-xs font-bold uppercase tracking-widest transition-all"
                 >
@@ -255,12 +255,12 @@ export default function CategoriesPage() {
         )}
 
         {isAddingTo === cat.id && (
-          <div 
+          <div
             className="flex items-center gap-2 p-2 ml-auto w-[calc(100%-24px)] animate-in slide-in-from-left-2 duration-200"
             style={{ marginLeft: `${(depth + 1) * 24}px` }}
           >
             <div className="flex-1 flex items-center bg-gray-800 rounded-xl border border-blue-500/30 overflow-hidden">
-              <input 
+              <input
                 autoFocus
                 type="text"
                 placeholder="Sub-category name..."
@@ -269,13 +269,13 @@ export default function CategoriesPage() {
                 onChange={e => setNewName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleCreate(cat.id)}
               />
-              <button 
+              <button
                 onClick={() => handleCreate(cat.id)}
                 className="p-2 text-blue-400 hover:bg-gray-700 transition-colors"
               >
                 <CheckIcon className="h-4 w-4" />
               </button>
-              <button 
+              <button
                 onClick={() => { setIsAddingTo(null); setNewName(''); }}
                 className="p-2 text-gray-500 hover:bg-gray-700 transition-colors"
               >
@@ -296,12 +296,12 @@ export default function CategoriesPage() {
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
             <FolderIcon className="h-7 w-7 text-blue-500" />
-            Taxonomy Management
+            Cateogry Management
           </h1>
           <p className="text-gray-500 text-sm mt-1">Manage hierarchical labels to organize your global asset library.</p>
         </div>
         <PermissionGate action={Action.Create} subject="Category" workspaceId={activeWorkspace?.id}>
-          <button 
+          <button
             onClick={() => setIsAddingTo('root')}
             className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2"
           >
@@ -314,7 +314,7 @@ export default function CategoriesPage() {
       {isAddingTo === 'root' && (
         <div className="bg-gray-900/60 p-4 border border-blue-500/30 rounded-3xl animate-in zoom-in-95 duration-200">
           <div className="flex gap-4">
-            <input 
+            <input
               autoFocus
               type="text"
               placeholder="Internal ID or Name..."
@@ -323,13 +323,13 @@ export default function CategoriesPage() {
               onChange={e => setNewName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleCreate()}
             />
-            <button 
+            <button
               onClick={() => handleCreate()}
               className="px-8 bg-blue-600 text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-blue-500 transition-all"
             >
               Create
             </button>
-            <button 
+            <button
               onClick={() => { setIsAddingTo(null); setNewName(''); }}
               className="px-4 text-gray-500 hover:text-white transition-colors"
             >
@@ -342,8 +342,8 @@ export default function CategoriesPage() {
       <div className="space-y-3">
         {categories.length === 0 ? (
           <div className="text-center py-20 bg-gray-900/20 rounded-[40px] border-2 border-dashed border-gray-800 flex flex-col items-center justify-center gap-4">
-             <FolderIcon className="h-12 w-12 text-gray-800" />
-             <p className="text-gray-600 font-bold uppercase tracking-widest text-[10px]">No categories defined for this workspace</p>
+            <FolderIcon className="h-12 w-12 text-gray-800" />
+            <p className="text-gray-600 font-bold uppercase tracking-widest text-[10px]">No categories defined for this workspace</p>
           </div>
         ) : (
           categories.map(cat => renderCategoryRow(cat))
@@ -359,7 +359,7 @@ export default function CategoriesPage() {
         </div>
       </footer>
 
-      <DeleteConfirmationModal 
+      <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => { setIsDeleteModalOpen(false); setCategoryToDelete(null); }}
         onConfirm={confirmDelete}
