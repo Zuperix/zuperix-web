@@ -60,6 +60,9 @@ import { is3D } from '@/lib/format';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import StarRating from '@/components/StarRating';
+import TranscriptionPanel from '@/components/TranscriptionPanel';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import { MicrophoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 interface Field {
   id: string;
@@ -73,7 +76,7 @@ interface MetadataValue {
   value: any;
 }
 
-type Tab = 'file-info' | 'attachments' | 'versions' | 'comments' | 'history' | 'workflow';
+type Tab = 'file-info' | 'attachments' | 'versions' | 'comments' | 'history' | 'workflow' | 'transcript';
 
 const STATUS_STYLING: Record<string, string> = {
   draft: 'bg-gray-900/40 text-gray-300 border-white/10 backdrop-blur-md shadow-sm',
@@ -150,7 +153,29 @@ export default function AssetDetailPage() {
   const [assetComments, setAssetComments] = useState<any[]>([]);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    onConfirm: () => void;
+    isProcessing: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: '',
+    onConfirm: () => { },
+    isProcessing: false,
+  });
   const previewRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [transcript, setTranscript] = useState<any>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [loadingTranscript, setLoadingTranscript] = useState(false);
+  const [isGeneratingTranscript, setIsGeneratingTranscript] = useState(false);
+  const [transcriptionUsage, setTranscriptionUsage] = useState<any>(null);
+  const [transcriptionJob, setTranscriptionJob] = useState<any>(null);
 
   const { fetchAssetWorkflow, processTask, loading: processingTask } = useWorkflows();
   const { user } = useAuth();
@@ -212,6 +237,47 @@ export default function AssetDetailPage() {
     }
   }, [assetId]);
 
+  const fetchTranscript = useCallback(async () => {
+    if (!assetId) return;
+    try {
+      setLoadingTranscript(true);
+      const [transcriptData, usageData, jobData] = await Promise.all([
+        apiFetch<any>(`/transcription/assets/${assetId}`).catch(() => null),
+        apiFetch<any>('/transcription/usage').catch(() => null),
+        apiFetch<any>(`/transcription/assets/${assetId}/job`).catch(() => null),
+      ]);
+      setTranscript(transcriptData);
+      setTranscriptionUsage(usageData);
+      setTranscriptionJob(jobData);
+    } catch (err) {
+      console.error('Failed to fetch transcription data:', err);
+    } finally {
+      setLoadingTranscript(false);
+    }
+  }, [assetId]);
+
+  const handleGenerateTranscript = async () => {
+    if (!assetId) return;
+    try {
+      setIsGeneratingTranscript(true);
+      await apiFetch(`/transcription/assets/${assetId}`, {
+        method: 'POST',
+        body: JSON.stringify({ workspace_id: activeWorkspace?.id }),
+      });
+      toast.success('Transcription has been initiated. It should appear here in a few minutes.');
+      
+      // Refresh to show "Processing" state immediately
+      fetchTranscript();
+      
+      // Auto refresh in 30s as a courtesy
+      setTimeout(fetchTranscript, 30000);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to start transcription');
+    } finally {
+      setIsGeneratingTranscript(false);
+    }
+  };
+
 
   const fetchData = useCallback(async () => {
     if (!activeWorkspace || !assetId) return;
@@ -253,6 +319,12 @@ export default function AssetDetailPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (activeTab === 'transcript' && !transcript) {
+      fetchTranscript();
+    }
+  }, [activeTab, transcript, fetchTranscript]);
 
   // Fetch all workspace tags for autocomplete
   useEffect(() => {
@@ -410,14 +482,25 @@ export default function AssetDetailPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this asset?')) return;
-    try {
-      await apiFetch(`/assets/${assetId}`, { method: 'DELETE' });
-      router.push('');
-    } catch (err) {
-      toast.error('Failed to delete asset');
-    }
+  const handleDelete = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Asset',
+      message: 'Are you sure you want to delete this asset? This action cannot be undone.',
+      confirmText: 'Delete permanently',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isProcessing: true }));
+        try {
+          await apiFetch(`/assets/${assetId}`, { method: 'DELETE' });
+          toast.success('Asset deleted successfully');
+          router.push('/');
+        } catch (err) {
+          toast.error('Failed to delete asset');
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+        }
+      },
+      isProcessing: false,
+    });
   };
 
   const handleShare = () => {
@@ -559,22 +642,27 @@ export default function AssetDetailPage() {
   };
 
   const handleRevert = async (versionId: string) => {
-    if (!confirm('Are you sure you want to revert to this version? A new version will be created reflecting this state.')) return;
-
-    setSaving(true);
-    setError('');
-    try {
-      await apiFetch(`/assets/${assetId}/versions/${versionId}/revert`, {
-        method: 'POST',
-      });
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-      fetchData(); // Refresh to see the new "reverted" version
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to revert version');
-    } finally {
-      setSaving(false);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Revert to Version',
+      message: 'Are you sure you want to revert to this version? A new version will be created reflecting this state.',
+      confirmText: 'Revert',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isProcessing: true }));
+        try {
+          await apiFetch(`/assets/${assetId}/versions/${versionId}/revert`, {
+            method: 'POST',
+          });
+          toast.success('Version reverted successfully');
+          fetchData();
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to revert version');
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+        }
+      },
+      isProcessing: false,
+    });
   };
 
   const handleUploadAttachment = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -602,17 +690,27 @@ export default function AssetDetailPage() {
   };
 
   const handleDeleteAttachment = async (attachmentId: string) => {
-    if (!confirm('Are you sure you want to remove this attachment?')) return;
-
-    try {
-      await apiFetch(`/assets/attachments/${attachmentId}`, {
-        method: 'DELETE',
-      });
-      toast.success('Attachment removed');
-      fetchAttachments();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to remove attachment');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Remove Attachment',
+      message: 'Are you sure you want to remove this attachment? This action cannot be undone.',
+      confirmText: 'Remove',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isProcessing: true }));
+        try {
+          await apiFetch(`/assets/attachments/${attachmentId}`, {
+            method: 'DELETE',
+          });
+          toast.success('Attachment removed');
+          fetchAttachments();
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to remove attachment');
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
+        }
+      },
+      isProcessing: false,
+    });
   };
 
 
@@ -901,9 +999,11 @@ export default function AssetDetailPage() {
                 />
               ) : asset?.mime_type?.startsWith('video/') ? (
                 <video
+                  ref={videoRef}
                   src={asset?.asset_live_url}
                   controls={!annotationMode}
                   className="max-w-full max-h-[70vh] rounded-2xl pointer-events-none"
+                  onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                 />
               ) : (
                 <div className="flex flex-col items-center gap-8 p-20">
@@ -1396,6 +1496,7 @@ export default function AssetDetailPage() {
               { id: 'attachments', label: 'Links', icon: Square3Stack3DIcon },
               { id: 'versions', label: 'History', icon: ClockIcon },
               { id: 'comments', label: 'Chat', icon: ChatBubbleLeftIcon },
+              ...(asset?.mime_type?.startsWith('video/') || asset?.mime_type?.startsWith('audio/') ? [{ id: 'transcript', label: 'Transcript', icon: MicrophoneIcon }] : []),
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1573,6 +1674,27 @@ export default function AssetDetailPage() {
                     ))}
                   </div>
                 )}
+                {activeTab === 'transcript' && (
+                  <div className="h-full min-h-[500px]">
+                    <TranscriptionPanel 
+                      transcript={transcript} 
+                      currentTime={currentTime} 
+                      assetId={assetId}
+                      loading={loadingTranscript}
+                      onSeek={(time) => {
+                        if (videoRef.current) {
+                          videoRef.current.currentTime = time;
+                          videoRef.current.play();
+                        }
+                      }}
+                      onGenerate={asset?.mime_type?.startsWith('video/') || asset?.mime_type?.startsWith('audio/') ? handleGenerateTranscript : undefined}
+                      isGenerating={isGeneratingTranscript}
+                      isProcessing={transcriptionJob?.status === 'pending' || transcriptionJob?.status === 'processing'}
+                      quotaExceeded={transcriptionUsage && transcriptionUsage.remaining_seconds <= 0}
+                      planRestricted={transcriptionUsage && transcriptionUsage.limit_seconds === 0}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1590,6 +1712,7 @@ export default function AssetDetailPage() {
                 { id: 'attachments', label: 'Links', icon: Square3Stack3DIcon },
                 { id: 'versions', label: 'History', icon: ClockIcon },
                 { id: 'comments', label: 'Chat', icon: ChatBubbleLeftIcon },
+                ...(asset?.mime_type?.startsWith('video/') || asset?.mime_type?.startsWith('audio/') ? [{ id: 'transcript', label: 'Transcript', icon: MicrophoneIcon }] : []),
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1931,7 +2054,6 @@ export default function AssetDetailPage() {
                 </div>
               </div>
             )}
-
             {activeTab === 'workflow' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-2">
@@ -1983,6 +2105,28 @@ export default function AssetDetailPage() {
                 />
               </div>
             )}
+
+            {activeTab === 'transcript' && (
+              <div className="animate-in fade-in slide-in-from-right-2 duration-300 h-full flex flex-col">
+                <TranscriptionPanel 
+                  transcript={transcript} 
+                  currentTime={currentTime} 
+                  assetId={assetId}
+                  loading={loadingTranscript}
+                  onSeek={(time) => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = time;
+                      videoRef.current.play();
+                    }
+                  }}
+                  onGenerate={asset?.mime_type?.startsWith('video/') || asset?.mime_type?.startsWith('audio/') ? handleGenerateTranscript : undefined}
+                  isGenerating={isGeneratingTranscript}
+                  isProcessing={transcriptionJob?.status === 'pending' || transcriptionJob?.status === 'processing'}
+                  quotaExceeded={transcriptionUsage && transcriptionUsage.remaining_seconds <= 0}
+                  planRestricted={transcriptionUsage && transcriptionUsage.limit_seconds === 0}
+                />
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -2028,6 +2172,15 @@ export default function AssetDetailPage() {
             onClose={() => setIsShareModalOpen(false)}
         />
       )}
+      <DeleteConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        isDeleting={confirmModal.isProcessing}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { dismissTransientOverlays } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -23,6 +24,7 @@ test('webhooks page renders correctly', async ({ page }) => {
 
 test('create and delete webhook (cleanup)', async ({ page }) => {
   await page.goto('/admin/webhooks');
+  await dismissTransientOverlays(page);
   await expect(page.getByRole('heading', { name: /Webhook Management/i })).toBeVisible();
 
   const webhookUrl = `https://example.com/e2e-webhook-${Date.now()}`;
@@ -33,6 +35,8 @@ test('create and delete webhook (cleanup)', async ({ page }) => {
   await expect(modal.getByRole('heading', { name: /^Create Webhook$/i })).toBeVisible();
   await modal.getByPlaceholder('https://your-app.com/webhook').fill(webhookUrl);
   await modal.getByRole('button', { name: /^Register Webhook$/i }).click();
+
+  await dismissTransientOverlays(page);
 
   const row = page.getByRole('row', { name: new RegExp(webhookUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') });
   await expect(row).toBeVisible({ timeout: 20000 });

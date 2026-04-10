@@ -16,8 +16,9 @@ import {
   DocumentIcon
 } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/lib/api';
-import { formatBytes } from '@/lib/format';
+import { formatBytes, formatMinutes } from '@/lib/format';
 import CustomImage from '../CustomImage';
+import UsageQuotaBar from './UsageQuotaBar';
 
 interface OverviewStats {
   total_storage: number;
@@ -25,6 +26,9 @@ interface OverviewStats {
   total_versions: number;
   total_users: number;
   active_users: number;
+  storage_limit: number;
+  transcription_used: number;
+  transcription_limit: number;
 }
 
 interface PerformanceData {
@@ -130,6 +134,26 @@ export default function AnalyticsDashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* iPhone-style Quota Bars */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+        <UsageQuotaBar 
+            label="Cloud Storage"
+            used={overview?.total_storage || 0}
+            total={overview?.storage_limit || 0}
+            unit=""
+            colorClass="bg-gradient-to-r from-blue-500 to-indigo-500 shadow-blue-500/50"
+            formatValue={formatBytes}
+        />
+        <UsageQuotaBar 
+            label="Transcription Quota"
+            used={overview?.transcription_used || 0}
+            total={overview?.transcription_limit || 0}
+            unit=""
+            colorClass="bg-gradient-to-r from-purple-500 to-pink-500 shadow-purple-500/50"
+            formatValue={formatMinutes}
+        />
       </div>
 
       {/* Charts Section */}

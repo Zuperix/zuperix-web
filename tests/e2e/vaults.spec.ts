@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissTransientOverlays } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -43,6 +44,7 @@ test('create new vault', async ({ page }) => {
 
 test('edit vault', async ({ page }) => {
   await page.goto('/vaults');
+  await dismissTransientOverlays(page);
 
   const vaultCard = page.locator('.group.flex.flex-col').filter({ hasText: vaultName });
   await expect(vaultCard).toBeVisible({ timeout: 10000 });
@@ -70,6 +72,7 @@ test('navigate to vault assets via Open button', async ({ page }) => {
 
 test('delete vault', async ({ page }) => {
   await page.goto('/vaults');
+  await dismissTransientOverlays(page);
 
   const vaultCard = page.locator('.group.flex.flex-col').filter({ hasText: updatedVaultName });
   await expect(vaultCard).toBeVisible({ timeout: 10000 });

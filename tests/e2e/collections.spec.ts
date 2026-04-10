@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissTransientOverlays } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -39,6 +40,7 @@ test('collections page shows create form controls', async ({ page }) => {
 
 test('create and delete collection (cleanup)', async ({ page }) => {
   await page.goto('/collections');
+  await dismissTransientOverlays(page);
   await expect(page.getByRole('heading', { name: /My Collections/i })).toBeVisible();
 
   const collectionName = `e2e-collection-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -52,13 +54,17 @@ test('create and delete collection (cleanup)', async ({ page }) => {
   await form.getByPlaceholder('What is this collection for?').fill(description);
   await form.getByRole('button', { name: /^Create Collection$/i }).click();
 
-  const collectionCard = page.locator('div').filter({ has: page.getByRole('heading', { name: collectionName }) }).first();
-  await expect(page.getByRole('heading', { name: collectionName })).toBeVisible({ timeout: 20000 });
-  await expect(page.getByText(description, { exact: true })).toBeVisible();
+  const collectionHeading = page.getByRole('heading', { name: collectionName });
+  await expect(collectionHeading).toBeVisible({ timeout: 20000 });
+  const collectionCard = collectionHeading.locator('xpath=ancestor::div[contains(@class, "group flex flex-col p-6")][1]');
+  await expect(collectionCard.getByText(description, { exact: true })).toBeVisible();
 
   await collectionCard.hover();
-  page.once('dialog', dialog => dialog.accept());
   await collectionCard.getByRole('button', { name: `Delete ${collectionName}` }).click();
+
+  const deleteModal = page.getByRole('dialog', { name: /Delete Collection/i });
+  await expect(deleteModal).toBeVisible();
+  await deleteModal.getByRole('button', { name: /Delete permanently/i }).click();
 
   await expect(page.getByRole('heading', { name: collectionName })).toBeHidden({ timeout: 20000 });
 });

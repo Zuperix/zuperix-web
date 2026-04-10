@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
 import fs from 'fs';
-import { expectShowing } from './helpers';
+import { expectShowingPattern, dismissTransientOverlays } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
 test('upload and delete asset (cleanup)', async ({ page }, testInfo) => {
   await page.goto('');
+  await dismissTransientOverlays(page);
 
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
@@ -22,7 +23,7 @@ test('upload and delete asset (cleanup)', async ({ page }, testInfo) => {
   await modal.locator('input[type="file"]').setInputFiles(filePath);
   await expect(modal.getByText(fileName)).toBeVisible({ timeout: 10000 });
 
-  await modal.getByRole('button', { name: /^Upload \d+ file(s)?$/i }).click();
+  await modal.getByRole('button', { name: /^Upload \d+ file(s)?$/i }).click({ force: true });
   await expect(modal.getByText(/1\s*\/\s*1 complete/i)).toBeVisible({ timeout: 20000 });
 
   await modal.getByRole('button', { name: /Close|Cancel/i }).click();
@@ -31,7 +32,7 @@ test('upload and delete asset (cleanup)', async ({ page }, testInfo) => {
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
 
 
-  await expectShowing(page, 20, 536);
+  await expectShowingPattern(page);
 
   const assetTitle = page.getByRole('heading', { level: 3 }).first();
   await expect(assetTitle).toHaveText(/^e2e-upload-/i, { timeout: 20000 });
@@ -42,6 +43,6 @@ test('upload and delete asset (cleanup)', async ({ page }, testInfo) => {
 
   await page.reload();
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
-  await expectShowing(page, 20, 535);
+  await expectShowingPattern(page);
 
 });

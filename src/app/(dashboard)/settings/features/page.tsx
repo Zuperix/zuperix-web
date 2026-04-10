@@ -27,10 +27,12 @@ interface Customer {
   is_ocr_enabled: boolean;
   is_text_extraction_enabled: boolean;
   is_geo_tagging_enabled: boolean;
+  is_transcription_enabled: boolean;
   is_single_category_enabled: boolean;
   ocr_last_toggle_at: string | null;
   geo_tagging_last_toggle_at: string | null;
   text_extraction_last_toggle_at: string | null;
+  transcription_last_toggle_at: string | null;
   created_at: string;
 }
 
@@ -38,6 +40,7 @@ interface LocalSettings {
   is_ocr_enabled: boolean;
   is_text_extraction_enabled: boolean;
   is_geo_tagging_enabled: boolean;
+  is_transcription_enabled: boolean;
   is_single_category_enabled: boolean;
 }
 
@@ -58,6 +61,7 @@ export default function ProjectFeaturesPage() {
           is_ocr_enabled: data[0].is_ocr_enabled,
           is_text_extraction_enabled: data[0].is_text_extraction_enabled,
           is_geo_tagging_enabled: data[0].is_geo_tagging_enabled,
+          is_transcription_enabled: data[0].is_transcription_enabled,
           is_single_category_enabled: data[0].is_single_category_enabled,
         });
       } else {
@@ -91,7 +95,9 @@ export default function ProjectFeaturesPage() {
       ? customer.ocr_last_toggle_at
       : feature === 'is_text_extraction_enabled'
         ? customer.text_extraction_last_toggle_at
-        : customer.geo_tagging_last_toggle_at;
+        : feature === 'is_geo_tagging_enabled'
+          ? customer.geo_tagging_last_toggle_at
+          : customer.transcription_last_toggle_at;
 
     // If currently OFF in DB and trying to turn ON in Local
     if (!currentValueInDb && !localSettings[feature as keyof typeof localSettings]) {
@@ -137,11 +143,17 @@ export default function ProjectFeaturesPage() {
           isOcrEnabled: localSettings.is_ocr_enabled,
           isTextExtractionEnabled: localSettings.is_text_extraction_enabled,
           isGeoTaggingEnabled: localSettings.is_geo_tagging_enabled,
+          isTranscriptionEnabled: localSettings.is_transcription_enabled,
           isSingleCategoryEnabled: localSettings.is_single_category_enabled,
         }),
       });
       
-      toast.success('Settings saved. A single background backfill job has been started to process your assets.');
+      if (showBackfillWarning) {
+        toast.success('Settings saved. A background processing job has been started to index your existing assets.');
+      } else {
+        toast.success('Settings saved successfully.');
+      }
+      
       await fetchCustomer(); // Refresh to get updated timestamps
     } catch (err: any) {
       toast.error(`Failed to save settings: ${err.message}`);
@@ -154,6 +166,7 @@ export default function ProjectFeaturesPage() {
     localSettings.is_ocr_enabled !== customer.is_ocr_enabled ||
     localSettings.is_text_extraction_enabled !== customer.is_text_extraction_enabled ||
     localSettings.is_geo_tagging_enabled !== customer.is_geo_tagging_enabled ||
+    localSettings.is_transcription_enabled !== customer.is_transcription_enabled ||
     localSettings.is_single_category_enabled !== customer.is_single_category_enabled
   );
 
@@ -333,6 +346,46 @@ export default function ProjectFeaturesPage() {
             </div>
         </div>
 
+        {/* Transcription Section */}
+        <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.is_transcription_enabled ? 'border-amber-500/30' : 'border-gray-800'}`}>
+            <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-xl transition-colors ${localSettings.is_transcription_enabled ? 'bg-amber-500/20' : 'bg-gray-800'}`}>
+                        <div className={`h-6 w-6 flex items-center justify-center font-bold ${localSettings.is_transcription_enabled ? 'text-amber-400' : 'text-gray-500'}`}>
+                          T
+                        </div>
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-white">Auto-transcribe Videos</h3>
+                            {isFeatureRestricted(customer.transcription_last_toggle_at) && !customer.is_transcription_enabled && (
+                                <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[10px] font-bold text-amber-500 uppercase tracking-tight">
+                                    <ClockIcon className="h-3 w-3" />
+                                    Restricted: {getHoursRemaining(customer.transcription_last_toggle_at)}h left
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-400">Automatically generate transcripts for newly uploaded video assets.</p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => handleToggleLocal('is_transcription_enabled')}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all focus:outline-none ${
+                        localSettings.is_transcription_enabled ? 'bg-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'bg-gray-700'
+                    }`}
+                >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                        localSettings.is_transcription_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                </button>
+            </div>
+            <div className="p-4 bg-amber-500/5 px-6">
+                <p className="text-xs text-amber-400/80 leading-relaxed font-medium">
+                    When enabled, all new videos will be sent for transcription on upload. This feature consumes credits based on video duration. No backfill is performed.
+                </p>
+            </div>
+        </div>
+
         {/* Single Category Section */}
         <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.is_single_category_enabled ? 'border-orange-500/30' : 'border-gray-800'}`}>
             <div className="p-6 border-b border-gray-800 flex items-center justify-between">
@@ -362,31 +415,6 @@ export default function ProjectFeaturesPage() {
                 <p className="text-xs text-orange-400/80 leading-relaxed font-medium">
                     When enabled, the application treats categories as physical folders. Assets can only belong to one category at a time, preventing duplicates in bulk downloads.
                 </p>
-            </div>
-        </div>
-
-        {/* Quotas / Plan Info */}
-        <div className="bg-gray-900/20 border border-gray-800/60 border-dashed rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 justify-between opacity-80">
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-800 rounded-lg">
-                    <ScaleIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Storage Quota</p>
-                    <p className="text-sm text-gray-300">100 GB Total (100GB Plan Feature)</p>
-                </div>
-            </div>
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-800 rounded-lg">
-                    <ShieldCheckIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">API Access</p>
-                    <p className="text-sm text-gray-300">Enabled for {customer.name}</p>
-                </div>
-            </div>
-            <div className="px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs font-bold text-blue-400 uppercase tracking-tighter">
-                {customer.plan} Account
             </div>
         </div>
       </div>
@@ -419,6 +447,7 @@ export default function ProjectFeaturesPage() {
                         is_ocr_enabled: customer.is_ocr_enabled,
                         is_text_extraction_enabled: customer.is_text_extraction_enabled,
                         is_geo_tagging_enabled: customer.is_geo_tagging_enabled,
+                        is_transcription_enabled: customer.is_transcription_enabled,
                         is_single_category_enabled: customer.is_single_category_enabled,
                     })}
                     className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"

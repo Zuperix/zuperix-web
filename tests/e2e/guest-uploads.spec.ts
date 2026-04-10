@@ -1,15 +1,18 @@
 import { test, expect } from '@playwright/test';
+import { dismissTransientOverlays } from './helpers';
 
 test.describe('Guest Upload Links', () => {
   test('should open guest link dialog from dashboard and generate a link', async ({ page }) => {
     // Navigate to homepage (which will be redirected to dashboard if authenticated by global setup)
     await page.goto('/');
+    await dismissTransientOverlays(page);
 
     // Wait for the workspace to load
-    await expect(page.locator('text=Assets')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Assets$/i })).toBeVisible();
 
     // Click the share link button next to Upload
-    const generateLinkButton = page.locator('button[title="Generate Public Upload Link"]');
+    await page.locator('button[aria-haspopup="true"]').click();
+    const generateLinkButton = page.getByRole('button', { name: /Generate Upload Link/i });
     await expect(generateLinkButton).toBeVisible();
     await generateLinkButton.click();
 

@@ -17,12 +17,16 @@ import { toast } from 'sonner';
 import { AddColorModal, AddFontModal, AssetPickerModal } from '@/components/brand/BrandKitModals';
 import { useWorkspace } from '@/context/WorkspaceContext';
 
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+
 export default function BrandKitDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { activeWorkspace } = useWorkspace();
   const [kit, setKit] = useState<BrandKit | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeletingKit, setIsDeletingKit] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Modal states
   const [showColorModal, setShowColorModal] = useState(false);
@@ -46,14 +50,20 @@ export default function BrandKitDetailPage() {
     if (id) fetchKit();
   }, [id]);
 
-  const handleDeleteKit = async () => {
-    if (!confirm('Are you sure you want to delete this brand kit?')) return;
+  const handleDeleteKit = () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteKit = async () => {
+    setIsDeletingKit(true);
     try {
       await apiFetch(`/brand-kits/${id}`, { method: 'DELETE' });
       toast.success('Brand kit deleted');
       router.push('/brand');
     } catch (err) {
       toast.error('Failed to delete brand kit');
+      setIsDeletingKit(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -258,6 +268,15 @@ export default function BrandKitDetailPage() {
         onClose={() => setShowLogoModal(false)} 
         onSelect={handleAddLogo} 
         workspaceId={activeWorkspace?.id} 
+      />
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDeleteKit}
+        isDeleting={isDeletingKit}
+        title="Delete Brand Kit"
+        message="Are you sure you want to delete this brand kit? This will permanently remove all associated colors, fonts, and logo references."
+        confirmText="Delete permanently"
       />
     </div>
   );

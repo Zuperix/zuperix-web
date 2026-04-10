@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { expectShowing } from './helpers';
 
+const categoriesHeadingPattern = /Cat(?:eogry|egory) Management/i;
+
 test.describe('category asset counts', () => {
   test('verify asset counts recursively (up to 10)', async ({ page }) => {
     await page.goto('/categories');
-    // Fix: Updated heading to match actual UI
-    await expect(page.getByRole('heading', { name: /Taxonomy Management/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: categoriesHeadingPattern })).toBeVisible();
 
     let verifiedCount = 0;
     const checkedNames = new Set<string>();
@@ -57,16 +58,13 @@ test.describe('category asset counts', () => {
           checkedNames.add(name);
           verifiedCount++;
 
-          // 4. Verification Flow
           await viewBtn.click();
           const shown = Math.min(20, expectedCount);
           await expectShowing(page, shown, expectedCount);
 
-          // 5. Back to categories
           await page.goto('/categories');
-          await expect(page.getByRole('heading', { name: /Taxonomy Management/i })).toBeVisible();
+          await expect(page.getByRole('heading', { name: categoriesHeadingPattern })).toBeVisible();
           
-          // Re-trigger exploration since DOM changed significantly
           await exploreAndVerify();
           return;
         }

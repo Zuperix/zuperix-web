@@ -17,11 +17,22 @@ import { toast } from 'sonner';
  * Trash Management Page
  * Relocated to Settings dashboard. Items stay here for 30 days.
  */
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+
 export default function TrashSettingsPage() {
   const { activeWorkspace } = useWorkspace();
   const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    assetId: string | null;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    assetId: null,
+    isDeleting: false,
+  });
 
   const fetchTrash = async () => {
     if (!activeWorkspace) return;
@@ -46,14 +57,25 @@ export default function TrashSettingsPage() {
     }
   };
 
-  const handlePermanentDelete = async (id: string) => {
-    if (!confirm('This item will be permanently removed. This action cannot be undone. Are you sure?')) return;
+  const handlePermanentDelete = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      assetId: id,
+      isDeleting: false,
+    });
+  };
+
+  const confirmPermanentDelete = async () => {
+    if (!confirmModal.assetId) return;
+    setConfirmModal(prev => ({ ...prev, isDeleting: true }));
     try {
-      await apiFetch(`/assets/${id}/purge`, { method: 'DELETE' });
+      await apiFetch(`/assets/${confirmModal.assetId}/purge`, { method: 'DELETE' });
       toast.success('Asset permanently removed');
       fetchTrash();
     } catch (err) {
       toast.error('Failed to purge asset');
+    } finally {
+      setConfirmModal({ isOpen: false, assetId: null, isDeleting: false });
     }
   };
 
@@ -143,6 +165,16 @@ export default function TrashSettingsPage() {
           onClose={() => setSelectedAssetId(null)} 
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, assetId: null, isDeleting: false })}
+        onConfirm={confirmPermanentDelete}
+        isDeleting={confirmModal.isDeleting}
+        title="Permanently Remove Asset"
+        message="This item will be permanently removed. This action cannot be undone. Are you sure?"
+        confirmText="Remove permanently"
+      />
     </div>
   );
 }

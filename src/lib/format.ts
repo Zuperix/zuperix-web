@@ -25,3 +25,11 @@ export function is3D(mime?: string, filename?: string) {
     f.endsWith('.gltf')
   );
 }
+
+export function formatMinutes(seconds: number) {
+  if (seconds === 0 || isNaN(seconds)) return '0m';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  if (mins === 0) return `${secs}s`;
+  return `${mins}m ${secs}s`;
+}

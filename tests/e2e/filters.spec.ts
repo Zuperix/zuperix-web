@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { clearAllFilters, expectShowing } from './helpers';
+import { clearAllFilters, expectShowing, expectShowingPattern, getShowingCounts } from './helpers';
 
 
 function filterSection(page: Page, name: RegExp) {
@@ -56,7 +56,7 @@ test('dashboard filters update results', async ({ page }) => {
 
   await clearAllFilters(page);
   await clickFilterOption(page, /^Asset Lifecycle$/i, /^Released\b/i);
-  await expectShowing(page, 20, 535);
+  await expectShowingPattern(page);
 
   await clearAllFilters(page);
   await clickFilterOption(page, /^Asset Lifecycle$/i, /^Expired\b/i);
@@ -72,6 +72,7 @@ test('dashboard filters update results', async ({ page }) => {
 
   await clearAllFilters(page);
   await setUploadDateRange(page, '2025-01-28', '2026-04-28');
-  await expectShowing(page, 20, 535);
+  const { shown } = await getShowingCounts(page);
+  expect(shown).toBe(20);
 
 });

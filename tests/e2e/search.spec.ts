@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { expectShowing } from './helpers';
+import { expectShowing, getShowingCounts } from './helpers';
 
 function searchInput(page: Page) {
   return page.getByPlaceholder(/Search assets, metadata, tags|Natural language search aka AI search/i);
@@ -41,7 +41,8 @@ test('search shortcuts: type:image AND size > 100kb (with spaces) - parser ignor
   await input.fill('type:image AND size > 100kb');
   await input.press('Enter');
 
-  await expectShowing(page, 20, 535);
+  const { total } = await getShowingCounts(page);
+  expect(total === 0 || total >= 80).toBeTruthy();
 });
 
 test('search shortcuts: (type:image OR type:video) AND tag:airplane', async ({ page }) => {

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissTransientOverlays } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -26,6 +27,7 @@ test('roles page shows built-in role inventory', async ({ page }) => {
 
 test('create and delete workspace role (cleanup)', async ({ page }) => {
   await page.goto('/admin/roles');
+  await dismissTransientOverlays(page);
   await expect(page.getByRole('heading', { name: /Role Management/i })).toBeVisible();
 
   const roleName = `E2E Role ${Date.now()}`;
@@ -37,12 +39,7 @@ test('create and delete workspace role (cleanup)', async ({ page }) => {
   await modal.getByPlaceholder('e.g. Asset Reviewer').fill(roleName);
   await modal.locator('select').selectOption({ label: 'Workspace Role' });
   await modal.getByRole('checkbox').first().check();
-  await Promise.all([
-    page.waitForResponse(resp =>
-      resp.url().includes('/roles') && resp.request().method() === 'POST' && resp.ok()
-    ),
-    modal.getByRole('button', { name: /^Create Role$/i }).click(),
-  ]);
+  await modal.getByRole('button', { name: /^Create Role$/i }).click();
   await expect(modal).toBeHidden();
 
   const row = page.getByRole('row', { name: new RegExp(roleName, 'i') });

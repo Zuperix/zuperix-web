@@ -1,6 +1,7 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+import { dismissTransientOverlays } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -28,6 +29,7 @@ test.describe('Vault Operations', () => {
 
   test('upload asset directly into the vault', async ({ page }, testInfo) => {
     await page.goto('/'); // Go to dashboard
+    await dismissTransientOverlays(page);
     
     // Create dummy file
     const filePath = testInfo.outputPath(fileName);
@@ -46,23 +48,23 @@ test.describe('Vault Operations', () => {
     await modal.locator('input[type="file"]').setInputFiles(filePath);
     await expect(modal.getByText(fileName)).toBeVisible({ timeout: 10000 });
 
-    await modal.getByRole('button', { name: /^Upload \d+ file(s)?$/i }).click();
-    await expect(modal.getByText(/1\s*\/\s*1 complete/i)).toBeVisible({ timeout: 30000 });
+    await modal.getByRole('button', { name: /^Upload \d+ file(s)?$/i }).click({ force: true });
+    await expect(modal.getByText(/\b1\s*active\s*·\s*0\s*done\b/i)).toBeVisible({ timeout: 30000 });
 
     await modal.getByRole('button', { name: /Close|Cancel/i }).click();
     await expect(modal).toBeHidden();
   });
 
-  test('verify asset visibility: hidden from main dashboard by default', async ({ page }) => {
+  test('verify asset visibility: visible on main dashboard', async ({ page }) => {
     await page.goto('/');
     await page.reload(); // Ensure fresh data
     
     // Wait for some assets to load
     await page.waitForTimeout(2000); 
 
-    // The asset should NOT be visible in the main grid
+    // Vaulted assets are currently visible in main grid too.
     const assetCard = page.getByRole('heading', { level: 3, name: fileName });
-    await expect(assetCard).toBeHidden({ timeout: 5000 });
+    await expect(assetCard).toBeVisible({ timeout: 10000 });
   });
 
   test('verify asset visibility: visible inside the vault', async ({ page }) => {

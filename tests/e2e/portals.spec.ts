@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissTransientOverlays } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -86,6 +87,7 @@ test('portal detail page has Page Builder and Raw Assets tabs', async ({ page })
 
 test('search and add 3 assets to portal', async ({ page }) => {
   await page.goto('/portals');
+  await dismissTransientOverlays(page);
   
   const slugText = `/p/${portalSlug}`;
   const portalCard = page.locator('.group.flex.flex-col').filter({ hasText: slugText });
@@ -100,16 +102,26 @@ test('search and add 3 assets to portal', async ({ page }) => {
   await page.getByPlaceholder('Search your library...').fill('test');
   await page.getByPlaceholder('Search your library...').press('Enter');
 
-  await expect(page.getByRole('button', { name: /Add to Portal/i }).first()).toBeVisible({ timeout: 10000 });
+  const addButtons = page.getByRole('button', { name: /Add to Portal/i });
+  await expect(addButtons.first()).toBeVisible({ timeout: 10000 });
 
-  await page.getByRole('button', { name: /Add to Portal/i }).first().click();
-  await expect(page.getByText(/Asset added to portal/i).first()).toBeVisible({ timeout: 10000 });
+  for (let i = 0; i < 3; i++) {
+    const count = await addButtons.count();
+    let clicked = false;
 
-  await page.getByRole('button', { name: /Add to Portal/i }).first().click();
-  await expect(page.getByText(/Asset added to portal/i).first()).toBeVisible({ timeout: 10000 });
+    for (let j = 0; j < count; j++) {
+      const btn = addButtons.nth(j);
+      const label = ((await btn.textContent()) || '').trim();
+      if ((await btn.isEnabled()) && !/Already in Portal/i.test(label)) {
+        await btn.click();
+        clicked = true;
+        break;
+      }
+    }
 
-  await page.getByRole('button', { name: /Add to Portal/i }).first().click();
-  await expect(page.getByText(/Asset added to portal/i).first()).toBeVisible({ timeout: 10000 });
+    expect(clicked).toBeTruthy();
+    await expect(page.getByText(/Asset added to portal/i).first()).toBeVisible({ timeout: 10000 });
+  }
 
   const drawerHeader = page.getByRole('heading', { name: /Add Assets from Library/i });
   await drawerHeader.locator('..').locator('button').click();

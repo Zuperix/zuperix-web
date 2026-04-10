@@ -23,6 +23,8 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
 
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+
 export default function CollectionsPage() {
   const { collections, createCollection, updateCollection, deleteCollection, refresh } = useCollections();
   const { activeWorkspace } = useWorkspace();
@@ -34,6 +36,8 @@ export default function CollectionsPage() {
   const [isGlobal, setIsGlobal] = useState(false);
   const [smartFilter, setSmartFilter] = useState<any>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<{ id: string } | null>(null);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -79,12 +83,20 @@ export default function CollectionsPage() {
     setSmartFilter(col.smart_filter || {});
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure?')) return;
+  const handleDelete = (id: string) => {
+    setShowDeleteModal({ id });
+  };
+
+  const confirmDelete = async () => {
+    if (!showDeleteModal) return;
+    setIsDeleting(true);
     try {
-      await deleteCollection(id);
+      await deleteCollection(showDeleteModal.id);
+      setShowDeleteModal(null);
     } catch (err) {
       console.error('Failed to delete collection');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -406,6 +418,16 @@ export default function CollectionsPage() {
           ))
         )}
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={!!showDeleteModal}
+        onClose={() => setShowDeleteModal(null)}
+        onConfirm={confirmDelete}
+        isDeleting={isDeleting}
+        title="Delete Collection"
+        message="Are you sure you want to delete this collection? This action cannot be undone, though the individual assets within it will not be deleted."
+        confirmText="Delete permanently"
+      />
     </div>
   );
 }

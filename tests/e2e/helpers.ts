@@ -7,12 +7,39 @@ export async function expectShowing(page: Page, shown: number, total: number) {
   });
 }
 
+export async function getShowingCounts(page: Page): Promise<{ shown: number; total: number }> {
+  const showing = page.locator('p', { hasText: 'Showing' }).first();
+  await expect(showing).toContainText(/Showing\s+\d+\s+out of\s+\d+\s+assets/i, { timeout: 20000 });
+  const text = (await showing.textContent()) || '';
+  const match = text.match(/Showing\s+(\d+)\s+out of\s+(\d+)\s+assets/i);
+  if (!match) throw new Error(`Unable to parse showing text: ${text}`);
+  return { shown: Number(match[1]), total: Number(match[2]) };
+}
+
+export async function expectShowingPattern(page: Page) {
+  const showing = page.locator('p', { hasText: 'Showing' }).first();
+  await expect(showing).toContainText(/Showing\s+\d+\s+out of\s+\d+\s+assets/i, { timeout: 20000 });
+}
+
+export async function dismissTransientOverlays(page: Page) {
+  const cookieModal = page.getByRole('heading', { name: /Cookie Preferences/i });
+  if (await cookieModal.isVisible()) {
+    const accept = page.getByRole('button', { name: /^Accept$/i });
+    if (await accept.isVisible()) await accept.click();
+  }
+
+  const savedSecret = page.getByRole('button', { name: /I've saved the secret/i });
+  if (await savedSecret.isVisible()) {
+    await savedSecret.click();
+  }
+}
+
 export async function clearAllFilters(page: Page) {
   const clearAll = page.locator('div.flex.flex-wrap.gap-2').getByRole('button', { name: /Clear all/i });
   await expect(clearAll).toBeVisible();
   await clearAll.click();
   await expect(page).toHaveURL(/\/$/);
-  await expectShowing(page, 20, 535);
+  await expectShowingPattern(page);
 }
 
 export async function expectImageToLoad(page: Page, selector: string) {

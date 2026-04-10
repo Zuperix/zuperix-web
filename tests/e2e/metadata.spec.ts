@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissTransientOverlays } from './helpers';
 
 test.describe('Metadata Management', () => {
   const firstAssetSelector = '[data-asset-id]';
@@ -70,8 +71,9 @@ test.describe('Metadata Management', () => {
     fs.writeFileSync(tempCsvPath, csvContent);
 
     try {
-      await page.goto('/settings/metadata');
-      await page.getByRole('button', { name: /Bulk Import \(CSV\)/i }).click();
+    await page.goto('/settings/metadata');
+    await dismissTransientOverlays(page);
+    await page.getByRole('button', { name: /Bulk Import \(CSV\)/i }).click();
       
       // Wait for the file input to be present in DOM
       // Use a specific selector to avoid strict mode violation with visual-search-upload
@@ -82,7 +84,7 @@ test.describe('Metadata Management', () => {
       // Wait for the Start Import button to become enabled (file accepted)
       const startImportBtn = page.getByRole('button', { name: /Start Import/i });
       await expect(startImportBtn).toBeEnabled({ timeout: 5000 });
-      await startImportBtn.click();
+      await startImportBtn.click({ force: true });
       
       // Success Notification
       await expect(page.getByText('Bulk Import Started', { exact: true })).toBeVisible({ timeout: 10000 });
