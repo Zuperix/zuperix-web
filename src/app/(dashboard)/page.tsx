@@ -7,6 +7,7 @@ import { apiFetch } from '@/lib/api';
 import { useMarqueeSelection } from '@/hooks/useMarqueeSelection';
 import AssetGrid from '@/components/AssetGrid';
 import UploadModal from '@/components/UploadModal';
+import GuestUploadLinkDialog from '@/components/GuestUploadLinkDialog';
 import MetadataPanel from '@/components/MetadataPanel';
 import FilterSidebar from '@/components/FilterSidebar';
 import DuplicateFinderModal from '@/components/DuplicateFinderModal';
@@ -20,7 +21,8 @@ import {
   ChevronRightIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
-  SquaresPlusIcon
+  SquaresPlusIcon,
+  LinkIcon
 } from '@heroicons/react/24/outline';
 import BulkActionToolbar from '@/components/BulkActionToolbar';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
@@ -199,6 +201,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [isClearingAllFilters, setIsClearingAllFilters] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isGuestLinkOpen, setIsGuestLinkOpen] = useState(false);
   const { sidebarCollapsed, setSidebarCollapsed, isFilterOpen, setIsFilterOpen } = useLayout();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
@@ -529,6 +532,15 @@ function DashboardContent() {
                   />
                   <PermissionGate action={Action.Create} subject="Asset" workspaceId={activeWorkspace.id}>
                     <button
+                      onClick={() => setIsGuestLinkOpen(true)}
+                      className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 border border-gray-200 dark:border-gray-700 sm:border-transparent rounded-xl transition-all shrink-0"
+                      title="Generate Public Upload Link"
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                    </button>
+                  </PermissionGate>
+                  <PermissionGate action={Action.Create} subject="Asset" workspaceId={activeWorkspace.id}>
+                    <button
                       onClick={() => setIsUploadOpen(true)}
                       className="flex-1 flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 active:scale-95 shrink-0"
                     >
@@ -591,6 +603,13 @@ function DashboardContent() {
           workspaceId={activeWorkspace.id}
           onClose={() => setIsUploadOpen(false)}
           onSuccess={fetchAssets}
+        />
+      )}
+
+      {isGuestLinkOpen && (
+        <GuestUploadLinkDialog
+          workspaceId={activeWorkspace.id}
+          onClose={() => setIsGuestLinkOpen(false)}
         />
       )}
 
