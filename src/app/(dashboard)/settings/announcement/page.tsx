@@ -9,8 +9,11 @@ import {
   InformationCircleIcon, 
   ExclamationTriangleIcon, 
   ExclamationCircleIcon,
-  TrashIcon
+  CheckCircleIcon,
+  TrashIcon,
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function AnnouncementSettingsPage() {
@@ -101,7 +104,16 @@ export default function AnnouncementSettingsPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-10 px-6">
+    <div className="max-w-4xl mx-auto py-10 px-6 animate-in fade-in slide-in-from-top-4 duration-500">
+      <Link 
+        href="/settings" 
+        className="group flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-all w-fit"
+      >
+        <div className="p-2 rounded-xl bg-gray-900 border border-gray-800 group-hover:bg-gray-800 transition-colors">
+          <ArrowLeftIcon className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-medium">Back to settings</span>
+      </Link>
       <div className="mb-8 p-6 bg-gray-900/40 border border-gray-800 rounded-3xl">
         <div className="flex items-center gap-4 mb-6">
           <div className="p-3 bg-indigo-500/10 rounded-2xl">
