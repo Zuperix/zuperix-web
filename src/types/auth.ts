@@ -42,6 +42,11 @@ export interface User {
     is_onboarding_completed: boolean;
     is_single_category_enabled: boolean;
     plan?: string;
+    announcement_header?: string | null;
+    announcement_description?: string | null;
+    announcement_start_at?: string | null;
+    announcement_end_at?: string | null;
+    announcement_style?: string;
   };
   roles?: Role[];
   workspace_members?: WorkspaceMember[];

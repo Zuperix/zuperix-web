@@ -9,7 +9,8 @@ import {
   AdjustmentsHorizontalIcon,
   CpuChipIcon,
   TrashIcon,
-  CreditCardIcon
+  CreditCardIcon,
+  MegaphoneIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
@@ -61,6 +62,14 @@ const BASE_SETTINGS_SECTIONS = [
     icon: AdjustmentsHorizontalIcon,
     href: '/settings/features',
     color: 'bg-emerald-500/10 text-emerald-400',
+  },
+  {
+    id: 'announcement',
+    name: 'Announcement Banner',
+    description: 'Configure organization-wide announcement banners for all members.',
+    icon: MegaphoneIcon,
+    href: '/settings/announcement',
+    color: 'bg-indigo-500/10 text-indigo-400',
   }
 ];
 
