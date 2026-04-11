@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { XMarkIcon, TrashIcon, ExclamationTriangleIcon, LinkIcon, DocumentDuplicateIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import GenericConfirmationModal, { ConfirmationVariant } from './GenericConfirmationModal';
 
 interface LinkData {
   id: string;
@@ -19,6 +20,7 @@ interface LinkData {
   expires_at: string | null;
   is_active: boolean;
   created_at: string;
+  name: string;
 }
 
 export default function ManageGuestLinksModal({
@@ -33,6 +35,12 @@ export default function ManageGuestLinksModal({
   const [error, setError] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const { user } = useAuth();
+
+  // Confirmation modal state
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [activeLinkId, setActiveLinkId] = useState<string | null>(null);
+  const [actionType, setActionType] = useState<'delete' | 'disable' | 'enable' | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Super admin logic 
   const isSuperAdmin = user?.system_role === 'SUPER_ADMIN';
@@ -58,22 +66,61 @@ export default function ManageGuestLinksModal({
     fetchLinks();
   }, [workspaceId, isSuperAdmin, user?.id]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this link? Guests will immediately lose access.')) return;
+  const handleActionRequest = (id: string, type: 'delete' | 'disable' | 'enable') => {
+    setActiveLinkId(id);
+    setActionType(type);
+    setConfirmationOpen(true);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!activeLinkId || !actionType) return;
     try {
-      await apiFetch(`/guest-uploads/links/${id}`, { method: 'DELETE' });
-      setLinks(prev => prev.filter(l => l.id !== id));
-    } catch (err) {
-      alert('Failed to delete link');
+      setIsProcessing(true);
+      if (actionType === 'delete') {
+        await apiFetch(`/guest-uploads/links/${activeLinkId}`, { method: 'DELETE' });
+        setLinks(prev => prev.filter(l => l.id !== activeLinkId));
+      } else if (actionType === 'disable') {
+        await apiFetch(`/guest-uploads/links/${activeLinkId}/disable`, { method: 'POST' });
+        setLinks(prev => prev.map(l => l.id === activeLinkId ? { ...l, is_active: false } : l));
+      } else if (actionType === 'enable') {
+        await apiFetch(`/guest-uploads/links/${activeLinkId}/enable`, { method: 'POST' });
+        setLinks(prev => prev.map(l => l.id === activeLinkId ? { ...l, is_active: true } : l));
+      }
+      setConfirmationOpen(false);
+      setActiveLinkId(null);
+      setActionType(null);
+    } catch (err: any) {
+      alert(`Failed to ${actionType} link: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleDisable = async (id: string) => {
-    try {
-      await apiFetch(`/guest-uploads/links/${id}/disable`, { method: 'POST' });
-      setLinks(prev => prev.map(l => l.id === id ? { ...l, is_active: false } : l));
-    } catch (err) {
-      alert('Failed to disable link');
+  const getModalConfig = () => {
+    switch (actionType) {
+      case 'delete':
+        return {
+          title: 'Delete Guest Link',
+          message: 'Are you sure you want to delete this link? Guests will immediately lose access and this action cannot be undone.',
+          confirmText: 'Delete Link',
+          variant: 'danger' as ConfirmationVariant,
+        };
+      case 'disable':
+        return {
+          title: 'Disable Guest Link',
+          message: 'Are you sure you want to disable this link? Guests will temporarily lose access.',
+          confirmText: 'Disable Link',
+          variant: 'warning' as ConfirmationVariant,
+        };
+      case 'enable':
+        return {
+          title: 'Enable Guest Link',
+          message: 'Are you sure you want to re-enable this link? Guests will be able to upload assets again.',
+          confirmText: 'Enable Link',
+          variant: 'success' as ConfirmationVariant,
+        };
+      default:
+        return { title: '', message: '', confirmText: 'Confirm', variant: 'primary' as ConfirmationVariant };
     }
   };
 
@@ -124,8 +171,14 @@ export default function ManageGuestLinksModal({
               {links.map(link => (
                 <div key={link.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:shadow-md">
                   <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate" title={link.name}>
+                        {link.name}
+                      </h3>
+                    </div>
+
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
                         link.is_active 
                           ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                           : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -174,17 +227,24 @@ export default function ManageGuestLinksModal({
                         <DocumentDuplicateIcon className="h-4 w-4 text-gray-500 dark:text-gray-300" />
                       )}
                     </button>
-                    {link.is_active && (
+                    {link.is_active ? (
                       <button
-                        onClick={() => handleDisable(link.id)}
-                        className="px-3 py-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 rounded-lg transition-colors border border-amber-200/50 dark:border-amber-800/50"
+                        onClick={() => handleActionRequest(link.id, 'disable')}
+                        className="px-3 py-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 rounded-lg transition-all border border-amber-200/50 dark:border-amber-800/50 active:scale-95"
                       >
                         Disable
                       </button>
+                    ) : (
+                      <button
+                        onClick={() => handleActionRequest(link.id, 'enable')}
+                        className="px-3 py-1.5 text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 rounded-lg transition-all border border-green-200/50 dark:border-green-800/50 active:scale-95"
+                      >
+                        Enable
+                      </button>
                     )}
                     <button
-                      onClick={() => handleDelete(link.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+                      onClick={() => handleActionRequest(link.id, 'delete')}
+                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors active:scale-95"
                       title="Delete Link"
                     >
                       <TrashIcon className="h-4 w-4" />
@@ -196,6 +256,14 @@ export default function ManageGuestLinksModal({
           )}
         </div>
       </div>
+
+      <GenericConfirmationModal
+        isOpen={confirmationOpen}
+        onClose={() => setConfirmationOpen(false)}
+        onConfirm={handleConfirmAction}
+        isLoading={isProcessing}
+        {...getModalConfig()}
+      />
     </div>
   );
 }

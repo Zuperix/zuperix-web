@@ -26,7 +26,7 @@ export async function generateMetadata(
     }
   } catch (e) {}
 
-  return { title: `Portal: ${slug}`, description: 'Shared assets from Open DAM' };
+  return { title: `Portal: ${slug}`, description: 'Shared assets from Zuperix' };
 }
 
 export default async function Page({ params }: Props) {

@@ -20,6 +20,8 @@ export default function GuestUploadLinkDialog({
   const [tagsInput, setTagsInput] = useState<string>('');
   const [allowMetadataEdit, setAllowMetadataEdit] = useState<boolean>(false);
   const [expiresInDays, setExpiresInDays] = useState<number | ''>('');
+  const [linkName, setLinkName] = useState<string>('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const { categories } = useCategories();
   const { fields: metadataFields } = useMetadataFields(workspaceId);
@@ -61,10 +63,17 @@ export default function GuestUploadLinkDialog({
   const flatCategories = flattenCategories(categories);
 
   const handleGenerate = async () => {
+    if (!linkName.trim()) {
+      setErrors({ name: 'Link name is required' });
+      return;
+    }
+    setErrors({});
+
     setLoading(true);
     try {
       const payload: any = {
         workspace_id: workspaceId,
+        name: linkName.trim(),
         allowed_types: allowedTypes,
         allow_metadata_edit: false, // Force false as per new requirement
       };
@@ -138,6 +147,21 @@ export default function GuestUploadLinkDialog({
             <>
               {/* Settings Form */}
               <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">
+                    Link Name <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Guest Uploads - Campaign June" 
+                    value={linkName} 
+                    onChange={e => setLinkName(e.target.value)}
+                    className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border ${errors.name ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-sm outline-none focus:ring-2 ${errors.name ? 'focus:ring-red-500/20' : 'focus:ring-blue-500/20'} focus:border-blue-500`}
+                    required
+                  />
+                  {errors.name && <p className="text-[10px] text-red-500 mt-1 ml-1">{errors.name}</p>}
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Max Uploads</label>

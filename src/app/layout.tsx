@@ -4,7 +4,7 @@ import "./globals.css";
 import Script from "next/script";
 
 import { AuthProvider } from "@/context/AuthContext";
-import { FliptProvider } from "@/providers/FliptProvider";
+import { LaunchDarklyProvider } from "@/providers/LaunchDarklyProvider";
 import { PostHogProvider } from "@/providers/PostHogProvider";
 import { ConsentBanner } from "@/components/ConsentBanner";
 
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
 };
 
-import { Toaster } from 'sonner';
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -43,9 +43,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <PostHogProvider>
-            <FliptProvider>
-              {children}
-            </FliptProvider>
+            <LaunchDarklyProvider>{children}</LaunchDarklyProvider>
             <ConsentBanner />
           </PostHogProvider>
         </AuthProvider>

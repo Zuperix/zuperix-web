@@ -20,6 +20,7 @@ test.describe('Guest Upload Links', () => {
     await expect(page.locator('text=Generate Public Upload Link')).toBeVisible();
 
     // Configure and Generate
+    await page.fill('input[placeholder="e.g. Guest Uploads - Campaign June"]', 'E2E Test Link');
     await page.fill('input[placeholder="Unlimited"]', '5');
     await page.click('button:has-text("Generate Link")');
 
