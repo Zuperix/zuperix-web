@@ -63,6 +63,7 @@ import StarRating from '@/components/StarRating';
 import TranscriptionPanel from '@/components/TranscriptionPanel';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import { MicrophoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { MetadataFieldInput } from '@/components/metadata/MetadataFieldInput';
 
 interface Field {
   id: string;
@@ -104,6 +105,7 @@ export default function AssetDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [isNotFound, setIsNotFound] = useState(false);
   const [success, setSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('file-info');
   const [showEmptyFields, setShowEmptyFields] = useState(false);
@@ -309,7 +311,11 @@ export default function AssetDetailPage() {
       });
       setValues(valueMap);
     } catch (err: any) {
-      setError('Failed to load asset details');
+      if (err.message?.includes('404') || err.message?.toLowerCase().includes('not found')) {
+        setIsNotFound(true);
+      } else {
+        setError('Failed to load asset details');
+      }
       console.error(err);
     } finally {
       setLoading(false);
@@ -729,6 +735,72 @@ export default function AssetDetailPage() {
     // Switch to comments tab to focus the input
     setActiveTab('comments');
   };
+
+  if (isNotFound) {
+    return (
+      <div className="flex flex-col h-screen bg-white dark:bg-[#0f111a] overflow-hidden">
+        {/* Simplified Header */}
+        <div className="flex items-center px-6 h-12 bg-gray-50 dark:bg-[#1a1c26] border-b border-gray-200 dark:border-gray-800/60 transition-all">
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-all group"
+          >
+            <ChevronLeftIcon className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
+            Back to Dashboard
+          </button>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="relative mb-12">
+            {/* Background Glow */}
+            <div className="absolute inset-0 bg-blue-500/20 dark:bg-blue-500/10 blur-[100px] rounded-full" />
+            
+            {/* 404 Illustration placeholder/Card */}
+            <div className="relative flex items-center justify-center w-32 h-32 md:w-48 md:h-48 bg-white dark:bg-[#151720] rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-gray-800 animate-in zoom-in-95 duration-700">
+              <div className="flex flex-col items-center gap-4">
+                <ExclamationTriangleIcon className="w-16 h-16 md:w-24 md:h-24 text-blue-500 opacity-80" />
+                <div className="flex gap-1">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-blue-500/30 animate-pulse" style={{ animationDelay: `${i * 200}ms` }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="max-w-2xl space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-3xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+                Asset Not Found
+              </h2>
+              <div className="h-1 w-20 bg-blue-600 mx-auto rounded-full animate-in grow-x duration-1000 delay-300" />
+            </div>
+            
+            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 font-medium max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+              This asset might have been deleted, moved, or you might not have permission to view it, or it never existed in the first place.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+              <button
+                onClick={() => router.back()}
+                className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                Go Back
+              </button>
+              <button
+                onClick={() => router.push('/')}
+                className="w-full sm:w-auto px-8 py-4 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-900 dark:text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] border border-transparent dark:border-white/10 flex items-center justify-center gap-2"
+              >
+                <MagnifyingGlassIcon className="h-4 w-4" />
+                Search Assets
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading && !asset) {
     return (
@@ -1408,18 +1480,12 @@ export default function AssetDetailPage() {
                     {fields
                       .filter(f => showEmptyFields || values[f.id])
                       .map(field => (
-                        <div key={field.id} className="space-y-3 group/field">
-                          <label className="flex items-center gap-2 text-[10px] font-extrabold text-gray-400 group-focus-within/field:text-blue-500 uppercase tracking-widest transition-colors">
-                            {field.label}
-                            {field.isRequired && <span className="text-red-500">*</span>}
-                          </label>
-                          <input
-                            type="text"
-                            className={`w-full px-5 py-3.5 bg-gray-50/50 dark:bg-[#0a0b10] border-2 border-transparent focus:border-blue-500/30 dark:focus:border-blue-500/20 rounded-2xl outline-none text-sm font-bold transition-all ${isLocked ? 'opacity-60 cursor-not-allowed group-focus-within/field:border-gray-200 dark:group-focus-within/field:border-gray-800' : 'hover:bg-gray-100/50 dark:hover:bg-[#1a1c26]'}`}
-                            value={values[field.id] || ''}
-                            onChange={(e) => updateValue(field.id, e.target.value)}
+                        <div key={field.id}>
+                          <MetadataFieldInput
+                            field={field}
+                            value={values[field.id]}
+                            onChange={(val) => updateValue(field.id, val)}
                             disabled={isLocked}
-                            placeholder={isLocked ? 'Locked during workflow' : `Enter ${field.label}...`}
                           />
                         </div>
                       ))}

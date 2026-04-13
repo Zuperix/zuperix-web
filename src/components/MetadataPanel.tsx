@@ -56,6 +56,7 @@ import { PermissionGate } from './PermissionGate';
 import { Action } from '@/types/auth';
 import { splitFileName, joinFileName } from '@/lib/naming';
 import { toast } from 'sonner';
+import { MetadataFieldInput } from './metadata/MetadataFieldInput';
 
 export default function MetadataPanel({ 
   assetId, 
@@ -417,51 +418,13 @@ export default function MetadataPanel({
                   </div>
                 ) : (
                   fields.map(field => (
-                    <div key={field.id} className="space-y-2 group">
-                      <label className="block text-[10px] font-bold text-gray-500 group-focus-within:text-blue-400 uppercase tracking-widest transition-colors">
-                        {field.label}
-                        {field.isRequired && <span className="text-red-500 ml-1">*</span>}
-                      </label>
-                      
-                      {field.fieldType === 'string' || field.fieldType === 'url' || field.fieldType === 'email' ? (
-                        <input
-                          type="text"
-                          className="w-full px-3 py-2 text-sm bg-gray-800/50 border border-gray-700/50 rounded-lg focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all text-gray-200 outline-none"
-                          value={values[field.id] || ''}
-                          onChange={(e) => updateValue(field.id, e.target.value)}
-                        />
-                      ) : field.fieldType === 'text' ? (
-                        <textarea
-                          rows={3}
-                          className="w-full px-3 py-2 text-sm bg-gray-800/50 border border-gray-700/50 rounded-lg focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all text-gray-200 outline-none resize-none"
-                          value={values[field.id] || ''}
-                          onChange={(e) => updateValue(field.id, e.target.value)}
-                        />
-                      ) : field.fieldType === 'boolean' ? (
-                        <div className="flex items-center gap-3">
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="sr-only peer"
-                              checked={values[field.id] || false}
-                              onChange={(e) => updateValue(field.id, e.target.checked)}
-                            />
-                            <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                          </label>
-                          <span className="text-xs text-gray-400 font-medium">Enabled</span>
-                        </div>
-                      ) : field.fieldType === 'integer' || field.fieldType === 'float' ? (
-                        <input
-                          type="number"
-                          step={field.fieldType === 'float' ? '0.01' : '1'}
-                          className="w-full px-3 py-2 text-sm bg-gray-800/50 border border-gray-700/50 rounded-lg focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all text-gray-200 outline-none"
-                          value={values[field.id] || ''}
-                          onChange={(e) => updateValue(field.id, field.fieldType === 'integer' ? parseInt(e.target.value) : parseFloat(e.target.value))}
-                        />
-                      ) : (
-                        <div className="text-[10px] text-gray-600 italic">Unsupported type: {field.fieldType}</div>
-                      )}
-                    </div>
+                    <MetadataFieldInput
+                      key={field.id}
+                      field={field}
+                      value={values[field.id]}
+                      onChange={(val) => updateValue(field.id, val)}
+                      disabled={saving}
+                    />
                   ))
                 )}
               </div>

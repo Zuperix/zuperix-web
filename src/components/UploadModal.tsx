@@ -25,6 +25,7 @@ import { useVaults } from '@/hooks/useVaults';
 import { useMetadataFields, MetadataField } from '@/hooks/useMetadataFields';
 import { LockClosedIcon } from '@heroicons/react/20/solid';
 import PdfPreview from './PdfPreview';
+import { MetadataFieldInput } from './metadata/MetadataFieldInput';
 
 const CONCURRENCY = 5;
 const MAX_FILES = 500;
@@ -597,38 +598,12 @@ export default function UploadModal({
                   {metadataFields
                     .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase()))
                     .map((field) => (
-                    <div key={field.id} className="space-y-1 group">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide group-focus-within:text-blue-500 transition-colors truncate">
-                          {field.label}
-                        </label>
-                        <span className="text-[8px] font-medium text-gray-600 dark:text-gray-500 uppercase tracking-tighter">
-                          {field.field_type}
-                        </span>
-                      </div>
-                      
-                      {field.field_type === 'boolean' ? (
-                        <div className="flex items-center h-9 px-3 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl">
-                          <label className="flex items-center gap-2 cursor-pointer w-full">
-                            <input
-                              type="checkbox"
-                              checked={initialMetadata[field.key] || false}
-                              onChange={(e) => setInitialMetadata(prev => ({ ...prev, [field.key]: e.target.checked }))}
-                              className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 transition-all"
-                            />
-                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Enabled</span>
-                          </label>
-                        </div>
-                      ) : (
-                        <input
-                          type={field.field_type === 'integer' || field.field_type === 'float' ? 'number' : 'text'}
-                          value={initialMetadata[field.key] || ''}
-                          onChange={(e) => setInitialMetadata(prev => ({ ...prev, [field.key]: e.target.value }))}
-                          placeholder={`Enter ${field.label.toLowerCase()}...`}
-                          className="w-full px-3 py-2 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium placeholder:text-gray-600"
-                        />
-                      )}
-                    </div>
+                      <MetadataFieldInput
+                        key={field.id}
+                        field={field}
+                        value={initialMetadata[field.key]}
+                        onChange={(val) => setInitialMetadata(prev => ({ ...prev, [field.key]: val }))}
+                      />
                   ))}
                   {metadataFields.filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
                     <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
@@ -645,8 +620,8 @@ export default function UploadModal({
         {counts.total > 0 && (
           <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-800 flex-shrink-0">
             <div className="flex items-center justify-between text-xs font-medium mb-2">
-              <span className="text-gray-600 dark:text-gray-400">
-                {counts.done + counts.duplicate} / {counts.total} complete
+              <span className="text-gray-600 dark:text-gray-400" data-testid="upload-status-text">
+                {`${counts.done + counts.duplicate} / ${counts.total} complete`}
                 {counts.error > 0 && (
                   <span className="text-red-500 ml-2">· {counts.error} failed</span>
                 )}

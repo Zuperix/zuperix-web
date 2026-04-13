@@ -10,7 +10,9 @@ import {
   SparklesIcon,
   CloudArrowUpIcon,
   ArrowRightOnRectangleIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
+import Link from "next/link";
 import { useLayout } from "@/context/LayoutContext";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -57,6 +59,8 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
+  const isBronze = user?.customer?.plan?.toLowerCase() === "bronze";
+
   const reverseSearchEnabled = useFeatureFlag(
     FEATURES.REVERSE_IMAGE_SEARCH.key,
     false,
@@ -101,9 +105,9 @@ export default function Header() {
       }
 
       const savedSemantic = localStorage.getItem("isSemantic") === "true";
-      setIsSemantic(savedSemantic);
+      setIsSemantic(isBronze ? false : savedSemantic);
     }
-  }, []);
+  }, [isBronze]);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -117,6 +121,10 @@ export default function Header() {
   };
 
   const toggleSemantic = () => {
+    if (isBronze) {
+      setShowSearchInfo(true);
+      return;
+    }
     const newState = !isSemantic;
     setIsSemantic(newState);
     localStorage.setItem("isSemantic", String(newState));
@@ -225,6 +233,8 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+
+
   return (
     <>
       <header className="h-16 bg-white/70 dark:bg-[#0f111a]/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/40 flex items-center gap-4 px-6 sticky top-0 z-50 transition-all duration-300">
@@ -280,11 +290,21 @@ export default function Header() {
                   <button
                     type="button"
                     onClick={toggleSemantic}
-                    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all duration-300 ${isSemantic ? "bg-blue-500/10 border-blue-500/50 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]" : "bg-transparent border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"}`}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all duration-300 ${
+                      isSemantic
+                        ? "bg-blue-500/10 border-blue-500/50 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
+                        : isBronze
+                          ? "bg-gray-100/50 dark:bg-gray-800/20 border-gray-200 dark:border-gray-800 text-gray-400 opacity-60 cursor-not-allowed group/locked"
+                          : "bg-transparent border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    }`}
                   >
-                    <div
-                      className={`h-1.5 w-1.5 rounded-full ${isSemantic ? "bg-blue-500 animate-pulse" : "bg-gray-300 dark:bg-gray-600"}`}
-                    />
+                    {isBronze ? (
+                      <LockClosedIcon className="h-3 w-3 text-gray-500" />
+                    ) : (
+                      <div
+                        className={`h-1.5 w-1.5 rounded-full ${isSemantic ? "bg-blue-500 animate-pulse" : "bg-gray-300 dark:bg-gray-600"}`}
+                      />
+                    )}
                     <span className="text-[10px] font-bold tracking-tight uppercase">
                       AI
                     </span>
@@ -319,33 +339,48 @@ export default function Header() {
                     </button>
 
                     {showSearchInfo && (
-                      <div className="absolute top-full right-0 mt-3 w-72 p-4 bg-gray-900/95 backdrop-blur-md border border-gray-700/50 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[60] animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="p-1.5 bg-blue-500/10 rounded-lg">
-                            <SparklesIcon className="h-4 w-4 text-blue-500" />
+                      <div className="absolute top-full right-0 mt-3 w-80 p-5 bg-gray-900/95 backdrop-blur-md border border-gray-700/50 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[60] animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div
+                            className={`p-1.5 rounded-lg ${isBronze ? "bg-amber-500/10" : "bg-blue-500/10"}`}
+                          >
+                            {isBronze ? (
+                              <LockClosedIcon className="h-4 w-4 text-amber-500" />
+                            ) : (
+                              <SparklesIcon className="h-4 w-4 text-blue-500" />
+                            )}
                           </div>
                           <span className="text-xs font-bold text-white uppercase tracking-wider">
-                            About AI Search
+                            {isBronze
+                              ? "Unlock Premium Search"
+                              : "About AI Search"}
                           </span>
                         </div>
-                        <p className="text-[11px] text-gray-300 leading-relaxed font-medium">
-                          Natural language search (Semantic Search) uses CLIP
-                          embeddings to find assets based on{" "}
-                          <span className="text-blue-400">visual concepts</span>{" "}
-                          rather than just keywords. AI analysis can
-                          occasionally vary, so please verify results for
-                          critical workflows.
+                        <p className="text-[12px] text-gray-300 leading-relaxed font-medium mb-4">
+                          {isBronze
+                            ? "AI Search (Semantic Search) allows you to find assets by visual concepts and natural language. Upgrade to Silver or Gold to unlock this feature."
+                            : "Natural language search (Semantic Search) uses CLIP embeddings to find assets based on visual concepts rather than just keywords. AI analysis can occasionally vary, so please verify results for critical workflows."}
                         </p>
-                        <div className="mt-3 pt-3 border-t border-gray-800 flex items-center justify-between">
-                          <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                            Powered by Zuperix AI
-                          </span>
-                          <div className="flex gap-1">
-                            <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
-                            <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse delay-75" />
-                            <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse delay-150" />
+
+                        {isBronze ? (
+                          <Link
+                            href="/settings/billing"
+                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-[0.98]"
+                          >
+                            Upgrade Plan
+                          </Link>
+                        ) : (
+                          <div className="pt-3 border-t border-gray-800 flex items-center justify-between">
+                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                              Powered by Zuperix AI
+                            </span>
+                            <div className="flex gap-1">
+                              <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
+                              <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse delay-75" />
+                              <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse delay-150" />
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     )}
                   </div>
