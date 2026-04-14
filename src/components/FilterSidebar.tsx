@@ -18,7 +18,8 @@ import {
   XMarkIcon,
   FolderIcon,
   RectangleGroupIcon,
-  StarIcon
+  StarIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
@@ -339,6 +340,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     collection_uuids: { label: 'Collections', icon: Square3Stack3DIcon },
     uploaded_by_id: { label: 'Uploaded By', icon: IdentificationIcon },
     average_rating: { label: 'Rating', icon: StarIcon },
+    vault_uuids: { label: 'Asset Vaults', icon: LockClosedIcon },
   };
 
 

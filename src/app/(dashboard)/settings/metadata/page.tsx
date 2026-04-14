@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { BulkImport } from './BulkImport';
+import { ImportHistory } from './ImportHistory';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 
 type Field = { 
@@ -65,7 +66,7 @@ export default function MetadataManagementPage() {
     is_filterable: true,
   });
 
-  const [activeTab, setActiveTab] = useState<'fields' | 'bulk'>('fields');
+  const [activeTab, setActiveTab] = useState<'fields' | 'bulk' | 'history'>('fields');
   const [showReindexWarning, setShowReindexWarning] = useState(false);
   const [fieldToDelete, setFieldToDelete] = useState<Field | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -240,13 +241,26 @@ export default function MetadataManagementPage() {
             }`}
           >
             <TableCellsIcon className="h-4 w-4" />
-            Bulk Import (CSV)
+            Bulk Import
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+              activeTab === 'history' 
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <ArrowPathIcon className="h-4 w-4" />
+            History
           </button>
         </div>
       </div>
 
       {activeTab === 'bulk' ? (
         <BulkImport workspaceId={activeWorkspace.id} />
+      ) : activeTab === 'history' ? (
+        <ImportHistory workspaceId={activeWorkspace.id} />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Create Form */}

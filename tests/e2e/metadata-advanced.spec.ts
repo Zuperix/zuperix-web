@@ -333,12 +333,31 @@ test.describe('Advanced Metadata & Complex Types', () => {
     await uploadModal.getByRole('button', { name: /Close|Cancel/i }).click();
     await expect(uploadModal).toBeHidden();
 
+    // Navigate to home and wait for asset to appear with retries (search indexing lag)
     await page.goto('/');
-    await dismissTransientOverlays(page);
-    await page.waitForSelector('[data-asset-id]', { state: 'visible', timeout: 20000 });
+    await expect(async () => {
+      const card = page.locator(`[data-asset-id="${capturedId}"]`);
+      if (await card.isVisible()) return;
 
-    const assetCard = page.locator('[data-asset-id]', { hasText: testFileName }).first();
-    await expect(assetCard).toBeVisible({ timeout: 30000 });
+      await page.goto('/');
+      await dismissTransientOverlays(page);
+      
+      // Clear any potential leftover filters from previous tests
+      const clearAll = page.getByRole('button', { name: /Clear all/i });
+      if (await clearAll.isVisible()) {
+        await clearAll.click();
+        await expect(clearAll).toBeHidden();
+      }
+
+      // Explicitly search for the filename
+      const searchInput = page.getByPlaceholder(/Search assets/i);
+      await searchInput.fill(testFileName);
+      await searchInput.press('Enter');
+      
+      await expect(card).toBeVisible({ timeout: 10000 });
+    }).toPass({ intervals: [5000, 10000], timeout: 90000 });
+
+    const assetCard = page.locator(`[data-asset-id="${capturedId}"]`);
     await assetCard.click();
     await expect(page).toHaveURL(/\/assets\/[0-9a-f-]+/i, { timeout: 30000 });
 
@@ -391,7 +410,7 @@ test.describe('Advanced Metadata & Complex Types', () => {
     fs.writeFileSync(csvPath, csvContent);
 
     await page.goto('/settings/metadata');
-    await page.getByRole('button', { name: /Bulk Import \(CSV\)/i }).click();
+    await page.getByRole('button', { name: /Bulk Import/i, exact: true }).click();
     await page.locator('input[type="file"][accept=".csv"]').setInputFiles(csvPath);
     await expect(page.getByRole('button', { name: /Start Import/i })).toBeEnabled();
     await page.getByRole('button', { name: /Start Import/i }).click();
@@ -403,5 +422,67 @@ test.describe('Advanced Metadata & Complex Types', () => {
       const intInput = getMetadataInput(page, `${testPrefix}_Number (Integer)`);
       await expect(intInput).toHaveValue(/^999(?:\.0+)?$/, { timeout: 5000 });
     }).toPass({ intervals: [2000, 5000, 10000], timeout: 60000 });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Test: Bulk Import Audit — Verify that failures are tracked and report is downloadable
+  // ─────────────────────────────────────────────────────────────────────────────
+  test('Metadata Bulk Import: Audit Report Verification', async ({ page }) => {
+    // 1. Create a field
+    const fieldLabel = `${testPrefix}_AuditTest`;
+    await page.goto('/settings/metadata');
+    await page.getByPlaceholder(/e\.g\. Photographer Name/i).fill(fieldLabel);
+    await page.locator('select').first().selectOption({ label: 'Short Text' });
+    await page.getByRole('button', { name: /Add Field/i }).click();
+    await expect(page.getByRole('heading', { name: fieldLabel })).toBeVisible();
+
+    // 2. Prepare CSV with one valid ID and one fake ID
+    const validAssetId = await uploadTempAsset(page, `test_${testPrefix}_audit_valid.txt`);
+    assetIdsToCleanup.push(validAssetId);
+    
+    const fieldKey = fieldLabel.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const csvContent = [
+      `asset_id,${fieldKey}`,
+      `${validAssetId},success_val`,
+      '00000000-0000-0000-0000-000000000000,fail_val' // Non-existent ID
+    ].join('\n');
+    
+    const csvPath = path.join(__dirname, `audit_${testPrefix}.csv`);
+    fs.writeFileSync(csvPath, csvContent);
+
+    // 3. Perform Import
+    await page.goto('/settings/metadata');
+    await page.getByRole('button', { name: /Bulk Import/i, exact: true }).click();
+    await page.locator('input[type="file"][accept=".csv"]').setInputFiles(csvPath);
+    await page.getByRole('button', { name: /Start Import/i }).click();
+
+    // 4. Verify Job started
+    await expect(page.getByText(/Bulk Import Started/i).first()).toBeVisible();
+    
+    // 5. Use Refresh to check status
+    const refreshBtn = page.locator('button[title="Refresh Status"]');
+    await expect(async () => {
+      await refreshBtn.click();
+      // Wait for completion indicator
+      await expect(page.getByText('Completed', { exact: true })).toBeVisible({ timeout: 5000 });
+    }).toPass({ intervals: [2000, 5000], timeout: 60000 });
+
+    // 6. Verify Summary counts
+    await expect(page.getByText('Succeeded', { exact: true })).toBeVisible();
+    await expect(page.getByText('Failed', { exact: true })).toBeVisible();
+    await expect(page.getByText('1').first()).toBeVisible();
+
+    await expect(page.getByRole('button', { name: /Audit Report/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Repair CSV/i })).toBeVisible();
+
+    // 8. Verify History Tab
+    await page.getByRole('button', { name: /History/i }).click();
+    await expect(page.getByText(/Loading history/i)).not.toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(`audit_${testPrefix}.csv`)).toBeVisible();
+    await expect(page.getByText('COMPLETED', { exact: true }).first()).toBeVisible();
+    
+    // Verify date is not "Invalid Date"
+    const dateText = await page.locator('tr').first().locator('td').first().innerText();
+    expect(dateText).not.toContain('Invalid Date');
   });
 });
