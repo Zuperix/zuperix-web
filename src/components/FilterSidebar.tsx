@@ -341,7 +341,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     category_uuids: { label: 'Categories', icon: FolderIcon },
     category_paths: { label: 'Category', icon: FolderIcon },
     collection_uuids: { label: 'Collections', icon: Square3Stack3DIcon },
-    uploaded_by_id: { label: 'Uploaded By', icon: IdentificationIcon },
+    uploaded_by_id: { label: 'Uploaded by', icon: IdentificationIcon },
     average_rating: { label: 'Rating', icon: StarIcon },
     vault_uuids: { label: 'Asset Vaults', icon: LockClosedIcon },
   };

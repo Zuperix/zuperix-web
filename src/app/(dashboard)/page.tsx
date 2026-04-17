@@ -61,6 +61,8 @@ function FilterChips({
     expiration_date: 'Expires',
     aspect_ratio: 'Aspect Ratio',
     category_paths: 'Category',
+    uploaded_by_id: 'Uploaded by',
+    average_rating: 'Rating'
   };
 
   const chips: { key: string; label: string; value: any; displayValue: string; isRange?: boolean }[] = [];
@@ -155,7 +157,7 @@ function FilterChips({
           key={`${chip.key}-${chip.value}-${i}`}
           className="group flex items-center gap-1.5 px-3 py-1.5 bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-full shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-top-1 duration-300"
         >
-          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">{chip.label}:</span>
+          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-tight">{chip.label}:</span>
           {chip.key === 'color_palette' ? (
             <div className="w-3 h-3 rounded-full border border-black/10 shadow-sm" style={{ backgroundColor: chip.value }} />
           ) : (
@@ -639,8 +641,8 @@ function DashboardContent() {
           width={downloadAsset.width || null}
           height={downloadAsset.height || null}
           mimeType={downloadAsset.mime_type}
-          previewUrl={(downloadAsset.mime_type === 'image/vnd.adobe.photoshop' || downloadAsset.mime_type === 'image/x-photoshop') 
-            ? downloadAsset.thumbnail_lg_url 
+          previewUrl={(downloadAsset.mime_type === 'image/vnd.adobe.photoshop' || downloadAsset.mime_type === 'image/x-photoshop')
+            ? downloadAsset.thumbnail_lg_url
             : (downloadAsset.asset_live_url || downloadAsset.thumbnail_lg_url)}
         />
       )}

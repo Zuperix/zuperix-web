@@ -62,7 +62,13 @@ export default function Sidebar() {
       
       // Permission-based:
       if (item.name === 'Categories') return can(Action.Read, 'Category', activeWorkspace?.id);
-      if (item.name === 'Collections') return can(Action.Read, 'Collection', activeWorkspace?.id);
+      if (item.name === 'Collections') {
+        const canManageAssets = can(Action.Create, 'Asset', activeWorkspace?.id) || 
+                               can(Action.Update, 'Asset', activeWorkspace?.id) || 
+                               can(Action.Delete, 'Asset', activeWorkspace?.id) || 
+                               can(Action.Manage, 'Asset', activeWorkspace?.id);
+        return can(Action.Read, 'Asset', activeWorkspace?.id) && canManageAssets;
+      }
       if (item.name === 'Portals') return can(Action.Read, 'Portal', activeWorkspace?.id);
       
       return true;

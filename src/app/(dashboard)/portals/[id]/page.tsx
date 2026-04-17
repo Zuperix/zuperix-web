@@ -94,8 +94,8 @@ export default function PortalDetailPage() {
       await addAssetsToPortal(id, [assetId]);
       await loadData();
       toast.success('Asset added to portal');
-    } catch (err) {
-      toast.error('Failed to add asset');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add asset');
     }
   };
 

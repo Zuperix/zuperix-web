@@ -33,7 +33,6 @@ export default function PortalsPage() {
   const [newDesc, setNewDesc] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Delete modal state
   const [portalToDelete, setPortalToDelete] = useState<Portal | null>(null);
 
   React.useEffect(() => {
@@ -48,10 +47,10 @@ export default function PortalsPage() {
       setNewSlug('');
       setNewDesc('');
       setIsAdding(false);
-      refresh(); // Refresh the list to show new portal
+      refresh();
       toast.success('Portal created successfully');
-    } catch (err) {
-      toast.error('Failed to create portal');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create portal');
     }
   };
 
@@ -61,8 +60,8 @@ export default function PortalsPage() {
       await deletePortal(portalToDelete.id);
       setPortalToDelete(null);
       toast.success('Portal deleted successfully');
-    } catch (err) {
-      toast.error('Failed to delete portal');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete portal');
     }
   };
 

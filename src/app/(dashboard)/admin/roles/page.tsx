@@ -2,7 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
-import { ShieldCheckIcon, PlusIcon, TrashIcon, CheckIcon, KeyIcon } from '@heroicons/react/24/outline';
+import { 
+  ShieldCheckIcon, 
+  PlusIcon, 
+  TrashIcon, 
+  CheckIcon, 
+  KeyIcon,
+  EyeIcon,
+  PencilSquareIcon,
+  ArrowUturnLeftIcon,
+  PlusCircleIcon,
+  Squares2X2Icon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import { toast } from 'sonner';
 
@@ -26,12 +38,13 @@ export default function RolesPage() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [newRole, setNewRole] = useState({ name: '', type: 'WORKSPACE' as const, permissionIds: [] as string[] });
+  const [newRole, setNewRole] = useState({ name: '', type: 'WORKSPACE' as 'WORKSPACE' | 'SYSTEM', permissionIds: [] as string[] });
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'roles' | 'permissions'>('roles');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
   const [isDeletingRole, setIsDeletingRole] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
 
   const fetchData = async () => {
     try {
@@ -56,20 +69,39 @@ export default function RolesPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await apiFetch('/roles', {
-        method: 'POST',
-        body: JSON.stringify(newRole),
-      });
+      if (editingRole) {
+        await apiFetch(`/roles/${editingRole.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(newRole),
+        });
+        toast.success('Role updated successfully');
+      } else {
+        await apiFetch('/roles', {
+          method: 'POST',
+          body: JSON.stringify(newRole),
+        });
+        toast.success('Role created successfully');
+      }
       setShowCreate(false);
+      setEditingRole(null);
       setNewRole({ name: '', type: 'WORKSPACE', permissionIds: [] });
       fetchData();
-      toast.success('Role created successfully');
     } catch (error) {
-      console.error('Failed to create role:', error);
-      toast.error('Failed to create role');
+      console.error('Failed to save role:', error);
+      toast.error('Failed to save role');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditRequest = (role: Role) => {
+    setEditingRole(role);
+    setNewRole({
+      name: role.name,
+      type: role.type,
+      permissionIds: role.permissions?.map(p => p.id) || []
+    });
+    setShowCreate(true);
   };
 
   const togglePermission = (id: string) => {
@@ -116,7 +148,11 @@ export default function RolesPage() {
           </div>
         </div>
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={() => {
+            setEditingRole(null);
+            setNewRole({ name: '', type: 'WORKSPACE', permissionIds: [] });
+            setShowCreate(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20 active:scale-95"
         >
           <PlusIcon className="h-4 w-4" />
@@ -142,15 +178,27 @@ export default function RolesPage() {
       </div>
 
       {showCreate && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
-            <form onSubmit={handleCreateRole}>
-              <div className="p-6 border-b border-gray-800">
-                <h2 className="text-xl font-bold text-white">New Role</h2>
-                <p className="text-xs text-gray-500 mt-1">Define properties and permissions for the new access role.</p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <form onSubmit={handleCreateRole} className="flex flex-col h-full overflow-hidden">
+              <div className="px-8 py-6 border-b border-gray-800 flex items-center justify-between flex-shrink-0 bg-gray-900 z-10">
+                <div>
+                  <h2 className="text-xl font-bold text-white">{editingRole ? 'Edit Role' : 'New Role'}</h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {editingRole ? `Update permissions for ${editingRole.name}` : 'Define properties and permissions for the new access role.'}
+                  </p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="p-2 text-gray-500 hover:text-white transition-colors"
+                >
+                  <PlusIcon className="h-5 w-5 rotate-45" />
+                </button>
               </div>
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
+              <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                  <div className="space-y-6">
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Role Name</label>
                     <input
@@ -174,27 +222,120 @@ export default function RolesPage() {
                     </select>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Assign Permissions</label>
-                  <div className="h-48 overflow-y-auto bg-gray-800/50 border border-gray-700 rounded-xl p-2 space-y-1 custom-scrollbar">
-                    {permissions.map(p => (
-                      <label key={p.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-700/50 cursor-pointer transition-colors group">
-                        <input
-                          type="checkbox"
-                          checked={newRole.permissionIds.includes(p.id)}
-                          onChange={() => togglePermission(p.id)}
-                          className="h-4 w-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500/40 bg-gray-900"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-gray-200 uppercase tracking-tight">{p.action}</span>
-                          <span className="text-[9px] text-gray-500 font-mono">{p.subject}</span>
+                <div className="md:col-span-2">
+                  <label className="block text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4">Assign Permissions</label>
+                  <div className="bg-gray-800/20 border border-gray-800/50 rounded-2xl p-6">
+                    <div className="space-y-8">
+                      {Object.entries(
+                        permissions.reduce((acc: Record<string, Permission[]>, p) => {
+                          if (!acc[p.subject]) acc[p.subject] = [];
+                          acc[p.subject].push(p);
+                          return acc;
+                        }, {})
+                      ).map(([subject, perms]) => (
+                        <div key={subject} className="space-y-4">
+                          <div className="flex items-center gap-2 border-b border-gray-800/50 pb-2">
+                            <Squares2X2Icon className="h-4 w-4 text-gray-500" />
+                            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{subject} Permissions</h3>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                            {perms.map(p => {
+                              const isSelected = newRole.permissionIds.includes(p.id);
+                              
+                              // Icon mapping based on action
+                              const getActionIcon = (action: string) => {
+                                const a = action.toLowerCase();
+                                if (a === 'read') return <EyeIcon className="h-4 w-4" />;
+                                if (a === 'create') return <PlusCircleIcon className="h-4 w-4" />;
+                                if (a === 'update' || a === 'edit') return <PencilSquareIcon className="h-4 w-4" />;
+                                if (a === 'delete') return <TrashIcon className="h-4 w-4" />;
+                                if (a === 'manage') return <ShieldCheckIcon className="h-4 w-4" />;
+                                if (a === 'revert') return <ArrowUturnLeftIcon className="h-4 w-4" />;
+                                return <InformationCircleIcon className="h-4 w-4" />;
+                              };
+
+                              const getActionColor = (action: string) => {
+                                const a = action.toLowerCase();
+                                if (a === 'delete') return isSelected ? 'bg-red-500 text-white' : 'text-red-400 group-hover:text-red-300';
+                                if (a === 'manage') return isSelected ? 'bg-indigo-500 text-white' : 'text-indigo-400 group-hover:text-indigo-300';
+                                if (a === 'create') return isSelected ? 'bg-emerald-500 text-white' : 'text-emerald-400 group-hover:text-emerald-300';
+                                return isSelected ? 'bg-blue-600 text-white' : 'text-blue-400 group-hover:text-blue-300';
+                              };
+
+                              const getPermissionDescription = (action: string, subject: string) => {
+                                const a = action.toLowerCase();
+                                const s = subject.toLowerCase();
+                                
+                                if (s === 'asset') {
+                                  if (a === 'read') return 'View and browse assets in the library';
+                                  if (a === 'create') return 'Upload and add new assets';
+                                  if (a === 'update') return 'Edit asset metadata and properties';
+                                  if (a === 'delete') return 'Permanently remove assets';
+                                  if (a === 'manage') return 'Full control over all asset operations';
+                                  if (a === 'revert') return 'Restore previous asset versions';
+                                }
+                                
+                                if (s === 'category') {
+                                  if (a === 'read') return 'View and browse asset categories';
+                                  if (a === 'create') return 'Create and organize new categories';
+                                  if (a === 'update') return 'Modify category names and properties';
+                                  if (a === 'delete') return 'Remove existing categories';
+                                  if (a === 'manage') return 'Full control over category management';
+                                }
+                              
+                                if (s === 'user') {
+                                  if (a === 'read') return 'View system users and profiles';
+                                  if (a === 'manage') return 'Manage user accounts and access';
+                                }
+                              
+                                if (s === 'workspace') {
+                                  if (a === 'manage') return 'Full administrative control of workspace';
+                                }
+                              
+                                return `Grant ${a} access to ${s} resources`;
+                              };
+
+                              return (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  onClick={() => togglePermission(p.id)}
+                                  className={`group relative flex flex-col p-3 rounded-xl border transition-all text-left h-full min-h-[90px] ${
+                                    isSelected 
+                                      ? 'bg-blue-600/10 border-blue-500/50 ring-1 ring-blue-500/20 shadow-lg shadow-blue-500/10' 
+                                      : 'bg-gray-800/40 border-gray-700/50 hover:bg-gray-800/60 hover:border-gray-600'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <div className={`p-1.5 rounded-lg ${getActionColor(p.action)} bg-opacity-10 transition-colors`}>
+                                      {getActionIcon(p.action)}
+                                    </div>
+                                    {isSelected && (
+                                      <div className="h-4 w-4 bg-blue-500 rounded-full flex items-center justify-center border border-gray-900">
+                                        <CheckIcon className="h-2.5 w-2.5 text-white" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    <span className={`text-[10px] font-bold uppercase tracking-widest block transition-colors ${isSelected ? 'text-blue-400' : 'text-gray-200'}`}>
+                                      {p.action}
+                                    </span>
+                                    <span className="text-[9px] text-gray-500 leading-relaxed group-hover:text-gray-400 transition-colors line-clamp-2">
+                                      {getPermissionDescription(p.action, subject)}
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </label>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="p-6 bg-gray-800/30 flex items-center justify-end gap-3">
+            </div>
+            <div className="px-8 py-6 bg-gray-800/30 border-t border-gray-800 flex items-center justify-end gap-3 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowCreate(false)}
@@ -207,7 +348,7 @@ export default function RolesPage() {
                   disabled={submitting}
                   className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20"
                 >
-                  {submitting ? 'Creating...' : 'Create Role'}
+                  {submitting ? 'Saving...' : editingRole ? 'Update Role' : 'Create Role'}
                 </button>
               </div>
             </form>
@@ -283,14 +424,24 @@ export default function RolesPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         {!role.isSystem && (
-                          <button
-                            onClick={() => handleDeleteRoleRequest(role.id)}
-                            aria-label={`Delete ${role.name}`}
-                            title="Delete"
-                            className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleEditRequest(role)}
+                              aria-label={`Edit ${role.name}`}
+                              title="Edit"
+                              className="p-1.5 rounded-lg text-gray-600 hover:text-blue-400 hover:bg-blue-500/10 transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <PencilSquareIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRoleRequest(role.id)}
+                              aria-label={`Delete ${role.name}`}
+                              title="Delete"
+                              className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
