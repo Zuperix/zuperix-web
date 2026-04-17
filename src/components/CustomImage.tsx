@@ -20,10 +20,11 @@ export interface CustomImageProps extends Omit<ImageProps, 'placeholder' | 'blur
  * - Standard defaults for Zuperix
  */
 const CustomImage = forwardRef<HTMLImageElement, CustomImageProps>(
-  ({ shimmerWidth = 400, shimmerHeight = 300, unoptimized = true, ...props }, ref) => {
+  ({ shimmerWidth = 400, shimmerHeight = 300, unoptimized = true, alt = "", ...props }, ref) => {
     return (
       <Image
         ref={ref}
+        alt={alt}
         placeholder="blur"
         blurDataURL={getShimmerDataUrl(shimmerWidth, shimmerHeight)}
         unoptimized={unoptimized}

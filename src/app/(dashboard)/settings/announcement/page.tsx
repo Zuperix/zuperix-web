@@ -44,6 +44,13 @@ export default function AnnouncementSettingsPage() {
   const handleSave = async () => {
     if (!customer?.id) return;
     
+    if (formData.announcementStartAt && formData.announcementEndAt) {
+      if (new Date(formData.announcementStartAt) > new Date(formData.announcementEndAt)) {
+        toast.error('End date cannot be before start date');
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       await apiFetch(`/customers/${customer.id}`, {
@@ -173,7 +180,9 @@ export default function AnnouncementSettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Active period</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Active period<span className="text-rose-500">*</span>
+                </label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
@@ -229,7 +238,13 @@ export default function AnnouncementSettingsPage() {
             </button>
             <button
               onClick={handleSave}
-              disabled={isLoading || !formData.announcementHeader || !formData.announcementDescription}
+              disabled={
+                isLoading || 
+                !formData.announcementHeader || 
+                !formData.announcementDescription ||
+                !formData.announcementStartAt ||
+                !formData.announcementEndAt
+              }
               className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98]"
             >
               {isLoading ? 'Saving...' : 'Save changes'}

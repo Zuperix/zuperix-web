@@ -14,6 +14,7 @@ import {
   TrashIcon,
   CheckIcon
 } from '@heroicons/react/24/outline';
+import { toast } from 'sonner';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import DeleteUserModal from '@/components/DeleteUserModal';
@@ -55,7 +56,6 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -80,7 +80,7 @@ export default function UsersPage() {
       setWorkspaces(workspacesData);
     } catch (err: any) {
       console.error('Failed to fetch data:', err);
-      setError(err.message);
+      toast.error(err.message || 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -102,7 +102,6 @@ export default function UsersPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
     try {
       const body = {
         ...newUser,
@@ -117,8 +116,9 @@ export default function UsersPage() {
       setShowCreate(false);
       setNewUser({ email: '', name: '', password: '', workspace_id: '', role_id: '' });
       fetchData();
+      toast.success('User created successfully');
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message || 'Failed to create user');
     } finally {
       setSubmitting(false);
     }
@@ -133,8 +133,9 @@ export default function UsersPage() {
       });
       setEditingUser({ ...editingUser, system_role: newRole });
       fetchData();
+      toast.success('System role updated');
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message || 'Failed to update system role');
     }
   };
 
@@ -146,8 +147,9 @@ export default function UsersPage() {
         body: JSON.stringify({ user_id: editingUser.id, role_id: roleId }),
       });
       fetchMemberships(editingUser.id);
+      toast.success('Member added to workspace');
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message || 'Failed to add member');
     }
   };
 
@@ -159,8 +161,9 @@ export default function UsersPage() {
         body: JSON.stringify({ role_id: roleId }),
       });
       fetchMemberships(editingUser.id);
+      toast.success('Member role updated');
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message || 'Failed to update member role');
     }
   };
 
@@ -171,8 +174,9 @@ export default function UsersPage() {
         method: 'DELETE',
       });
       fetchMemberships(editingUser.id);
+      toast.success('Member removed from workspace');
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message || 'Failed to remove member');
     }
   };
 
@@ -191,8 +195,9 @@ export default function UsersPage() {
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
       fetchData();
+      toast.success('User deleted successfully');
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message || 'Failed to delete user');
     } finally {
       setIsDeleting(false);
     }
@@ -221,12 +226,6 @@ export default function UsersPage() {
         </PermissionGate>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex justify-between items-center capitalize">
-          {error}
-          <button onClick={() => setError(null)}><XMarkIcon className="h-4 w-4" /></button>
-        </div>
-      )}
 
       {showCreate && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">

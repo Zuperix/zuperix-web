@@ -11,6 +11,7 @@ import {
   CloudArrowUpIcon,
   ArrowRightOnRectangleIcon,
   LockClosedIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useLayout } from "@/context/LayoutContext";
@@ -248,8 +249,8 @@ export default function Header() {
             <Bars3Icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
           </button>
 
-          <div className="hidden lg:flex flex-col">
-            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-500 uppercase tracking-[0.2em] leading-none mb-1">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-blue-600 dark:text-blue-500 uppercase tracking-[0.2em] leading-none">
               {activeWorkspace?.name || "Workspace"}
             </span>
           </div>
@@ -613,6 +614,14 @@ export default function Header() {
 
             {showUserMenu && (
               <div className="absolute right-0 top-full mt-3 w-52 rounded-2xl border border-gray-200 dark:border-gray-800/60 bg-white dark:bg-[#0f111a] shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] overflow-hidden z-50">
+                <Link
+                  href="/settings/profile"
+                  onClick={() => setShowUserMenu(false)}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <UserIcon className="h-4 w-4" />
+                  <span>Profile Settings</span>
+                </Link>
                 <button
                   onClick={() => {
                     setShowUserMenu(false);

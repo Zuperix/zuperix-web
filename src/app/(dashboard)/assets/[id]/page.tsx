@@ -1163,13 +1163,15 @@ export default function AssetDetailPage() {
                         flattenedCategories.filter(c => selectedCategoryIds.includes(c.id)).map(cat => (
                           <span key={cat.id} className="px-3 py-1.5 bg-blue-600/10 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50 rounded-xl text-[11px] font-bold shadow-sm flex items-center gap-1.5 transition-all hover:bg-blue-600 hover:text-white group/tag">
                             {cat.name}
-                            <button 
-                              onClick={() => handleToggleCategory(cat.id)} 
-                              disabled={isLocked}
-                              className="text-blue-400 group-hover/tag:text-blue-100 disabled:opacity-50"
-                            >
-                              <XMarkIcon className="h-3 w-3" />
-                            </button>
+                            <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                              <button 
+                                onClick={() => handleToggleCategory(cat.id)} 
+                                disabled={isLocked}
+                                className="text-blue-400 group-hover/tag:text-blue-100 disabled:opacity-50"
+                              >
+                                <XMarkIcon className="h-3 w-3" />
+                              </button>
+                            </PermissionGate>
                           </span>
                         ))
                       )}
@@ -1266,13 +1268,15 @@ export default function AssetDetailPage() {
                         collections.filter(c => selectedCollectionIds.includes(c.id)).map(col => (
                           <span key={col.id} className="px-3 py-1.5 bg-indigo-600/10 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/50 rounded-xl text-[11px] font-bold shadow-sm flex items-center gap-1.5 transition-all hover:bg-indigo-600 hover:text-white group/tag">
                             {col.name}
-                            <button 
-                              onClick={() => handleToggleCollection(col.id)} 
-                              disabled={isLocked}
-                              className="text-indigo-400 group-hover/tag:text-indigo-100 disabled:opacity-50"
-                            >
-                              <XMarkIcon className="h-3 w-3" />
-                            </button>
+                            <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                              <button 
+                                onClick={() => handleToggleCollection(col.id)} 
+                                disabled={isLocked}
+                                className="text-indigo-400 group-hover/tag:text-indigo-100 disabled:opacity-50"
+                              >
+                                <XMarkIcon className="h-3 w-3" />
+                              </button>
+                            </PermissionGate>
                           </span>
                         ))
                       )}

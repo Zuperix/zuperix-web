@@ -1,9 +1,9 @@
 'use client';
 
 import { usePermissions, SystemRole } from '@/hooks/usePermissions';
-import { 
-  IdentificationIcon, 
-  TagIcon, 
+import {
+  IdentificationIcon,
+  TagIcon,
   Square3Stack3DIcon,
   QueueListIcon,
   AdjustmentsHorizontalIcon,
@@ -73,11 +73,23 @@ const BASE_SETTINGS_SECTIONS = [
   }
 ];
 
+const ADMIN_ONLY_SECTION_IDS = [
+  'maintenance',
+  'features',
+  'announcement',
+];
+
 export default function SettingsPage() {
   const { user } = usePermissions();
   const isSuperAdmin = user?.system_role === SystemRole.SUPER_ADMIN;
 
-  const sections = [...BASE_SETTINGS_SECTIONS];
+  const sections = BASE_SETTINGS_SECTIONS.filter(section => {
+    if (ADMIN_ONLY_SECTION_IDS.includes(section.id)) {
+      return isSuperAdmin;
+    }
+    return true;
+  });
+
   if (isSuperAdmin) {
     sections.push({
       id: 'billing',
@@ -106,7 +118,7 @@ export default function SettingsPage() {
             <div className={`p-3 rounded-xl ${section.color} group-hover:scale-110 transition-transform duration-300`}>
               <section.icon className="h-6 w-6" />
             </div>
-            
+
             <div className="flex flex-col gap-1">
               <h3 className="text-lg font-bold text-gray-200 group-hover:text-white transition-colors">
                 {section.name}
