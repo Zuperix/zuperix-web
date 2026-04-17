@@ -333,7 +333,9 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
           width={downloadAsset.width}
           height={downloadAsset.height}
           mimeType={downloadAsset.type || downloadAsset.mime_type}
-          previewUrl={downloadAsset.asset_live_url}
+          previewUrl={(downloadAsset.type === 'image/vnd.adobe.photoshop' || downloadAsset.type === 'image/x-photoshop') 
+            ? downloadAsset.thumbnail_url 
+            : (downloadAsset.asset_live_url || downloadAsset.thumbnail_url)}
           portalSlug={slug}
         />
       )}

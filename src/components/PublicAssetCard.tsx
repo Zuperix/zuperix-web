@@ -42,8 +42,9 @@ export default function PublicAssetCard({
   // Use the full URL if it's a relative path from the backend
   const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || BASE_URL.replace('/api/v1', '');
   
-  // Prioritize CloudFront signed URL (asset_live_url)
-  const imageUrl = asset.asset_live_url!;
+  // Prioritize CloudFront signed URL (asset_live_url), but use thumbnail for PSD
+  const isPsd = asset.type === 'image/vnd.adobe.photoshop' || asset.type === 'image/x-photoshop';
+  const imageUrl = isPsd ? asset.thumbnail_url : (asset.asset_live_url || asset.thumbnail_url);
 
   return (
     <div className="group relative bg-white dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all duration-300 overflow-hidden hover:border-blue-400 dark:hover:border-blue-500/50 hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-blue-900/10">

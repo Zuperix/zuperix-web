@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLayout } from '@/context/LayoutContext';
-import { 
-  ChevronDownIcon, 
-  ChevronUpIcon, 
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
   FunnelIcon,
   TagIcon,
   VideoCameraIcon,
@@ -46,13 +46,13 @@ function buildTree(buckets: FilterBucket[]): TreeBucket[] {
     const path = String(bucket.value);
     const parts = path.split('/');
     const label = parts[parts.length - 1];
-    
+
     const node: TreeBucket = {
       ...bucket,
       label: label,
       children: []
     };
-    
+
     map[path] = node;
 
     if (parts.length === 1) {
@@ -80,16 +80,16 @@ function buildTree(buckets: FilterBucket[]): TreeBucket[] {
   return roots;
 }
 
-function RenderCategoryNode({ 
-  bucket, 
-  depth = 0, 
-  activeFilters, 
+function RenderCategoryNode({
+  bucket,
+  depth = 0,
+  activeFilters,
   handleCheckboxChange,
-  groupKey 
-}: { 
-  bucket: TreeBucket; 
-  depth?: number; 
-  activeFilters: any; 
+  groupKey
+}: {
+  bucket: TreeBucket;
+  depth?: number;
+  activeFilters: any;
   handleCheckboxChange: any;
   groupKey: string;
 }) {
@@ -99,13 +99,13 @@ function RenderCategoryNode({
 
   // Recursive check for any selected descendant
   const hasSelectedDescendant = (node: TreeBucket): boolean => {
-    return node.children.some(child => 
+    return node.children.some(child =>
       activeList.includes(child.value) || hasSelectedDescendant(child)
     );
   };
 
   const showTick = isExplicitlySelected || hasSelectedDescendant(bucket);
-  
+
   return (
     <div key={String(bucket.value)} className="space-y-1.5">
       <label className="flex items-center group cursor-pointer justify-between">
@@ -125,13 +125,16 @@ function RenderCategoryNode({
         </span>
       </label>
       {bucket.children.length > 0 && (
-        <div className="space-y-1.5">
+        <div
+          className="space-y-1.5 border-l border-gray-200 dark:border-gray-700/50 ml-2"
+          style={{ paddingLeft: `${0.75 + depth * 1.25}rem` }}
+        >
           {bucket.children.map(child => (
-            <RenderCategoryNode 
-              key={String(child.value)} 
-              bucket={child} 
-              depth={depth + 1} 
-              activeFilters={activeFilters} 
+            <RenderCategoryNode
+              key={String(child.value)}
+              bucket={child}
+              depth={0}
+              activeFilters={activeFilters}
               handleCheckboxChange={handleCheckboxChange}
               groupKey={groupKey}
             />
@@ -150,15 +153,15 @@ interface FilterSidebarProps {
   disabled?: boolean;
 }
 
-function DateRangePicker({ 
-  currentMin, 
-  currentMax, 
-  onChange 
-}: { 
-  min: number; 
-  max: number; 
-  currentMin: string | undefined; 
-  currentMax: string | undefined; 
+function DateRangePicker({
+  currentMin,
+  currentMax,
+  onChange
+}: {
+  min: number;
+  max: number;
+  currentMin: string | undefined;
+  currentMax: string | undefined;
   onChange: (min: string | undefined, max: string | undefined) => void;
 }) {
   const [from, setFrom] = useState(currentMin || '');
@@ -176,7 +179,7 @@ function DateRangePicker({
   return (
     <div className="space-y-4 px-1 pt-1">
       <div className="flex flex-col gap-3">
-        <div 
+        <div
           onClick={(e) => {
             const input = e.currentTarget.querySelector('input');
             if (input) (input as any).showPicker?.();
@@ -186,7 +189,7 @@ function DateRangePicker({
           <CalendarIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
           <div className="flex-1 flex flex-col min-w-0">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">From</span>
-            <input 
+            <input
               type="date"
               value={from}
               onChange={(e) => {
@@ -198,7 +201,7 @@ function DateRangePicker({
           </div>
         </div>
 
-        <div 
+        <div
           onClick={(e) => {
             const input = e.currentTarget.querySelector('input');
             if (input) (input as any).showPicker?.();
@@ -208,7 +211,7 @@ function DateRangePicker({
           <CalendarIcon className="h-4 w-4 text-gray-400 mr-3 group-focus-within/input:text-blue-500 transition-colors" />
           <div className="flex-1 flex flex-col min-w-0">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">To</span>
-            <input 
+            <input
               type="date"
               value={to}
               onChange={(e) => {
@@ -220,9 +223,9 @@ function DateRangePicker({
           </div>
         </div>
       </div>
-      
+
       {(from || to) && (
-        <button 
+        <button
           onClick={() => {
             setFrom('');
             setTo('');
@@ -237,17 +240,17 @@ function DateRangePicker({
   );
 }
 
-function RangeSlider({ 
-  min, 
-  max, 
-  currentMin, 
-  currentMax, 
+function RangeSlider({
+  min,
+  max,
+  currentMin,
+  currentMax,
   onChange
-}: { 
-  min: number; 
-  max: number; 
-  currentMin: number | undefined; 
-  currentMax: number | undefined; 
+}: {
+  min: number;
+  max: number;
+  currentMin: number | undefined;
+  currentMax: number | undefined;
   onChange: (min: number | undefined, max: number | undefined) => void;
 }) {
   const [localMin, setLocalMin] = useState(Number(currentMin ?? min));
@@ -278,11 +281,11 @@ function RangeSlider({
   return (
     <div className="px-1 pt-2 pb-4">
       <div className="relative w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full">
-        <div 
+        <div
           className="absolute h-full bg-blue-500 rounded-full transition-all duration-150"
-          style={{ 
-            left: `${getPercent(localMin)}%`, 
-            right: `${100 - getPercent(localMax)}%` 
+          style={{
+            left: `${getPercent(localMin)}%`,
+            right: `${100 - getPercent(localMax)}%`
           }}
         />
         <input
@@ -378,7 +381,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
   const handleCheckboxChange = (groupKey: string, value: string | number, checked: boolean) => {
     const rawValue = activeFilters[groupKey];
     const currentValues = Array.isArray(rawValue) ? rawValue : (rawValue ? [rawValue] : []);
-    
+
     let newValues;
     if (checked) {
       newValues = [...currentValues, value];
@@ -412,17 +415,17 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
 
       if (data.min === 0 && data.max === 0) return false;
       // If it's a date and the range is basically empty (1970)
-      if ((key.endsWith('_date') || key.endsWith('_at')) && data.max < 20000) return false; 
+      if ((key.endsWith('_date') || key.endsWith('_at')) && data.max < 20000) return false;
     }
 
     if (!filterSearch) return true;
     const { label } = getGroupConfig(key);
     if (label.toLowerCase().includes(filterSearch.toLowerCase())) return true;
-    
+
     // Check inside buckets
     if (Array.isArray(data)) {
-      return data.some(b => 
-        String(b.value).toLowerCase().includes(filterSearch.toLowerCase()) || 
+      return data.some(b =>
+        String(b.value).toLowerCase().includes(filterSearch.toLowerCase()) ||
         String(b.label || '').toLowerCase().includes(filterSearch.toLowerCase())
       );
     }
@@ -433,15 +436,15 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     <>
       {/* Mobile Backdrop */}
       {isFilterOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setIsFilterOpen(false)}
         />
       )}
 
       <div className={`
-        fixed inset-y-0 right-0 z-50 w-80 max-w-[90%] bg-white dark:bg-[#0f111a] border-l border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out
-        lg:relative lg:translate-x-0 lg:w-72 lg:border-r lg:border-l-0 lg:z-0 lg:flex
+        fixed inset-y-0 right-0 z-50 w-72 max-w-[90%] bg-white dark:bg-[#0f111a] border-l border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out
+        lg:relative lg:translate-x-0 lg:w-68 lg:border-r lg:border-l-0 lg:z-0 lg:flex
         ${isFilterOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
         ${disabled ? 'pointer-events-none opacity-60' : ''}
         flex flex-col h-full overflow-hidden shrink-0 shadow-2xl lg:shadow-none
@@ -450,7 +453,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800/60">
               <div className="flex items-center gap-2">
-                <button 
+                <button
                   onClick={() => setIsFilterOpen(false)}
                   className="lg:hidden p-1.5 -ml-1 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                 >
@@ -458,7 +461,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                 </button>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">Filters</h2>
               </div>
-              <button 
+              <button
                 type="button"
                 disabled={disabled}
                 onClick={collapseAll}
@@ -479,7 +482,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                 className="w-full pl-9 pr-8 py-2 text-xs bg-gray-100/50 dark:bg-gray-800/40 border-transparent dark:border-transparent rounded-xl focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/40 transition-all outline-none text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
               />
               {filterSearch && (
-                <button 
+                <button
                   onClick={() => setFilterSearch('')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                 >
@@ -488,7 +491,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
               )}
             </div>
           </div>
-          
+
           <div className="flex-1 space-y-6">
             {filteredFilterEntries
               .filter(([key]) => !key.startsWith('metadata.'))
@@ -498,7 +501,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                 const { label, icon: Icon } = getGroupConfig(key);
 
                 return (
-                  <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-6 text-gray-900 dark:text-gray-100">
+                  <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-4 text-gray-900 dark:text-gray-100">
                     <button
                       onClick={() => toggleExpand(key)}
                       className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
@@ -517,7 +520,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                               const isActive = Number(activeFilters[`${key}[gte]`]) === tier.min && Number(activeFilters[`${key}[lte]`]) === tier.max;
                               const ratingData = data as any[];
                               const bucketKey = tier.min === 5 ? '5_stars' : (tier.min === 1 ? '1_star_up' : `${tier.min}_stars_up`);
-                              const bucket = Array.isArray(ratingData) 
+                              const bucket = Array.isArray(ratingData)
                                 ? ratingData.find((b: any) => b.value === bucketKey)
                                 : null;
                               const count = bucket?.count || 0;
@@ -566,11 +569,11 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                         ) : !Array.isArray(data) ? (
                           <div className="px-2">
                             {key.endsWith('_date') || key.endsWith('_at') ? (
-                              <DateRangePicker 
-                                min={data.min} 
-                                max={data.max} 
-                                currentMin={activeFilters[`${key}[gte]`]} 
-                                currentMax={activeFilters[`${key}[lte]`]} 
+                              <DateRangePicker
+                                min={data.min}
+                                max={data.max}
+                                currentMin={activeFilters[`${key}[gte]`]}
+                                currentMax={activeFilters[`${key}[lte]`]}
                                 onChange={(minVal, maxVal) => {
                                   onFilterChange({
                                     [`${key}[gte]`]: minVal,
@@ -579,11 +582,11 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                                 }}
                               />
                             ) : (
-                              <RangeSlider 
-                                min={data.min} 
-                                max={data.max} 
-                                currentMin={activeFilters[`${key}[gte]`]} 
-                                currentMax={activeFilters[`${key}[lte]`]} 
+                              <RangeSlider
+                                min={data.min}
+                                max={data.max}
+                                currentMin={activeFilters[`${key}[gte]`]}
+                                currentMax={activeFilters[`${key}[lte]`]}
                                 onChange={(minVal, maxVal) => {
                                   onFilterChange({
                                     [`${key}[gte]`]: minVal,
@@ -605,7 +608,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                                 <button
                                   key={hex}
                                   onClick={() => {
-                                    const nextActive = isActive 
+                                    const nextActive = isActive
                                       ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
                                       : Array.from(new Set([...activeHexes, ...clusterHexes]));
                                     onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
@@ -629,7 +632,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                               buildTree(data)
                                 .filter(node => !filterSearch || String(node.value).toLowerCase().includes(filterSearch.toLowerCase()) || node.children.some(c => String(c.value).toLowerCase().includes(filterSearch.toLowerCase())))
                                 .map(node => (
-                                  <RenderCategoryNode 
+                                  <RenderCategoryNode
                                     key={String(node.value)}
                                     bucket={node}
                                     activeFilters={activeFilters}
@@ -689,7 +692,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                 const { label, icon: Icon } = getGroupConfig(key);
 
                 return (
-                  <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-6 text-gray-900 dark:text-gray-100">
+                  <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-4 text-gray-900 dark:text-gray-100">
                     <button
                       onClick={() => toggleExpand(key)}
                       className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
@@ -705,11 +708,11 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                         {!Array.isArray(data) ? (
                           <div className="px-2">
                             {key.endsWith('_date') || key.endsWith('_at') ? (
-                              <DateRangePicker 
-                                min={data.min} 
-                                max={data.max} 
-                                currentMin={activeFilters[`${key}[gte]`]} 
-                                currentMax={activeFilters[`${key}[lte]`]} 
+                              <DateRangePicker
+                                min={data.min}
+                                max={data.max}
+                                currentMin={activeFilters[`${key}[gte]`]}
+                                currentMax={activeFilters[`${key}[lte]`]}
                                 onChange={(minVal, maxVal) => {
                                   onFilterChange({
                                     [`${key}[gte]`]: minVal,
@@ -718,11 +721,11 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                                 }}
                               />
                             ) : (
-                              <RangeSlider 
-                                min={data.min} 
-                                max={data.max} 
-                                currentMin={activeFilters[`${key}[gte]`]} 
-                                currentMax={activeFilters[`${key}[lte]`]} 
+                              <RangeSlider
+                                min={data.min}
+                                max={data.max}
+                                currentMin={activeFilters[`${key}[gte]`]}
+                                currentMax={activeFilters[`${key}[lte]`]}
                                 onChange={(minVal, maxVal) => {
                                   onFilterChange({
                                     [`${key}[gte]`]: minVal,
@@ -744,7 +747,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                                 <button
                                   key={hex}
                                   onClick={() => {
-                                    const nextActive = isActive 
+                                    const nextActive = isActive
                                       ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
                                       : Array.from(new Set([...activeHexes, ...clusterHexes]));
                                     onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);

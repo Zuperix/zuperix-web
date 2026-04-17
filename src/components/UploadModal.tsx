@@ -668,7 +668,7 @@ export default function UploadModal({
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.svg,.glb,.gltf"
+                accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.svg,.glb,.gltf,.psd,image/vnd.adobe.photoshop"
                 className="hidden"
                 onChange={(e) => e.target.files && addFiles(e.target.files)}
               />

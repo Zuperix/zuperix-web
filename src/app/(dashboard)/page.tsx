@@ -639,7 +639,9 @@ function DashboardContent() {
           width={downloadAsset.width || null}
           height={downloadAsset.height || null}
           mimeType={downloadAsset.mime_type}
-          previewUrl={downloadAsset.asset_live_url}
+          previewUrl={(downloadAsset.mime_type === 'image/vnd.adobe.photoshop' || downloadAsset.mime_type === 'image/x-photoshop') 
+            ? downloadAsset.thumbnail_lg_url 
+            : (downloadAsset.asset_live_url || downloadAsset.thumbnail_lg_url)}
         />
       )}
     </div>
