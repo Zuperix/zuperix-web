@@ -150,7 +150,7 @@ const AssetCard = ({
             <div className="p-4 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 group-hover:scale-110 transition-transform duration-500">
               <Icon className="h-12 w-12 text-indigo-500" />
             </div>
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">{mimeType.split('/')[1] || 'FILE'}</span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">{mimeType?.split('/')[1] || 'FILE'}</span>
           </div>
         )}
 
@@ -217,7 +217,7 @@ const AssetCard = ({
             {originalName}
           </h3>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{mimeType.split('/')[1] || 'Unknown'}</span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{mimeType?.split('/')[1] || 'Unknown'}</span>
             <span className="text-[10px] font-medium text-gray-600">{formatSize(size)}</span>
           </div>
         </div>

@@ -191,7 +191,7 @@ export default function DownloadOptions({
       });
 
       const downloadExt = mimeType === 'application/pdf' ? 'pdf' : format;
-      downloadBlob(blob, `${originalName.split('.')[0]}_custom.${downloadExt}`);
+      downloadBlob(blob, `${originalName?.split('.')[0] || 'asset'}_custom.${downloadExt}`);
       toast.success('Custom version downloaded');
     } catch (err: any) {
       toast.error(err.message || 'Download failed');
@@ -488,7 +488,7 @@ export default function DownloadOptions({
                 ) : (
                   <ArrowDownTrayIcon className="h-4 w-4" />
                 )}
-                <span>{mimeType.startsWith('image/') ? (crop ? 'Download Cropped' : 'Download Custom') : `Download Original ${mimeType.split('/')[1]?.toUpperCase() || ''}`}</span>
+                <span>{mimeType?.startsWith('image/') ? (crop ? 'Download Cropped' : 'Download Custom') : `Download Original ${mimeType?.split('/')[1]?.toUpperCase() || ''}`}</span>
               </button>
             </div>
           </div>

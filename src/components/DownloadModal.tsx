@@ -258,7 +258,7 @@ export default function DownloadModal({
                  <div className="p-6 bg-white dark:bg-white/5 rounded-3xl shadow-xl ring-1 ring-black/5 dark:ring-white/10">
                    <span className="text-4xl text-gray-400 group-hover:scale-110 transition-transform duration-500">📄</span>
                  </div>
-                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">{mimeType.split('/')[1] || 'FILE'}</span>
+                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">{mimeType?.split('/')[1] || 'FILE'}</span>
                </div>
             )}
           </div>

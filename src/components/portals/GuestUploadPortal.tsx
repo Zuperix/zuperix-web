@@ -208,7 +208,7 @@ export default function GuestUploadPortal({ token }: { token: string }) {
       // client-side validation
       if (config.max_file_size && f.size > config.max_file_size) return false;
       if (config.allowed_types && config.allowed_types.length > 0 && !config.allowed_types.includes('all')) {
-        const fileTypeCategory = f.type.split('/')[0];
+        const fileTypeCategory = f.type?.split('/')[0];
         if (!config.allowed_types.includes(fileTypeCategory) && !config.allowed_types.includes(f.type)) {
           return false;
         }

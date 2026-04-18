@@ -60,7 +60,7 @@ export default function PublicAssetCard({
         ) : (
           <div className="flex flex-col items-center gap-2">
             <Icon className="h-14 w-14 text-gray-300 dark:text-gray-700 group-hover:text-blue-500/50 transition-colors" />
-            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest">{asset.type.split('/')[1] || 'FILE'}</span>
+            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest">{asset.type?.split('/')[1] || 'FILE'}</span>
           </div>
         )}
         
@@ -84,7 +84,7 @@ export default function PublicAssetCard({
           {asset.name}
         </p>
         <div className="flex items-center justify-between mt-1.5">
-          <p className="text-[11px] font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide">{asset.type.split('/')[1] || 'File'}</p>
+          <p className="text-[11px] font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide">{asset.type?.split('/')[1] || 'File'}</p>
         </div>
       </div>
     </div>

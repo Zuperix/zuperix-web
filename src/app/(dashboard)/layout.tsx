@@ -8,7 +8,10 @@ import { LayoutProvider } from '@/context/LayoutContext';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 
 export const metadata: Metadata = {
-  title: 'Dashboard',
+  title: {
+    default: 'Dashboard',
+    template: `%s | Zuperix`,
+  },
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Tasks',
+  title: { default: 'Tasks', template: '%s | Zuperix' },
 };
 
 export default function TasksLayout({ children }: { children: React.ReactNode }) {
