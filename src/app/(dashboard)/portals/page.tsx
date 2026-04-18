@@ -22,6 +22,7 @@ import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useRouter } from 'next/navigation';
 import { getPortalUrl } from '@/lib/constants';
+import DocumentationLink from '@/components/DocumentationLink';
 
 export default function PortalsPage() {
   const router = useRouter();
@@ -268,6 +269,7 @@ export default function PortalsPage() {
         onConfirm={handleDeleteConfirm}
         portalName={portalToDelete?.name || ''}
       />
+      <DocumentationLink href="https://docs.zuperix.com/docs/sharing/portals" />
     </div>
   );
 }

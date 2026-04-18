@@ -15,6 +15,7 @@ import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import VaultCard from '@/components/VaultCard';
 import DeleteVaultModal from '@/components/DeleteVaultModal';
+import DocumentationLink from '@/components/DocumentationLink';
 
 export default function VaultsPage() {
   const { vaults, createVault, updateVault, deleteVault, loading } = useVaults();
@@ -202,6 +203,7 @@ export default function VaultsPage() {
         onConfirm={handleDeleteConfirm}
         vaultName={vaultToDelete?.name || ''}
       />
+      <DocumentationLink href="https://docs.zuperix.com/docs/assets/vaults" />
     </div>
   );
 }

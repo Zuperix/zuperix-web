@@ -13,6 +13,7 @@ import {
   MegaphoneIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import DocumentationLink from '@/components/DocumentationLink';
 
 const BASE_SETTINGS_SECTIONS = [
   {
@@ -140,6 +141,7 @@ export default function SettingsPage() {
           </Link>
         ))}
       </div>
+      <DocumentationLink href="https://docs.zuperix.com/docs/admin/settings" />
     </div>
   );
 }

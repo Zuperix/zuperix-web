@@ -33,6 +33,7 @@ import { useLayout } from '@/context/LayoutContext';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { toast } from 'sonner';
+import DocumentationLink from '@/components/DocumentationLink';
 
 function FilterChips({
   activeFilters,

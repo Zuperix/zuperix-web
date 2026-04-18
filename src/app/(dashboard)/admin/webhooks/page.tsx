@@ -24,6 +24,7 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import type { Webhook, WebhookLog, WebhookStats } from '@/types/webhooks';
 import { toast } from 'sonner';
+import DocumentationLink from '@/components/DocumentationLink';
 
 interface Customer {
   id: string;
@@ -709,6 +710,7 @@ export default function WebhooksPage() {
           </div>
         </div>
       )}
+      <DocumentationLink href="https://docs.zuperix.com/docs/api/webhooks" />
     </div>
   );
 }

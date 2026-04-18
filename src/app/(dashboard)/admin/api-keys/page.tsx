@@ -15,6 +15,7 @@ import {
   ShieldCheckIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
+import DocumentationLink from '@/components/DocumentationLink';
 
 interface ApiKey {
   id: string;
@@ -559,6 +560,7 @@ export default function ApiKeysPage() {
           </div>
         </div>
       )}
+      <DocumentationLink href="https://docs.zuperix.com/docs/api/quickstart" />
     </div>
   );
 }
