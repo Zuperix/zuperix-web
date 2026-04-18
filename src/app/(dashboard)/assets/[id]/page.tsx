@@ -326,6 +326,30 @@ export default function AssetDetailPage() {
     fetchData();
   }, [fetchData]);
 
+  const calculateCompletion = () => {
+    if (!asset || fields.length === 0) return 0;
+    
+    // Standard fields: Status, Release Date, Expiration Date
+    const standardFields = [
+      asset.status,
+      asset.release_date,
+      asset.expiration_date
+    ];
+    
+    const filledStandardCount = standardFields.filter(val => val !== undefined && val !== null && val !== '').length;
+    
+    // Custom metadata fields
+    const filledCustomCount = fields.filter(field => {
+      const val = values[field.id];
+      return val !== undefined && val !== null && val !== '';
+    }).length;
+    
+    const totalFields = 3 + fields.length; // 3 standard + all custom
+    const totalFilled = filledStandardCount + filledCustomCount;
+    
+    return Math.round((totalFilled / totalFields) * 100);
+  };
+
   useEffect(() => {
     if (activeTab === 'transcript' && !transcript) {
       fetchTranscript();
@@ -1466,12 +1490,25 @@ export default function AssetDetailPage() {
 
                 {/* Metadata Section */}
                 <section className="space-y-4 md:space-y-6 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-8 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
-                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/60 pb-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-100 dark:border-gray-800/60 pb-4 gap-4">
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
                         <InformationCircleIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest leading-none">Custom Metadata</label>
+                      <div className="flex flex-col">
+                        <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest leading-none">Custom Metadata</label>
+                        <div className="mt-2 flex items-center gap-3">
+                          <div className="w-32 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000 ease-out"
+                              style={{ width: `${calculateCompletion()}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 tracking-tighter">
+                            {calculateCompletion()}% COMPLETE
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Show empty</span>

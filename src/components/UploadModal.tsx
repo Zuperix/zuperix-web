@@ -453,6 +453,14 @@ export default function UploadModal({
     pending: entries.filter((e) => e.status === 'pending').length,
   };
 
+  const missingRequiredFields = (metadataFields || []).filter(f => {
+    if (!f.is_required) return false;
+    const val = initialMetadata[f.key];
+    return val === undefined || val === null || val === '';
+  });
+
+  const isMetadataValid = missingRequiredFields.length === 0;
+
   const overallProgress =
     counts.total === 0
       ? 0
@@ -837,8 +845,8 @@ export default function UploadModal({
             </button>
             <button
               onClick={uploadAll}
-              disabled={running || counts.pending === 0}
-              className="flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+              disabled={running || counts.pending === 0 || !isMetadataValid}
+              className="group relative flex items-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               {running ? (
                 <>
@@ -850,6 +858,20 @@ export default function UploadModal({
                   <CloudArrowUpIcon className="h-4 w-4" />
                   Upload {counts.pending > 0 ? `${counts.pending} file${counts.pending !== 1 ? 's' : ''}` : 'All'}
                 </>
+              )}
+              {!isMetadataValid && counts.pending > 0 && !running && (
+                <div className="absolute bottom-full mb-3 right-0 w-64 p-3 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[100] scale-95 group-hover:scale-100 origin-bottom-right">
+                  <div className="flex items-start gap-2">
+                    <ExclamationCircleIcon className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] font-bold text-white uppercase tracking-wider mb-1">Required Content Missing</p>
+                      <p className="text-[10px] text-gray-400 leading-relaxed">
+                        Please fill in the required metadata field{missingRequiredFields.length > 1 ? 's' : ''}: <span className="text-amber-400 font-bold">{missingRequiredFields.map(f => f.label).join(', ')}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="absolute top-full right-6 -mt-1 border-[6px] border-transparent border-t-gray-900" />
+                </div>
               )}
             </button>
           </div>

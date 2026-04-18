@@ -164,6 +164,24 @@ export default function MetadataPanel({
     setValues(prev => ({ ...prev, [fieldId]: value }));
   };
 
+  const calculateCompletion = () => {
+    if (!asset || fields.length === 0) return 0;
+    
+    // Standard fields: Status, Release Date, Expiration Date
+    const standardFields = ['_status', '_release_date', '_expiration_date'];
+    const customFields = fields.map(f => f.id);
+    const allFields = [...standardFields, ...customFields];
+    
+    const filledCount = allFields.filter(id => {
+      const val = values[id];
+      return val !== undefined && val !== null && val !== '';
+    }).length;
+    
+    return Math.round((filledCount / allFields.length) * 100);
+  };
+
+  const completionPercent = calculateCompletion();
+
   const handleStartNameEdit = () => {
     if (activeWorkflow) {
       toast.error('Asset is locked during active workflow');
@@ -308,9 +326,22 @@ export default function MetadataPanel({
               )}
               
               <div className="space-y-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowPathIcon className="h-4 w-4 text-gray-500" />
-                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Metadata</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <ArrowPathIcon className="h-4 w-4 text-gray-500" />
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Metadata</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">{completionPercent}% COMPLETE</span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-800 rounded-full h-1 overflow-hidden -mt-2">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                    style={{ width: `${completionPercent}%` }}
+                  />
                 </div>
 
                 <div className="space-y-2 group">
