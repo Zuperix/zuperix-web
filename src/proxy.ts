@@ -30,17 +30,17 @@ export function proxy(request: NextRequest) {
                         pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|js|css)$/);
   const isApiRoute = pathname.startsWith('/api');
 
-  if (isPortalsDomain && !isStaticAsset && !isApiRoute && !isDevelopment) {
-    // Portals domain should ONLY access /p/* routes (Skip restriction in dev)
-    const isPortalRoute = pathname.startsWith('/p/');
-    const isUnauthorizedPage = pathname === '/unauthorized-domain';
+  // if (isPortalsDomain && !isStaticAsset && !isApiRoute && !isDevelopment) {
+  //   // Portals domain should ONLY access /p/* routes (Skip restriction in dev)
+  //   const isPortalRoute = pathname.startsWith('/p/');
+  //   const isUnauthorizedPage = pathname === '/unauthorized-domain';
 
-    if (!isPortalRoute && !isUnauthorizedPage) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/unauthorized-domain';
-      return NextResponse.rewrite(url);
-    }
-  }
+  //   if (!isPortalRoute && !isUnauthorizedPage) {
+  //     const url = request.nextUrl.clone();
+  //     url.pathname = '/unauthorized-domain';
+  //     return NextResponse.rewrite(url);
+  //   }
+  // }
 
   if (!isPortalsDomain && pathname.startsWith('/p/') && !isDevelopment) {
     const url = request.nextUrl.clone();

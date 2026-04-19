@@ -327,27 +327,15 @@ export default function AssetDetailPage() {
   }, [fetchData]);
 
   const calculateCompletion = () => {
-    if (!asset || fields.length === 0) return 0;
+    if (!asset || fields.length === 0) return 100;
     
-    // Standard fields: Status, Release Date, Expiration Date
-    const standardFields = [
-      asset.status,
-      asset.release_date,
-      asset.expiration_date
-    ];
-    
-    const filledStandardCount = standardFields.filter(val => val !== undefined && val !== null && val !== '').length;
-    
-    // Custom metadata fields
+    // Custom metadata fields only
     const filledCustomCount = fields.filter(field => {
       const val = values[field.id];
       return val !== undefined && val !== null && val !== '';
     }).length;
     
-    const totalFields = 3 + fields.length; // 3 standard + all custom
-    const totalFilled = filledStandardCount + filledCustomCount;
-    
-    return Math.round((totalFilled / totalFields) * 100);
+    return Math.round((filledCustomCount / fields.length) * 100);
   };
 
   useEffect(() => {

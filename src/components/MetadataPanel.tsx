@@ -167,17 +167,13 @@ export default function MetadataPanel({
   const calculateCompletion = () => {
     if (!asset || fields.length === 0) return 0;
     
-    // Standard fields: Status, Release Date, Expiration Date
-    const standardFields = ['_status', '_release_date', '_expiration_date'];
     const customFields = fields.map(f => f.id);
-    const allFields = [...standardFields, ...customFields];
-    
-    const filledCount = allFields.filter(id => {
+    const filledCount = customFields.filter(id => {
       const val = values[id];
       return val !== undefined && val !== null && val !== '';
     }).length;
     
-    return Math.round((filledCount / allFields.length) * 100);
+    return Math.round((filledCount / customFields.length) * 100);
   };
 
   const completionPercent = calculateCompletion();
