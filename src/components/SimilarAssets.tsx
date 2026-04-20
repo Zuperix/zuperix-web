@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import CustomImage from './CustomImage';
 import { apiFetch, BASE_URL } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -34,6 +35,8 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
   const [data, setData] = useState<{ metadata: SimilarAsset[], visual: SimilarAsset[] }>({ metadata: [], visual: [] });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<SimilarityType>('metadata');
+  const { user } = useAuth();
+  const isGold = user?.customer?.plan?.toLowerCase() === 'gold';
 
   useEffect(() => {
     const fetchSimilar = async () => {
@@ -74,7 +77,7 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
   }
 
   // Only show if at least one tab has assets
-  if (data.metadata.length === 0 && data.visual.length === 0) return null;
+  if (data.metadata.length === 0 && (!isGold || data.visual.length === 0)) return null;
 
   return (
     <section className="mt-16 mb-20 space-y-8 animate-in fade-in duration-500">
@@ -98,17 +101,19 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
                 <FolderIcon className="h-3.5 w-3.5" />
                 By Metadata
             </button>
-            <button
-                onClick={() => setActiveTab('visual')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-                    activeTab === 'visual' 
-                        ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm' 
-                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-            >
-                <SparklesIcon className="h-3.5 w-3.5" />
-                By Appearance
-            </button>
+            {isGold && (
+                <button
+                    onClick={() => setActiveTab('visual')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                        activeTab === 'visual' 
+                            ? 'bg-white dark:bg-gray-800 text-blue-600 shadow-sm' 
+                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                >
+                    <SparklesIcon className="h-3.5 w-3.5" />
+                    By Appearance
+                </button>
+            )}
         </div>
       </div>
 
@@ -119,7 +124,6 @@ export default function SimilarAssets({ assetId }: { assetId: string }) {
                     <SparklesIcon className="h-6 w-6 text-gray-300 dark:text-gray-700" />
                 </div>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No similar assets found</p>
-                <p className="text-[9px] text-gray-500">Try adding more tags or AI labels to improve discovery.</p>
             </div>
         ) : (
             <div className="flex gap-6 overflow-x-auto pb-6 custom-scrollbar scroll-smooth snap-x">

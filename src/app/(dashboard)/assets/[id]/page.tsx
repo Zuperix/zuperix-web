@@ -64,6 +64,8 @@ import TranscriptionPanel from '@/components/TranscriptionPanel';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import { MicrophoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { MetadataFieldInput } from '@/components/metadata/MetadataFieldInput';
+import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
+import { FEATURES } from '@/constants/features';
 
 interface Field {
   id: string;
@@ -179,8 +181,19 @@ export default function AssetDetailPage() {
   const [transcriptionUsage, setTranscriptionUsage] = useState<any>(null);
   const [transcriptionJob, setTranscriptionJob] = useState<any>(null);
 
+  // Facial Recognition state
+  const [showFaces, setShowFaces] = useState(false);
+  const [editingFaceId, setEditingFaceId] = useState<string | null>(null);
+  const [faceNameInput, setFaceNameInput] = useState('');
+  const [isFaceTaggingMode, setIsFaceTaggingMode] = useState(false);
+  const [faceDragStart, setFaceDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [faceDragCurrent, setFaceDragCurrent] = useState<{ x: number; y: number } | null>(null);
+  const [isManualFaceSaving, setIsManualFaceSaving] = useState(false);
+  const mediaWrapperRef = useRef<HTMLDivElement>(null);
+
   const { fetchAssetWorkflow, processTask, loading: processingTask } = useWorkflows();
   const { user } = useAuth();
+  const isFaceDetectionEnabled = useFeatureFlag(FEATURES.FACE_DETECTION.key, false);
 
   const canApprove = () => {
     if (!user || !activeWorkspace || !activeWorkflow || activeWorkflow.status !== 'ACTIVE') return false;
@@ -280,6 +293,89 @@ export default function AssetDetailPage() {
     }
   };
 
+  const handleAssignFace = async (faceId: string, personName: string) => {
+    if (!personName.trim()) return;
+    try {
+      await apiFetch(`/assets/${assetId}/faces/${faceId}/person`, {
+        method: 'PATCH',
+        body: JSON.stringify({ person_name: personName.trim() })
+      });
+      toast.success('Face tagged successfully');
+      setEditingFaceId(null);
+      setFaceNameInput('');
+      fetchData(); // Refresh asset to get updated faces
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to tag face');
+    }
+  };
+
+  const handleUnassignFace = async (faceId: string) => {
+    try {
+      await apiFetch(`/assets/${assetId}/faces/${faceId}/person`, {
+        method: 'DELETE'
+      });
+      toast.success('Face tag removed');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove tag');
+    }
+  };
+
+  const handleManualFaceSave = async () => {
+    if (!faceDragStart || !faceDragCurrent || !asset) return;
+    
+    const rect = mediaWrapperRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    // Normalize coordinates relative to media wrapper
+    const x1 = Math.min(faceDragStart.x, faceDragCurrent.x) - rect.left;
+    const y1 = Math.min(faceDragStart.y, faceDragCurrent.y) - rect.top;
+    const x2 = Math.max(faceDragStart.x, faceDragCurrent.x) - rect.left;
+    const y2 = Math.max(faceDragStart.y, faceDragCurrent.y) - rect.top;
+
+    // Scale to original dimensions
+    const scaleX = asset.width / rect.width;
+    const scaleY = asset.height / rect.height;
+
+    const boundingBox = [
+      Math.round(x1 * scaleX),
+      Math.round(y1 * scaleY),
+      Math.round(x2 * scaleX),
+      Math.round(y2 * scaleY)
+    ];
+
+    try {
+      setIsManualFaceSaving(true);
+      const name = prompt('Name this person (optional):');
+      
+      await apiFetch(`/assets/${assetId}/faces`, {
+        method: 'POST',
+        body: JSON.stringify({
+          bounding_box: boundingBox,
+          person_name: name || undefined
+        })
+      });
+
+      toast.success('Manual face tag added');
+      setIsFaceTaggingMode(false);
+      setFaceDragStart(null);
+      setFaceDragCurrent(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save manual face tag');
+    } finally {
+      setIsManualFaceSaving(false);
+    }
+  };
+
+  const handleReprocessFaces = async () => {
+    try {
+      await apiFetch(`/assets/${assetId}/process/faces`, { method: 'POST' });
+      toast.success('AI face detection triggered. Refresh in a few moments.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to trigger AI detection');
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (!activeWorkspace || !assetId) return;
@@ -733,11 +829,14 @@ export default function AssetDetailPage() {
 
 
   const handleAssetClick = (e: React.MouseEvent) => {
-    if (!annotationMode || !previewRef.current) return;
+    if (!annotationMode || !mediaWrapperRef.current) return;
 
-    const rect = previewRef.current.getBoundingClientRect();
+    const rect = mediaWrapperRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    // Safety check: coordinates should be within 0-100
+    if (x < 0 || x > 100 || y < 0 || y > 100) return;
 
     setPendingAnnotation({
       type: 'point',
@@ -746,6 +845,27 @@ export default function AssetDetailPage() {
     
     // Switch to comments tab to focus the input
     setActiveTab('comments');
+  };
+
+  const getFaceColor = (index: number, faceId?: string) => {
+    if (faceId === editingFaceId) return '#fbbf24'; // amber-400 for editing
+    
+    const palette = asset?.color_palette || [];
+    if (palette.length > 0) {
+      return palette[index % palette.length];
+    }
+    
+    // Default high-contrast colors
+    const colors = [
+      '#ec4899', // pink-500
+      '#3b82f6', // blue-500
+      '#10b981', // emerald-500
+      '#f59e0b', // amber-500
+      '#8b5cf6', // violet-500
+      '#f43f5e', // rose-500
+      '#06b6d4', // cyan-500
+    ];
+    return colors[index % colors.length];
   };
 
   if (isNotFound) {
@@ -1012,6 +1132,26 @@ export default function AssetDetailPage() {
                   <ChatBubbleLeftIcon className="h-5 w-5" />
                   <div className="absolute right-full mr-3 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">{annotationMode ? 'Exit Annotation Mode' : 'Add Annotation'}</div>
                 </button>
+                {isFaceDetectionEnabled && asset?.faces?.length > 0 && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setShowFaces(!showFaces); }}
+                    className={`p-3.5 backdrop-blur-2xl border rounded-2xl shadow-2xl transition-all hover:scale-110 active:scale-95 group/btn ${showFaces ? 'bg-pink-600 border- pink-500 text-white' : 'bg-white/90 dark:bg-gray-900/90 border-white dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:text-pink-600'}`}
+                  >
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="absolute right-full mr-3 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">{showFaces ? 'Hide Faces' : `Show Faces (${asset.faces.length})`}</div>
+                  </button>
+                )}
+                {isFaceDetectionEnabled && asset?.mime_type?.startsWith('image/') && (
+                   <button 
+                     onClick={(e) => { e.stopPropagation(); setIsFaceTaggingMode(!isFaceTaggingMode); if (!isFaceTaggingMode) setShowFaces(true); }}
+                     className={`p-3.5 backdrop-blur-2xl border rounded-2xl shadow-2xl transition-all hover:scale-110 active:scale-95 group/btn ${isFaceTaggingMode ? 'bg-amber-500 border-amber-400 text-white' : 'bg-white/90 dark:bg-gray-900/90 border-white dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:text-amber-500'}`}
+                   >
+                     <PlusIcon className="h-5 w-5" />
+                     <div className="absolute right-full mr-3 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">{isFaceTaggingMode ? 'Cancel Tagging' : 'Add Face Tag'}</div>
+                   </button>
+                )}
               </div>
 
               <div 
@@ -1019,97 +1159,234 @@ export default function AssetDetailPage() {
                 onClick={handleAssetClick}
                 className={`relative flex items-center justify-center w-full h-full ${annotationMode ? 'cursor-crosshair' : ''}`}
               >
-                {/* Existing Annotation Markers */}
-                {assetComments.filter(c => c.coordinates).map((comment) => (
-                  <div 
-                    key={comment.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveTab('comments');
-                      setTimeout(() => {
-                        const element = document.getElementById(`comment-${comment.id}`);
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          element.classList.add('ring-2', 'ring-purple-500', 'ring-offset-2', 'dark:ring-offset-[#0a0b10]');
-                          setTimeout(() => {
-                            element.classList.remove('ring-2', 'ring-purple-500', 'ring-offset-2', 'dark:ring-offset-[#0a0b10]');
-                          }, 2000);
-                        }
-                      }, 100);
-                    }}
-                    className="absolute group/marker cursor-pointer z-30 transform -translate-x-1/2 -translate-y-1/2"
-                    style={{ left: `${comment.coordinates.x}%`, top: `${comment.coordinates.y}%` }}
-                  >
-                    <div className="w-5 h-5 bg-purple-600 border-2 border-white rounded-full shadow-lg hover:scale-125 transition-all flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                    </div>
-                    
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900/95 backdrop-blur shadow-xl rounded-xl border border-gray-800 opacity-0 group-hover/marker:opacity-100 transition-opacity pointer-events-none z-50">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <div className="w-4 h-4 rounded-full bg-purple-600 flex items-center justify-center text-[8px] font-bold text-white uppercase">
-                          {comment.user?.name?.[0] || 'U'}
-                        </div>
-                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">{comment.user?.name || 'User'}</span>
+                <div 
+                  ref={mediaWrapperRef}
+                  className="relative inline-block max-w-full"
+                >
+                  {/* Overlays - Now relative to the actual media content */}
+                  
+                  {/* Existing Annotation Markers */}
+                  {assetComments.filter(c => c.coordinates).map((comment) => (
+                    <div 
+                      key={comment.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveTab('comments');
+                        setTimeout(() => {
+                          const element = document.getElementById(`comment-${comment.id}`);
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            element.classList.add('ring-2', 'ring-purple-500', 'ring-offset-2', 'dark:ring-offset-[#0a0b10]');
+                            setTimeout(() => {
+                              element.classList.remove('ring-2', 'ring-purple-500', 'ring-offset-2', 'dark:ring-offset-[#0a0b10]');
+                            }, 2000);
+                          }
+                        }, 100);
+                      }}
+                      className="absolute group/marker cursor-pointer z-30 transform -translate-x-1/2 -translate-y-1/2"
+                      style={{ left: `${comment.coordinates.x}%`, top: `${comment.coordinates.y}%` }}
+                    >
+                      <div className="w-5 h-5 bg-purple-600 border-2 border-white rounded-full shadow-lg hover:scale-125 transition-all flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full" />
                       </div>
-                      <p className="text-[10px] text-gray-200 line-clamp-2 leading-tight">{comment.content}</p>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-gray-900/95" />
+                      
+                      {/* Tooltip */}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900/95 backdrop-blur shadow-xl rounded-xl border border-gray-800 opacity-0 group-hover/marker:opacity-100 transition-opacity pointer-events-none z-50">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div className="w-4 h-4 rounded-full bg-purple-600 flex items-center justify-center text-[8px] font-bold text-white uppercase">
+                            {comment.user?.name?.[0] || 'U'}
+                          </div>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">{comment.user?.name || 'User'}</span>
+                        </div>
+                        <p className="text-[10px] text-gray-200 line-clamp-2 leading-tight">{comment.content}</p>
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-gray-900/95" />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
 
-                {/* Pending Annotation Marker */}
-                {pendingAnnotation && (
-                  <div 
-                    className="absolute w-6 h-6 bg-yellow-400 border-2 border-white rounded-full shadow-xl transform -translate-x-1/2 -translate-y-1/2 z-40 animate-pulse"
-                    style={{ left: `${pendingAnnotation.coordinates.x}%`, top: `${pendingAnnotation.coordinates.y}%` }}
-                  />
-                )}
+                  {/* Pending Annotation Marker */}
+                  {pendingAnnotation && (
+                    <div 
+                      className="absolute w-6 h-6 bg-yellow-400 border-2 border-white rounded-full shadow-xl transform -translate-x-1/2 -translate-y-1/2 z-40 animate-pulse"
+                      style={{ left: `${pendingAnnotation.coordinates.x}%`, top: `${pendingAnnotation.coordinates.y}%` }}
+                    />
+                  )}
+                  
+                  {/* Manual Face Tagging Overlay */}
+                  {isFaceDetectionEnabled && isFaceTaggingMode && (
+                    <div 
+                      className="absolute inset-0 z-40 cursor-crosshair"
+                      onMouseDown={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setFaceDragStart({ x: e.clientX, y: e.clientY });
+                        setFaceDragCurrent({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseMove={(e) => {
+                        if (faceDragStart) setFaceDragCurrent({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseUp={() => {
+                        if (faceDragStart && faceDragCurrent) {
+                          const dist = Math.sqrt(Math.pow(faceDragCurrent.x - faceDragStart.x, 2) + Math.pow(faceDragCurrent.y - faceDragStart.y, 2));
+                          if (dist > 10) {
+                            handleManualFaceSave();
+                          } else {
+                            setFaceDragStart(null);
+                            setFaceDragCurrent(null);
+                          }
+                        }
+                      }}
+                    >
+                      {faceDragStart && faceDragCurrent && (
+                        <div 
+                          className="absolute border-2 border-amber-500 bg-amber-500/20 rounded shadow-[0_0_15px_rgba(245,158,11,0.6)]"
+                          style={{
+                            left: Math.min(faceDragStart.x, faceDragCurrent.x) - (mediaWrapperRef.current?.getBoundingClientRect().left || 0),
+                            top: Math.min(faceDragStart.y, faceDragCurrent.y) - (mediaWrapperRef.current?.getBoundingClientRect().top || 0),
+                            width: Math.abs(faceDragCurrent.x - faceDragStart.x),
+                            height: Math.abs(faceDragCurrent.y - faceDragStart.y),
+                          }}
+                        />
+                      )}
+                      <div className="absolute top-4 left-4 bg-amber-600/90 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg backdrop-blur animate-pulse">
+                        DRAW A BOX AROUND THE FACE
+                      </div>
+                    </div>
+                  )}
 
-              {is3D(asset?.mime_type, asset?.original_name) ? (
-                <ThreeDPreview 
-                  src={asset?.asset_live_url || ''} 
-                  alt={asset?.original_name} 
-                  className="w-full h-[60vh] max-h-[70vh]"
-                />
-              ) : asset?.mime_type === 'application/pdf' ? (
-                <PdfPreview src={asset?.asset_live_url} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-2xl md:rounded-[32px]" />
-                            ) : asset?.mime_type?.startsWith('image/') ? (
-                <img
-                  src={
-                    (asset?.mime_type === 'image/vnd.adobe.photoshop' || asset?.mime_type === 'image/x-photoshop') 
-                      ? asset?.thumbnail_lg_url 
-                      : (asset?.asset_live_url || asset?.thumbnail_lg_url)
-                  }
-                  alt={asset?.original_name}
-                  loading="lazy"
-                  className="max-w-full max-h-[70vh] object-contain transition-transform duration-700 group-hover:scale-[1.01] pointer-events-none"
-                />
-              ) : asset?.mime_type?.startsWith('video/') ? (
-                <video
-                  ref={videoRef}
-                  src={asset?.asset_live_url}
-                  controls={!annotationMode}
-                  className="max-w-full max-h-[70vh] rounded-2xl pointer-events-none"
-                  onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-8 p-20">
-                  <div className="w-24 h-24 bg-blue-50 dark:bg-blue-900/30 rounded-3xl flex items-center justify-center shadow-inner">
-                    <DocumentIcon className="h-12 w-12 text-blue-500" />
-                  </div>
-                  <div className="text-center space-y-2">
-                    <span className="text-sm font-bold text-gray-900 dark:text-white block">{asset?.original_name}</span>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{asset?.mime_type?.split('/')[1] || 'FILE'}</span>
-                  </div>
-                  <button 
-                    onClick={() => window.open(asset?.asset_live_url, '_blank')}
-                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20"
-                  >
-                    View Original
-                  </button>
+                  {/* Face Annotations */}
+                  {isFaceDetectionEnabled && asset?.faces?.map((face: any, idx: number) => {
+                    if (!face.bounding_box) return null;
+                    const [x1, y1, x2, y2] = face.bounding_box;
+                    const imageWidth = asset.width || 1;
+                    const imageHeight = asset.height || 1;
+                    
+                    const left = (x1 / imageWidth) * 100;
+                    const top = (y1 / imageHeight) * 100;
+                    const width = ((x2 - x1) / imageWidth) * 100;
+                    const height = ((y2 - y1) / imageHeight) * 100;
+
+                    const color = getFaceColor(idx, face.id);
+
+                    return (
+                      <div 
+                        key={face.id}
+                        className={`absolute border-2 rounded transition-all duration-300 z-20 group/face ${editingFaceId && editingFaceId !== face.id ? 'opacity-30 scale-95 grayscale-[0.3]' : (showFaces || editingFaceId === face.id ? 'opacity-100' : 'opacity-0')} hover:opacity-100 hover:scale-[1.02]`}
+                        style={{ 
+                          left: `${left}%`, 
+                          top: `${top}%`, 
+                          width: `${width}%`, 
+                          height: `${height}%`,
+                          borderColor: color,
+                          boxShadow: editingFaceId === face.id 
+                            ? `0 0 0 2px rgba(0,0,0,0.4), 0 0 20px ${color}`
+                            : `0 0 0 1px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(0,0,0,0.3), 0 0 8px ${color}44`
+                        }}
+                        onClick={(e) => { e.stopPropagation(); setEditingFaceId(face.id); setFaceNameInput(face.person?.name || ''); }}
+                      >
+                        {/* Badge / Name popover */}
+                        <div 
+                          className={`absolute left-1/2 -translate-x-1/2 transition-all duration-300 whitespace-nowrap z-50 ${
+                            top < 20 ? 'top-full mt-2' : 'bottom-full mb-2'
+                          } ${
+                            editingFaceId === face.id 
+                              ? 'opacity-100 scale-100' 
+                              : (editingFaceId ? 'opacity-0 scale-90 pointer-events-none' : 'opacity-0 scale-95 group-hover/face:opacity-100 group-hover/face:scale-100')
+                          }`}
+                        >
+                          {editingFaceId === face.id ? (
+                            <div className="bg-[#0f111a]/95 border border-white/10 rounded-xl p-1.5 flex items-center gap-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl ring-1 ring-white/5" onClick={e => e.stopPropagation()}>
+                              <div className="relative flex-1">
+                                <input 
+                                  type="text" 
+                                  autoFocus
+                                  value={faceNameInput} 
+                                  onChange={e => setFaceNameInput(e.target.value)} 
+                                  placeholder="Name..."
+                                  className="bg-white/5 text-white text-[10px] font-bold border border-white/10 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/50 w-28 tracking-wide placeholder:text-gray-500"
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') handleAssignFace(face.id, faceNameInput);
+                                    if (e.key === 'Escape') setEditingFaceId(null);
+                                  }}
+                                />
+                              </div>
+                              <div className="flex items-center gap-1 flex-none border-l border-white/10 pl-1.5 ml-0.5">
+                                <button 
+                                  onClick={() => handleAssignFace(face.id, faceNameInput)} 
+                                  className="p-1 text-emerald-400 hover:bg-emerald-500/10 rounded-md transition-colors"
+                                  title="Save"
+                                >
+                                  <CheckIcon className="w-3.5 h-3.5 stroke-[3]" />
+                                </button>
+                                <button 
+                                  onClick={() => setEditingFaceId(null)} 
+                                  className="p-1 text-gray-400 hover:bg-white/10 rounded-md transition-colors"
+                                  title="Cancel"
+                                >
+                                  <XMarkIcon className="w-3.5 h-3.5 stroke-[3]" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-[#0f111a]/90 text-white text-[9px] font-black px-2 py-1 rounded-md flex items-center gap-1.5 shadow-2xl backdrop-blur-md tracking-widest uppercase border border-white/10">
+                              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }} />
+                              {face.person ? face.person.name : 'Unknown'}
+                              {face.person && (
+                                <button onClick={(e) => { e.stopPropagation(); handleUnassignFace(face.id); }} className="hover:text-red-400 ml-1 transition-colors opacity-60 hover:opacity-100">
+                                  <XMarkIcon className="w-2.5 h-2.5 stroke-[3]" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {is3D(asset?.mime_type, asset?.original_name) ? (
+                    <ThreeDPreview 
+                      src={asset?.asset_live_url || ''} 
+                      alt={asset?.original_name} 
+                      className="w-full h-[60vh] max-h-[70vh]"
+                    />
+                  ) : asset?.mime_type === 'application/pdf' ? (
+                    <PdfPreview src={asset?.asset_live_url} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-2xl md:rounded-[32px]" />
+                                ) : asset?.mime_type?.startsWith('image/') ? (
+                    <img
+                      src={
+                        (asset?.mime_type === 'image/vnd.adobe.photoshop' || asset?.mime_type === 'image/x-photoshop') 
+                          ? asset?.thumbnail_lg_url 
+                          : (asset?.asset_live_url || asset?.thumbnail_lg_url)
+                      }
+                      alt={asset?.original_name}
+                      loading="lazy"
+                      className="block max-w-full max-h-[70vh] w-auto h-auto object-contain transition-transform duration-700 group-hover:scale-[1.01] pointer-events-none"
+                    />
+                  ) : asset?.mime_type?.startsWith('video/') ? (
+                    <video
+                      ref={videoRef}
+                      src={asset?.asset_live_url}
+                      controls={!annotationMode}
+                      className="block max-w-full max-h-[70vh] w-auto h-auto rounded-2xl pointer-events-none"
+                      onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-8 p-20">
+                      <div className="w-24 h-24 bg-blue-50 dark:bg-blue-900/30 rounded-3xl flex items-center justify-center shadow-inner">
+                        <DocumentIcon className="h-12 w-12 text-blue-500" />
+                      </div>
+                      <div className="text-center space-y-2">
+                        <span className="text-sm font-bold text-gray-900 dark:text-white block">{asset?.original_name}</span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{asset?.mime_type?.split('/')[1] || 'FILE'}</span>
+                      </div>
+                      <button 
+                        onClick={() => window.open(asset?.asset_live_url, '_blank')}
+                        className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20"
+                      >
+                        View Original
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
               </div>
             </div>
 
@@ -1531,6 +1808,42 @@ export default function AssetDetailPage() {
                     )}
                   </div>
                 </section>
+
+              {/* People in Image Section */}
+              {isFaceDetectionEnabled && asset?.faces?.length > 0 && asset.faces.some((f: any) => f.person) && (
+                <section className="space-y-4 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-8 w-8 bg-pink-100 dark:bg-pink-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
+                      <svg className="h-4 w-4 text-pink-600 dark:text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">People in Image</label>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {asset.faces.filter((f: any) => f.person).map((face: any) => (
+                      <div key={face.id} className="flex items-center gap-2 px-3 py-1.5 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 rounded-lg border border-pink-200 dark:border-pink-800/50 text-[11px] font-bold transition-all hover:scale-105 group">
+                        {face.person.name}
+                        <button onClick={() => handleUnassignFace(face.id)} className="hover:text-pink-500 ml-1 transition-opacity opacity-0 group-hover:opacity-100">
+                          <XMarkIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {asset.faces.filter((f: any) => !f.person).length > 0 && (
+                      <div className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800/40 text-gray-500 rounded-lg border border-gray-200 dark:border-gray-800 border-dashed text-[11px] font-bold">
+                        {asset.faces.filter((f: any) => !f.person).length} UNNAMED
+                      </div>
+                    )}
+                  </div>
+                  <button 
+                    onClick={handleReprocessFaces}
+                    className="w-full py-2.5 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl text-[10px] font-bold text-gray-400 hover:text-pink-500 hover:border-pink-500/50 hover:bg-pink-500/5 transition-all flex items-center justify-center gap-2"
+                  >
+                    <ArrowPathIcon className="h-3.5 w-3.5" />
+                    Re-run AI Detection
+                  </button>
+                </section>
+              )}
 
               {/* OCR Text Section */}
               {asset?.ocr_text && (

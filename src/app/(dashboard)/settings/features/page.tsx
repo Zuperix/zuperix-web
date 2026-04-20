@@ -29,10 +29,12 @@ interface Customer {
   is_geo_tagging_enabled: boolean;
   is_transcription_enabled: boolean;
   is_single_category_enabled: boolean;
+  is_facial_recognition_enabled: boolean;
   ocr_last_toggle_at: string | null;
   geo_tagging_last_toggle_at: string | null;
   text_extraction_last_toggle_at: string | null;
   transcription_last_toggle_at: string | null;
+  facial_recognition_last_toggle_at: string | null;
   created_at: string;
 }
 
@@ -42,6 +44,7 @@ interface LocalSettings {
   is_geo_tagging_enabled: boolean;
   is_transcription_enabled: boolean;
   is_single_category_enabled: boolean;
+  is_facial_recognition_enabled: boolean;
 }
 
 export default function ProjectFeaturesPage() {
@@ -63,6 +66,7 @@ export default function ProjectFeaturesPage() {
           is_geo_tagging_enabled: data[0].is_geo_tagging_enabled,
           is_transcription_enabled: data[0].is_transcription_enabled,
           is_single_category_enabled: data[0].is_single_category_enabled,
+          is_facial_recognition_enabled: data[0].is_facial_recognition_enabled,
         });
       } else {
         setError('No customer settings found.');
@@ -89,7 +93,9 @@ export default function ProjectFeaturesPage() {
         ? customer.is_text_extraction_enabled
         : feature === 'is_geo_tagging_enabled'
           ? customer.is_geo_tagging_enabled
-          : customer.is_single_category_enabled;
+          : feature === 'is_facial_recognition_enabled'
+            ? customer.is_facial_recognition_enabled
+            : customer.is_single_category_enabled;
 
     const lastToggleAt = feature === 'is_ocr_enabled'
       ? customer.ocr_last_toggle_at
@@ -97,7 +103,9 @@ export default function ProjectFeaturesPage() {
         ? customer.text_extraction_last_toggle_at
         : feature === 'is_geo_tagging_enabled'
           ? customer.geo_tagging_last_toggle_at
-          : customer.transcription_last_toggle_at;
+          : feature === 'is_facial_recognition_enabled'
+            ? customer.facial_recognition_last_toggle_at
+            : customer.transcription_last_toggle_at;
 
     // If currently OFF in DB and trying to turn ON in Local
     if (!currentValueInDb && !localSettings[feature as keyof typeof localSettings]) {
@@ -145,6 +153,7 @@ export default function ProjectFeaturesPage() {
           isGeoTaggingEnabled: localSettings.is_geo_tagging_enabled,
           isTranscriptionEnabled: localSettings.is_transcription_enabled,
           isSingleCategoryEnabled: localSettings.is_single_category_enabled,
+          isFacialRecognitionEnabled: localSettings.is_facial_recognition_enabled,
         }),
       });
       
@@ -167,13 +176,15 @@ export default function ProjectFeaturesPage() {
     localSettings.is_text_extraction_enabled !== customer.is_text_extraction_enabled ||
     localSettings.is_geo_tagging_enabled !== customer.is_geo_tagging_enabled ||
     localSettings.is_transcription_enabled !== customer.is_transcription_enabled ||
-    localSettings.is_single_category_enabled !== customer.is_single_category_enabled
+    localSettings.is_single_category_enabled !== customer.is_single_category_enabled ||
+    localSettings.is_facial_recognition_enabled !== customer.is_facial_recognition_enabled
   );
 
   const showBackfillWarning = localSettings && customer && (
     (!customer.is_ocr_enabled && localSettings.is_ocr_enabled) ||
     (!customer.is_text_extraction_enabled && localSettings.is_text_extraction_enabled) ||
-    (!customer.is_geo_tagging_enabled && localSettings.is_geo_tagging_enabled)
+    (!customer.is_geo_tagging_enabled && localSettings.is_geo_tagging_enabled) ||
+    (!customer.is_facial_recognition_enabled && localSettings.is_facial_recognition_enabled)
   );
 
   if (loading) {
@@ -386,6 +397,52 @@ export default function ProjectFeaturesPage() {
             </div>
         </div>
 
+        {/* Facial Recognition Section */}
+        <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.is_facial_recognition_enabled ? 'border-pink-500/30' : 'border-gray-800'}`}>
+            <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-xl transition-colors ${localSettings.is_facial_recognition_enabled ? 'bg-pink-500/20' : 'bg-gray-800'}`}>
+                        <svg className={`h-6 w-6 ${localSettings.is_facial_recognition_enabled ? 'text-pink-400' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-white">Facial Recognition</h3>
+                            {isFeatureRestricted(customer.facial_recognition_last_toggle_at) && !customer.is_facial_recognition_enabled && (
+                                <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-[10px] font-bold text-amber-500 uppercase tracking-tight">
+                                    <ClockIcon className="h-3 w-3" />
+                                    Restricted: {getHoursRemaining(customer.facial_recognition_last_toggle_at)}h left
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-400">Detect and tag people within image assets automatically.</p>
+                    </div>
+                </div>
+                {customer.plan === 'GOLD' ? (
+                  <button
+                      onClick={() => handleToggleLocal('is_facial_recognition_enabled')}
+                      className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all focus:outline-none ${
+                          localSettings.is_facial_recognition_enabled ? 'bg-pink-600 shadow-[0_0_15px_rgba(236,72,153,0.4)]' : 'bg-gray-700'
+                      }`}
+                  >
+                      <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                          localSettings.is_facial_recognition_enabled ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                  </button>
+                ) : (
+                  <div className="text-xs px-2 py-1 bg-gray-800 text-gray-400 rounded-md font-medium border border-gray-700">
+                    GOLD PLAN
+                  </div>
+                )}
+            </div>
+            <div className="p-4 bg-pink-500/5 px-6 flex justify-between items-center">
+                <p className="text-xs text-pink-400/80 leading-relaxed font-medium max-w-2xl">
+                    Gold tier exclusive: The AI engine detects faces mapped directly to custom named tags, making people fully searchable across your workspaces.
+                </p>
+            </div>
+        </div>
+
         {/* Single Category Section */}
         <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.is_single_category_enabled ? 'border-orange-500/30' : 'border-gray-800'}`}>
             <div className="p-6 border-b border-gray-800 flex items-center justify-between">
@@ -449,6 +506,7 @@ export default function ProjectFeaturesPage() {
                         is_geo_tagging_enabled: customer.is_geo_tagging_enabled,
                         is_transcription_enabled: customer.is_transcription_enabled,
                         is_single_category_enabled: customer.is_single_category_enabled,
+                        is_facial_recognition_enabled: customer.is_facial_recognition_enabled,
                     })}
                     className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
                     disabled={isSaving}

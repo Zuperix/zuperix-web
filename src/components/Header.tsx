@@ -60,7 +60,7 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const isBronze = user?.customer?.plan?.toLowerCase() === "bronze";
+  const isLocked = user?.customer?.plan?.toLowerCase() !== "gold";
 
   const reverseSearchEnabled = useFeatureFlag(
     FEATURES.REVERSE_IMAGE_SEARCH.key,
@@ -106,9 +106,9 @@ export default function Header() {
       }
 
       const savedSemantic = localStorage.getItem("isSemantic") === "true";
-      setIsSemantic(isBronze ? false : savedSemantic);
+      setIsSemantic(isLocked ? false : savedSemantic);
     }
-  }, [isBronze]);
+  }, [isLocked]);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -122,7 +122,7 @@ export default function Header() {
   };
 
   const toggleSemantic = () => {
-    if (isBronze) {
+    if (isLocked) {
       setShowSearchInfo(true);
       return;
     }
@@ -294,12 +294,12 @@ export default function Header() {
                     className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all duration-300 ${
                       isSemantic
                         ? "bg-blue-500/10 border-blue-500/50 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
-                        : isBronze
+                        : isLocked
                           ? "bg-gray-100/50 dark:bg-gray-800/20 border-gray-200 dark:border-gray-800 text-gray-400 opacity-60 cursor-not-allowed group/locked"
                           : "bg-transparent border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                     }`}
                   >
-                    {isBronze ? (
+                    {isLocked ? (
                       <LockClosedIcon className="h-3 w-3 text-gray-500" />
                     ) : (
                       <div
@@ -343,27 +343,27 @@ export default function Header() {
                       <div className="absolute top-full right-0 mt-3 w-80 p-5 bg-gray-900/95 backdrop-blur-md border border-gray-700/50 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[60] animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="flex items-center gap-2 mb-3">
                           <div
-                            className={`p-1.5 rounded-lg ${isBronze ? "bg-amber-500/10" : "bg-blue-500/10"}`}
+                            className={`p-1.5 rounded-lg ${isLocked ? "bg-amber-500/10" : "bg-blue-500/10"}`}
                           >
-                            {isBronze ? (
+                            {isLocked ? (
                               <LockClosedIcon className="h-4 w-4 text-amber-500" />
                             ) : (
                               <SparklesIcon className="h-4 w-4 text-blue-500" />
                             )}
                           </div>
                           <span className="text-xs font-bold text-white uppercase tracking-wider">
-                            {isBronze
+                            {isLocked
                               ? "Unlock Premium Search"
                               : "About AI Search"}
                           </span>
                         </div>
                         <p className="text-[12px] text-gray-300 leading-relaxed font-medium mb-4">
-                          {isBronze
-                            ? "AI Search (Semantic Search) allows you to find assets by visual concepts and natural language. Upgrade to Silver or Gold to unlock this feature."
+                          {isLocked
+                            ? "AI Search (Semantic Search) allows you to find assets by visual concepts and natural language. Upgrade to Gold to unlock this feature."
                             : "Natural language search (Semantic Search) uses CLIP embeddings to find assets based on visual concepts rather than just keywords. AI analysis can occasionally vary, so please verify results for critical workflows."}
                         </p>
 
-                        {isBronze ? (
+                        {isLocked ? (
                           <Link
                             href="/settings/billing"
                             className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-[0.98]"
@@ -434,7 +434,7 @@ export default function Header() {
                               : undefined;
                           if (status === 403) {
                             alert(
-                              "Visual search is only available on Silver, Gold, and Platinum plans.",
+                              "Visual search is only available on the Gold plan.",
                             );
                           } else {
                             alert("Visual search failed. Please try again.");
