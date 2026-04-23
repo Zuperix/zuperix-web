@@ -6,6 +6,10 @@ export const FEATURES = {
     key: "reverse-image-search",
     name: "Reverse Image Search",
   },
+  FACE_DETECTION: {
+    key: "face-detection",
+    name: "Face Detection",
+  },
 } as const;
 
 export type FeatureKey = (typeof FEATURES)[keyof typeof FEATURES]["key"];

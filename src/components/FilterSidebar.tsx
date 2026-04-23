@@ -343,6 +343,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
     uploaded_by_id: { label: 'Uploaded by', icon: IdentificationIcon },
     average_rating: { label: 'Rating', icon: StarIcon },
     vault_uuids: { label: 'Asset Vaults', icon: LockClosedIcon },
+    person_ids: { label: 'People', icon: IdentificationIcon },
   };
 
 

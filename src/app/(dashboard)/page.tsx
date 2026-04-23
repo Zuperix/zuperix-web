@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense, useRef } from 'react';
+import { useState, useEffect, useCallback, Suspense, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch } from '@/lib/api';
@@ -63,7 +63,8 @@ function FilterChips({
     aspect_ratio: 'Aspect Ratio',
     category_paths: 'Category',
     uploaded_by_id: 'Uploaded by',
-    average_rating: 'Rating'
+    average_rating: 'Rating',
+    person_ids: 'People'
   };
 
   const chips: { key: string; label: string; value: any; displayValue: string; isRange?: boolean }[] = [];
@@ -86,7 +87,7 @@ function FilterChips({
   Object.entries(activeFilters).forEach(([key, value]) => {
     if (processedKeys.has(key)) return; // Skip already grouped range keys
     if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) return;
-    if (key.startsWith('ws') || key === 'page' || key === 'limit' || key === 'is_semantic') return;
+    if (key.startsWith('ws') || ['page', 'limit', 'is_semantic', 'sort_by', 'sort_order', 'sortBy', 'sortOrder'].includes(key.trim())) return;
 
     const label = filterLabels[key] || key.split('.').pop()!.replace(/_/g, ' ');
 
@@ -214,6 +215,19 @@ function DashboardContent() {
   const q = searchParams.get('q') || '';
   const isSemantic = searchParams.get('is_semantic') === 'true';
 
+  const [personMap, setPersonMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!activeWorkspace) return;
+    apiFetch<any[]>(`/workspaces/${activeWorkspace.id}/persons`)
+      .then(persons => {
+        const map: Record<string, string> = {};
+        persons.forEach(p => { map[p.id] = p.name; });
+        setPersonMap(map);
+      })
+      .catch(console.error);
+  }, [activeWorkspace]);
+
   // Delete Modal State
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [assetToDelete, setAssetToDelete] = useState<string | null>(null);
@@ -289,6 +303,18 @@ function DashboardContent() {
       setLoading(false);
     }
   }, [activeWorkspace, searchParams]);
+
+  const decoratedFilters = useMemo(() => {
+    if (!filters) return {};
+    const f = { ...filters };
+    if (f.person_ids && Array.isArray(f.person_ids)) {
+      f.person_ids = f.person_ids.map((b: any) => ({
+        ...b,
+        label: personMap[b.value] || b.value
+      }));
+    }
+    return f;
+  }, [filters, personMap]);
 
   useEffect(() => {
     fetchAssets();
@@ -462,7 +488,7 @@ function DashboardContent() {
   return (
     <div className="flex h-full overflow-hidden">
       <FilterSidebar
-        filters={filters}
+        filters={decoratedFilters}
         activeFilters={activeFilters}
         onFilterChange={handleFilterChange}
         onClearAll={handleClearAll}
@@ -549,7 +575,7 @@ function DashboardContent() {
 
             <FilterChips
               activeFilters={activeFilters}
-              filters={filters}
+              filters={decoratedFilters}
               onRemove={removeFilter}
               onClearAll={handleClearAll}
               disabled={isClearingAllFilters}
