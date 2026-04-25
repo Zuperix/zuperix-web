@@ -10,7 +10,8 @@ import {
   CpuChipIcon,
   TrashIcon,
   CreditCardIcon,
-  MegaphoneIcon
+  MegaphoneIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import DocumentationLink from '@/components/DocumentationLink';
@@ -71,6 +72,14 @@ const BASE_SETTINGS_SECTIONS = [
     icon: MegaphoneIcon,
     href: '/settings/announcement',
     color: 'bg-indigo-500/10 text-indigo-400',
+  },
+  {
+    id: 'integrations',
+    name: 'External Integrations',
+    description: 'Connect Google Drive, S3, and other sources for zero-copy asset management.',
+    icon: CloudArrowUpIcon,
+    href: '/settings/integrations',
+    color: 'bg-blue-600/10 text-blue-400',
   }
 ];
 

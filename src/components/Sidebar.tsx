@@ -20,6 +20,7 @@ import {
   CommandLineIcon,
   InboxIcon,
   ChartBarIcon,
+  CloudArrowUpIcon,
 } from '@heroicons/react/24/outline';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -33,6 +34,7 @@ const NAV = [
   // { name: 'Brand kits', href: '/brand', icon: PaintBrushIcon },
   { name: 'Portals', href: '/portals', icon: GlobeAltIcon },
   { name: 'Vaults', href: '/vaults', icon: LockClosedIcon },
+  { name: 'Integrations', href: '/settings/integrations', icon: CloudArrowUpIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 

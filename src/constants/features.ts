@@ -10,6 +10,10 @@ export const FEATURES = {
     key: "face-detection",
     name: "Face Detection",
   },
+  DRIVE_ADVANCED_MODES: {
+    key: "drive-advanced-modes",
+    name: "Drive Advanced Modes",
+  },
 } as const;
 
 export type FeatureKey = (typeof FEATURES)[keyof typeof FEATURES]["key"];
