@@ -20,6 +20,7 @@ import { useWorkspace } from '@/context/WorkspaceContext';
 import ShareAssetModal from './ShareAssetModal';
 import ThreeDPreview from './ThreeDPreview';
 import PdfPreview from './PdfPreview';
+import FileTypeIcon from './FileTypeIcon';
 
 type Asset = components['schemas']['MetadataEntryDto'] & {
   id: string;
@@ -149,12 +150,7 @@ const AssetCard = ({
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-            <div className="p-4 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 group-hover:scale-110 transition-transform duration-500">
-              <Icon className="h-12 w-12 text-indigo-500" />
-            </div>
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">{mimeType?.split('/')[1] || 'FILE'}</span>
-          </div>
+          <FileTypeIcon mimeType={mimeType} filename={originalName} />
         )}
 
         {/* Floating Controls Layer */}

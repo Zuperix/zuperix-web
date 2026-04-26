@@ -22,6 +22,7 @@ import {
   QueueListIcon,
   PencilIcon
 } from '@heroicons/react/24/outline';
+import FileTypeIcon from './FileTypeIcon';
 
 type Field = components['schemas']['CreateMetadataFieldDto'] & { id: string };
 type MetadataValue = { field_id: string; value: any };
@@ -264,8 +265,8 @@ export default function MetadataPanel({
                     }
                   }}
                 />
-                <div className="hidden absolute inset-0 items-center justify-center bg-gray-800">
-                  <DocumentIcon className="h-12 w-12 text-gray-600" />
+                <div className="absolute inset-0">
+                  <FileTypeIcon mimeType={asset?.mime_type || ''} filename={asset?.original_name || ''} />
                 </div>
               </>
             )}

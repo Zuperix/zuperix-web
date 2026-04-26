@@ -26,6 +26,7 @@ import CustomImage from "./CustomImage";
 import { FEATURES } from "@/constants/features";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
 import { useFeatureFlag } from "@/providers/LaunchDarklyProvider";
+import FileTypeIcon from "./FileTypeIcon";
 
 type SearchAsset = {
   id: string;
@@ -518,7 +519,9 @@ export default function Header() {
                             />
                           </div>
                         ) : (
-                          <DocumentIcon className="h-6 w-6 text-gray-400 dark:text-gray-600 group-hover/item:text-blue-500 transition-colors" />
+                          <div className="w-full h-full transform scale-75">
+                            <FileTypeIcon mimeType={asset.mime_type || ''} filename={asset.original_name || ''} />
+                          </div>
                         )}
                       </div>
                       <div className="flex flex-col min-w-0 flex-1">

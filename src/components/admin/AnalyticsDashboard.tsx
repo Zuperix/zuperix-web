@@ -19,6 +19,7 @@ import { apiFetch } from '@/lib/api';
 import { formatBytes, formatMinutes } from '@/lib/format';
 import CustomImage from '../CustomImage';
 import UsageQuotaBar from './UsageQuotaBar';
+import FileTypeIcon from '../FileTypeIcon';
 
 interface OverviewStats {
   total_storage: number;
@@ -294,9 +295,8 @@ export default function AnalyticsDashboard() {
                     className="object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <DocumentIcon className="h-10 w-10 text-gray-300 dark:text-gray-700 group-hover:text-blue-500 transition-colors" />
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{asset.asset.mime_type?.split('/')[1] || 'FILE'}</span>
+                  <div className="w-full h-full transform scale-75">
+                    <FileTypeIcon mimeType={asset.asset.mime_type || ''} filename={asset.asset.original_name || ''} />
                   </div>
                 )}
 

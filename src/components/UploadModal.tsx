@@ -670,13 +670,13 @@ export default function UploadModal({
                 {dragging ? 'Drop files here' : 'Click or drag & drop files'}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {entries.length > 0 ? `${entries.length} selected · Add more` : `Images, Videos, 3D Models, PDFs up to ${MAX_FILE_SIZE_MB} MB each`}
+                {entries.length > 0 ? `${entries.length} selected · Add more` : `Images, Videos, InDesign, Illustrator, 3D Models, PDFs up to ${MAX_FILE_SIZE_MB} MB each`}
               </p>
               <input
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.svg,.glb,.gltf,.psd,image/vnd.adobe.photoshop"
+                accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.svg,.glb,.gltf,.psd,image/vnd.adobe.photoshop,.indd,application/x-indesign,.ai,application/postscript"
                 className="hidden"
                 onChange={(e) => e.target.files && addFiles(e.target.files)}
               />
