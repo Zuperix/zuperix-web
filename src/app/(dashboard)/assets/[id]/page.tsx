@@ -37,7 +37,8 @@ import {
   ChevronRightIcon,
   CheckCircleIcon,
   XCircleIcon,
-  PencilIcon
+  PencilIcon,
+  InboxArrowDownIcon
 } from '@heroicons/react/24/outline';
 import DownloadModal from '@/components/DownloadModal';
 import { useCategories, Category } from '@/hooks/useCategories';
@@ -1161,6 +1162,24 @@ export default function AssetDetailPage() {
                     <div className="absolute right-full mr-3 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">{isFaceTaggingMode ? 'Cancel Tagging' : 'Add Face Tag'}</div>
                   </button>
                 )}
+                {asset?.source === 'google_drive' && !asset?.is_imported && (
+                  <button
+                    onClick={async (e) => { 
+                      e.stopPropagation(); 
+                      try {
+                        await googleDriveApi.promoteAsset(assetId);
+                        toast.success('Asset promotion started! It will be fully imported in a few moments.');
+                        fetchData();
+                      } catch (err: any) {
+                        toast.error(err.message || 'Failed to promote asset');
+                      }
+                    }}
+                    className="p-3.5 bg-blue-600 border border-blue-400 rounded-2xl shadow-2xl text-white hover:scale-110 active:scale-95 transition-all text-white group/btn"
+                  >
+                    <InboxArrowDownIcon className="h-5 w-5" />
+                    <div className="absolute right-full mr-3 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded-lg opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">Promote to Native Asset</div>
+                  </button>
+                )}
               </div>
 
               <div
@@ -1391,6 +1410,20 @@ export default function AssetDetailPage() {
                       >
                         View Original
                       </button>
+                    </div>
+                  )}
+
+                  {/* Google Drive Source Indicator */}
+                  {asset?.source === 'google_drive' && (
+                    <div className="absolute top-6 left-6 z-30 pointer-events-none">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-[#4285F4] text-white rounded-xl shadow-2xl border border-white/20 backdrop-blur-sm">
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                          <path d="M7.71 3.502L1.15 15l3.414 6h13.15l6.56-11.498L17.71 3.502H7.71zm1.26 2h7.06l5.41 9.498h-7.06L9 15.002z" />
+                        </svg>
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          {asset.is_imported ? 'Managed via Google Drive' : 'Linked via Google Drive'}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>

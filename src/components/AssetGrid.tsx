@@ -35,6 +35,9 @@ type Asset = components['schemas']['MetadataEntryDto'] & {
   is_semantic_match?: boolean;
   asset_live_url?: string;
   thumbnail_lg_url?: string;
+  source?: string;
+  is_imported?: boolean;
+  drive_file_id?: string;
 };
 
 const is3D = (mime: string, filename: string) => {
@@ -179,6 +182,14 @@ const AssetCard = ({
                 <div className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border backdrop-blur-xl flex items-center gap-1 ${STATUS_STYLING[asset.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
                   {asset.status === 'pending_review' && <LockClosedIcon className="h-2.5 w-2.5" />}
                   {STATUS_LABELS[asset.status] || asset.status}
+                </div>
+              )}
+              {asset.source === 'google_drive' && (
+                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-600 border border-white/20 text-white text-[8px] font-black uppercase tracking-tighter rounded-lg backdrop-blur-xl shadow-lg">
+                  <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M7.71 3.502L1.15 15l3.414 6h13.15l6.56-11.498L17.71 3.502H7.71zm1.26 2h7.06l5.41 9.498h-7.06L9 15.002z" />
+                  </svg>
+                  {asset.is_imported ? 'Google Drive' : 'Drive Linked'}
                 </div>
               )}
               {asset.is_ocr_match && (
