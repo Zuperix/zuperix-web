@@ -36,6 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isLoginOrRegister = currentPath.startsWith('/login') || currentPath.startsWith('/register');
     const isOnboardingPage = currentPath.startsWith('/onboarding');
 
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('canva_token')) {
+        return;
+      }
+    }
 
     if (profile.customer && (!profile.customer.is_onboarding_completed || process.env.NEXT_PUBLIC_SHOW_ONBOARDING === 'true')) {
       if (!isOnboardingPage) {

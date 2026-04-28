@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useSearchParams } from 'next/navigation';
+import { apiFetch } from '@/lib/api';
 import Link from 'next/link';
 import { Typewriter } from '@/components/Typewriter';
 
@@ -10,7 +12,31 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, signInWithGoogle } = useAuth();
+  const [isLinked, setIsLinked] = useState(false);
+  const { user, login, signInWithGoogle } = useAuth();
+  const searchParams = useSearchParams();
+  const canvaToken = searchParams.get('canva_token');
+
+  useEffect(() => {
+    const linkCanva = async () => {
+      if (user && canvaToken) {
+        try {
+          await apiFetch('/canva/dam/connect', {
+            method: 'POST',
+            body: JSON.stringify({ canva_user_token: canvaToken }),
+          });
+          setIsLinked(true);
+          // Account linked! Now close the popup if we are in one
+          if (window.opener) {
+            window.close();
+          }
+        } catch (err) {
+          console.error('Failed to link Canva account:', err);
+        }
+      }
+    };
+    linkCanva();
+  }, [user, canvaToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +114,12 @@ export default function LoginPage() {
               <p className="text-zinc-500 dark:text-zinc-400">Welcome back! Please enter your details.</p>
             </div>
             
+            {isLinked && (
+              <div className="mb-6 p-4 text-sm font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/20 animate-in fade-in slide-in-from-top-1">
+                ✅ Successfully linked with Canva! You may close this tab and return to the Canva application.
+              </div>
+            )}
+
             {error && (
               <div className="mb-6 p-4 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/10 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-900/20 animate-in fade-in slide-in-from-top-1">
                 {error}
