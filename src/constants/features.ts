@@ -14,6 +14,10 @@ export const FEATURES = {
     key: "drive-advanced-modes",
     name: "Drive Advanced Modes",
   },
+  EMAIL_ASSET: {
+    key: "email-asset",
+    name: "Email Asset",
+  },
 } as const;
 
 export type FeatureKey = (typeof FEATURES)[keyof typeof FEATURES]["key"];

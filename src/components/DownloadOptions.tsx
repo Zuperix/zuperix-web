@@ -12,7 +12,8 @@ import {
   ScissorsIcon
 } from '@heroicons/react/24/outline';
 import { apiDownload, apiFetch } from '@/lib/api';
-import { toast } from 'sonner';
+import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
+import { FEATURES } from '@/constants/features';
 
 interface DownloadOptionsProps {
   assetId: string;
@@ -61,6 +62,8 @@ export default function DownloadOptions({
   const [quality, setQuality] = useState(90);
   const [email, setEmail] = useState('');
   const [pageRange, setPageRange] = useState('');
+
+  const emailAssetEnabled = useFeatureFlag(FEATURES.EMAIL_ASSET.key, true);
 
   const originalAspectRatio = originalWidth && originalHeight ? originalWidth / originalHeight : 1;
 
@@ -454,34 +457,38 @@ export default function DownloadOptions({
             )}
 
             {/* Email Field with explicit styling */}
-            <div className="space-y-2 pt-2">
-               <div className="relative group">
-                 <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email to send asset..."
-                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl px-10 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-500"
-                  />
-                  <EnvelopeIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-               </div>
-            </div>
+            {emailAssetEnabled && (
+              <div className="space-y-2 pt-2">
+                 <div className="relative group">
+                   <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Email to send asset..."
+                      className="w-full bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl px-10 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-500"
+                    />
+                    <EnvelopeIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                 </div>
+              </div>
+            )}
 
             {/* Actions Grid */}
             <div className="grid grid-cols-4 gap-2 pt-1">
-              <button
-                onClick={handleSendEmail}
-                disabled={loading === 'email'}
-                className="col-span-1 h-12 flex items-center justify-center bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-2xl transition-all disabled:opacity-50 group"
-                title="Send via Email"
-              >
-                <EnvelopeIcon className={`h-5 w-5 ${loading === 'email' ? 'animate-bounce text-blue-500' : 'text-gray-400 group-hover:text-blue-500'}`} />
-              </button>
+              {emailAssetEnabled && (
+                <button
+                  onClick={handleSendEmail}
+                  disabled={loading === 'email'}
+                  className="col-span-1 h-12 flex items-center justify-center bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-2xl transition-all disabled:opacity-50 group"
+                  title="Send via Email"
+                >
+                  <EnvelopeIcon className={`h-5 w-5 ${loading === 'email' ? 'animate-bounce text-blue-500' : 'text-gray-400 group-hover:text-blue-500'}`} />
+                </button>
+              )}
               
               <button
                 onClick={handleCustomDownload}
                 disabled={!!loading}
-                className="col-span-3 h-12 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                className={`${emailAssetEnabled ? 'col-span-3' : 'col-span-4'} h-12 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-3 disabled:opacity-50`}
               >
                 {loading === 'custom' ? (
                   <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
