@@ -25,15 +25,15 @@ const INTEGRATIONS_CONFIG = [
     href: '/settings/integrations/google-drive',
     enabled: true,
   },
-  {
-    id: 'aws-s3',
-    name: 'AWS S3',
-    description: 'Mount S3 buckets as external storage for zero-copy management.',
-    icon: '/integrations/aws-s3.svg',
-    status: 'Coming Soon',
-    href: '#',
-    enabled: false,
-  }
+  // {
+  //   id: 'aws-s3',
+  //   name: 'AWS S3',
+  //   description: 'Mount S3 buckets as external storage for zero-copy management.',
+  //   icon: '/integrations/aws-s3.svg',
+  //   status: 'Coming Soon',
+  //   href: '#',
+  //   enabled: false,
+  // }
 ];
 
 export default function IntegrationsPage() {

@@ -23,6 +23,7 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { BulkImport } from './BulkImport';
 import { ImportHistory } from './ImportHistory';
+import { TemplateManager } from './TemplateManager';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 
 type Field = { 
@@ -66,7 +67,7 @@ export default function MetadataManagementPage() {
     is_filterable: true,
   });
 
-  const [activeTab, setActiveTab] = useState<'fields' | 'bulk' | 'history'>('fields');
+  const [activeTab, setActiveTab] = useState<'fields' | 'templates' | 'bulk' | 'history'>('fields');
   const [showReindexWarning, setShowReindexWarning] = useState(false);
   const [fieldToDelete, setFieldToDelete] = useState<Field | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -233,6 +234,17 @@ export default function MetadataManagementPage() {
             Field Definitions
           </button>
           <button
+            onClick={() => setActiveTab('templates')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+              activeTab === 'templates' 
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <IdentificationIcon className="h-4 w-4" />
+            Templates
+          </button>
+          <button
             onClick={() => setActiveTab('bulk')}
             className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'bulk' 
@@ -261,6 +273,8 @@ export default function MetadataManagementPage() {
         <BulkImport workspaceId={activeWorkspace.id} />
       ) : activeTab === 'history' ? (
         <ImportHistory workspaceId={activeWorkspace.id} />
+      ) : activeTab === 'templates' ? (
+        <TemplateManager workspaceId={activeWorkspace.id} fields={fields} />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Create Form */}

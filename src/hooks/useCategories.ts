@@ -13,6 +13,7 @@ export interface Category {
   is_smart: boolean;
   smart_filter: any;
   asset_count: number;
+  metadata_template_id: string | null;
   children?: Category[];
 }
 

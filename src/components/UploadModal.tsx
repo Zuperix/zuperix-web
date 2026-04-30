@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, DragEvent } from 'react';
+import { useState, useRef, useCallback, DragEvent, useEffect } from 'react';
 import {
   XMarkIcon,
   CloudArrowUpIcon,
@@ -19,7 +19,7 @@ import {
   CubeTransparentIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
-import { BASE_URL } from '@/lib/api';
+import { BASE_URL, apiFetch } from '@/lib/api';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useVaults } from '@/hooks/useVaults';
 import { useMetadataFields, MetadataField } from '@/hooks/useMetadataFields';
@@ -347,11 +347,44 @@ export default function UploadModal({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [selectedVaultId, setSelectedVaultId] = useState<string>('');
 
+  // Helper to flatten categories for the select dropdown
+  const flattenCategories = (cats: Category[], depth = 0): { id: string, name: string, depth: number, metadata_template_id: string | null }[] => {
+    let result: { id: string, name: string, depth: number, metadata_template_id: string | null }[] = [];
+    cats.forEach(cat => {
+      result.push({ id: cat.id, name: cat.name, depth, metadata_template_id: cat.metadata_template_id });
+      if (cat.children && cat.children.length > 0) {
+        result = result.concat(flattenCategories(cat.children, depth + 1));
+      }
+    });
+    return result;
+  };
+
+  const flatCategories = flattenCategories(categories);
+
   // Metadata state
   const { fields: metadataFields } = useMetadataFields(workspaceId);
   const [initialMetadata, setInitialMetadata] = useState<Record<string, any>>({});
   const [showMetadata, setShowMetadata] = useState(false);
   const [metadataSearch, setMetadataSearch] = useState('');
+  const [activeTemplateFields, setActiveTemplateFields] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      setActiveTemplateFields(null);
+      return;
+    }
+    const cat = flatCategories.find(c => c.id === selectedCategoryId);
+    if (cat?.metadata_template_id) {
+      apiFetch<any>(`/workspaces/${workspaceId}/metadata/templates/${cat.metadata_template_id}`)
+        .then(data => {
+          setActiveTemplateFields(data.field_ids || data.fieldIds || []);
+          setShowMetadata(true); // Auto expand required template fields
+        })
+        .catch(() => setActiveTemplateFields(null));
+    } else {
+      setActiveTemplateFields(null);
+    }
+  }, [selectedCategoryId, workspaceId, flatCategories]);
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const arr = Array.from(files).slice(0, MAX_FILES - entries.length);
@@ -469,19 +502,7 @@ export default function UploadModal({
             counts.total,
         );
 
-  // Helper to flatten categories for the select dropdown
-  const flattenCategories = (cats: Category[], depth = 0): { id: string, name: string, depth: number }[] => {
-    let result: { id: string, name: string, depth: number }[] = [];
-    cats.forEach(cat => {
-      result.push({ id: cat.id, name: cat.name, depth });
-      if (cat.children && cat.children.length > 0) {
-        result = result.concat(flattenCategories(cat.children, depth + 1));
-      }
-    });
-    return result;
-  };
 
-  const flatCategories = flattenCategories(categories);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm">
@@ -604,6 +625,7 @@ export default function UploadModal({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 max-h-[300px] overflow-y-auto px-1 pt-1 custom-scrollbar">
                   {metadataFields
+                    .filter(f => !selectedCategoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
                     .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase()))
                     .map((field) => (
                       <MetadataFieldInput
@@ -613,9 +635,15 @@ export default function UploadModal({
                         onChange={(val) => setInitialMetadata(prev => ({ ...prev, [field.key]: val }))}
                       />
                   ))}
-                  {metadataFields.filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
+                  {metadataFields
+                    .filter(f => !selectedCategoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
+                    .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
                     <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
-                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching &quot;{metadataSearch}&quot;</p>
+                        {metadataSearch ? (
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching &quot;{metadataSearch}&quot;</p>
+                        ) : (
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No metadata fields required for this category</p>
+                        )}
                     </div>
                   )}
                 </div>

@@ -485,4 +485,77 @@ test.describe('Advanced Metadata & Complex Types', () => {
     const dateText = await page.locator('tr').first().locator('td').first().innerText();
     expect(dateText).not.toContain('Invalid Date');
   });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Test: Metadata Templates lifecycle — Create, Assign to Category and Lazy Load
+  // ─────────────────────────────────────────────────────────────────────────────
+  test('Metadata Templates: Create, Map to Category & Lazy Load in Upload', async ({ page }) => {
+    test.setTimeout(180000);
+
+    // 0. Create a Category first
+    const categoryName = `${testPrefix}_Cat`;
+    await page.goto('/categories');
+    await dismissTransientOverlays(page);
+    await page.getByRole('button', { name: /Add Root Category/i }).click();
+    await page.getByPlaceholder('Internal ID or Name...').fill(categoryName);
+    await page.getByRole('button', { name: /^Create$/i }).click();
+    await expect(page.getByText(categoryName, { exact: true })).toBeVisible({ timeout: 20000 });
+
+    // 1. Create a Custom Field next
+    const fieldLabel = `${testPrefix}_TplField`;
+    await page.goto('/settings/metadata');
+    await dismissTransientOverlays(page);
+    
+    await page.getByPlaceholder(/e\.g\. Photographer Name/i).fill(fieldLabel);
+    await page.locator('select').first().selectOption({ label: 'Short Text' });
+    await page.getByRole('button', { name: /Add Field/i }).click();
+    await expect(page.getByRole('heading', { name: fieldLabel })).toBeVisible();
+
+    // 2. Locate the Template Manager and Create a Template
+    const templateName = `${testPrefix}_Tpl`;
+    await page.getByPlaceholder(/e\.g\. Jio Photography/i).fill(templateName);
+    
+    // Select the newly created field from the list
+    await page.locator('label').filter({ hasText: fieldLabel }).getByRole('checkbox').check();
+    
+    // Wait for the categories to load and select the newly created category
+    await page.getByPlaceholder('Filter categories...').fill(categoryName);
+    const catCheckbox = page.locator('div.max-h-40').getByRole('checkbox').first();
+    await catCheckbox.waitFor({ state: 'visible', timeout: 30000 });
+    await catCheckbox.check();
+
+
+    // Submit Template
+    await page.getByRole('button', { name: /Create Template/i }).click();
+    
+    // Expect success message or the template to be visible in the list
+    await expect(page.getByRole('heading', { name: templateName })).toBeVisible();
+
+    // 3. Test Lazy Loading in Upload Modal
+    await page.goto('/');
+    await dismissTransientOverlays(page);
+    await page.getByRole('button', { name: /^Upload$/i }).click();
+    const uploadModal = page.locator('div.fixed', { has: page.getByRole('heading', { name: /Bulk Upload/i }) });
+    await expect(uploadModal).toBeVisible();
+
+    const testFileName = `test_${testPrefix}_tpl_upload.txt`;
+    const testFilePath = path.join(__dirname, testFileName);
+    fs.writeFileSync(testFilePath, 'template upload test content');
+
+    await uploadModal.locator('input[type="file"]').setInputFiles(testFilePath);
+    await expect(uploadModal.getByText(testFileName)).toBeVisible();
+
+    // Select Category and verify that mapped fields are lazy loaded
+    const categorySelect = uploadModal.locator('select').first();
+    await categorySelect.selectOption({ index: 1 }); // select first category option (which corresponds to mapped cat)
+    
+    // Now our Template's fields should be loaded lazily!
+    // Check if our Custom Field is visible in the upload modal
+    await expect(uploadModal.getByLabel(fieldLabel, { exact: true })).toBeVisible({ timeout: 20000 });
+    
+    // Clean up file
+    if (fs.existsSync(testFilePath)) fs.unlinkSync(testFilePath);
+  });
 });
+
+
