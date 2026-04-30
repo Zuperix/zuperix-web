@@ -15,14 +15,11 @@ test.describe('Asset Transcription', () => {
     await searchInput.fill('ai transcipt demo.mp4');
     await searchInput.press('Enter');
 
-    // Wait for search results
     await expect(page.locator('p', { hasText: /Showing/i }).first()).toBeVisible();
     
-    // Click on the video asset card (using regex to be resilient to the "transcipt" typo in seeded data)
     const assetCard = page.getByRole('heading', { name: /ai transci?pt demo\.mp4/i }).first();
     await assetCard.click();
 
-    // 2. Wait for detail page to load
     await expect(page.getByRole('heading', { level: 1, name: /ai transci?pt demo\.mp4/i })).toBeVisible({ timeout: 15000 });
 
     // 3. Open Transcript Tab

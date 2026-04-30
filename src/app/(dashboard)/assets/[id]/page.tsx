@@ -1430,41 +1430,6 @@ export default function AssetDetailPage() {
               </div>
             </div>
 
-            {/* Quick Summary under Image */}
-            <div className="w-full max-w-4xl mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-[#151720] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex items-center gap-4 transition-all hover:border-blue-200 dark:hover:border-blue-900/50">
-                <div className="h-10 w-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
-                  <GlobeAltIcon className="h-5 w-5 text-blue-500" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Storage</span>
-                  <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">Public Assets</span>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-[#151720] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex items-center gap-4 transition-all hover:border-indigo-200 dark:hover:border-indigo-900/50">
-                <div className="h-10 w-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center">
-                  <Square3Stack3DIcon className="h-5 w-5 text-indigo-500" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Type</span>
-                  <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                    {asset?.mime_type?.startsWith('image/') ? 'Image' : asset?.mime_type === 'application/pdf' ? 'PDF Document' : 'Asset File'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-[#151720] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex items-center gap-4 transition-all hover:border-emerald-200 dark:hover:border-emerald-900/50">
-                <div className="h-10 w-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
-                  <PhotoIcon className="h-5 w-5 text-emerald-500" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Ratio</span>
-                  <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{asset?.aspect_ratio?.toFixed(2) || 'N/A'}</span>
-                </div>
-              </div>
-            </div>
-
             <div className="w-full max-w-4xl mt-8 mb-20 space-y-8 md:space-y-12">
               {/* Categories & Collections Group */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
@@ -2012,6 +1977,7 @@ export default function AssetDetailPage() {
                         { label: 'Dimensions', value: asset?.width && asset?.height ? `${asset.width} × ${asset.height} px` : 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                         { label: 'Format', value: asset?.mime_type, icon: InformationCircleIcon, color: 'text-purple-500' },
                         { label: 'Uploaded', value: asset?.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A', icon: ClockIcon, color: 'text-amber-500' },
+                        { label: 'Ratio', value: asset?.aspect_ratio?.toFixed(2) || 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                       ].map((item, i) => (
                         <div key={i} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center justify-between transition-all group/card border-b-2 hover:border-b-blue-500">
                           <div className="flex items-center gap-4">
@@ -2232,6 +2198,7 @@ export default function AssetDetailPage() {
                     { label: 'Dimensions', value: asset?.width && asset?.height ? `${asset.width} × ${asset.height} px` : 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                     { label: 'Format', value: asset?.mime_type, icon: InformationCircleIcon, color: 'text-purple-500' },
                     { label: 'Uploaded', value: asset?.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A', icon: ClockIcon, color: 'text-amber-500' },
+                    { label: 'Ratio', value: asset?.aspect_ratio?.toFixed(2) || 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                   ].map((item, i) => (
                     <div key={i} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl flex flex-col gap-2 transition-all hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-none group/card border-b-2 hover:border-b-blue-500">
                       <div className="flex items-center gap-2">

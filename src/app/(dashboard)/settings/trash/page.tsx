@@ -9,8 +9,11 @@ import MetadataPanel from '@/components/MetadataPanel';
 import {
   TrashIcon,
   ArrowPathIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
+import Pagination from '@/components/Pagination';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -32,6 +35,9 @@ export default function TrashSettingsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -53,9 +59,12 @@ export default function TrashSettingsPage() {
         ...(searchQuery && { q: searchQuery }),
         ...(startDate && { start_date: startDate }),
         ...(endDate && { end_date: endDate }),
+        page: page.toString(),
+        limit: limit.toString(),
       });
       const data = await apiFetch<any>(`/assets/trash?${params.toString()}`);
       setAssets(data.assets || []);
+      setTotalPages(data.total_pages || 1);
     } catch (err) {
       console.error('Failed to fetch trash:', err);
       toast.error('Failed to load trash items');
@@ -113,11 +122,15 @@ export default function TrashSettingsPage() {
   };
 
   useEffect(() => {
+    setPage(1);
+  }, [searchQuery, startDate, endDate]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchTrash();
     }, 300);
     return () => clearTimeout(timer);
-  }, [activeWorkspace, searchQuery, startDate, endDate]);
+  }, [activeWorkspace, searchQuery, startDate, endDate, page, limit]);
 
   if (!activeWorkspace) return null;
 
@@ -150,6 +163,20 @@ export default function TrashSettingsPage() {
             <TrashIcon className="h-4 w-4" />
             EMPTY TRASH
           </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+              className="appearance-none px-3 py-2 bg-gray-900 border border-gray-800 text-gray-300 text-xs font-bold rounded-xl hover:bg-gray-800 focus:ring-2 focus:ring-red-500/20 outline-none cursor-pointer transition-all font-mono tracking-tighter"
+            >
+              {[20, 50, 100].map(size => (
+                <option key={size} value={size}>{size} PER PAGE</option>
+              ))}
+            </select>
+          </div>
           <button
             onClick={fetchTrash}
             className="flex items-center gap-2 px-4 py-2 bg-gray-900 border border-gray-800 rounded-xl text-xs font-bold text-gray-300 hover:bg-gray-800 transition-all font-mono tracking-tighter"
@@ -228,6 +255,12 @@ export default function TrashSettingsPage() {
               onRestore={handleRestore}
               onSelect={(id) => setSelectedAssetId(id === selectedAssetId ? null : id)}
               selectedIds={selectedAssetId ? [selectedAssetId] : []}
+            />
+
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
             />
           </div>
         )}

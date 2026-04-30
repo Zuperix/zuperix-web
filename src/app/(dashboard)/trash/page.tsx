@@ -5,10 +5,10 @@ import { apiFetch } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import AssetGrid from '@/components/AssetGrid';
 import MetadataPanel from '@/components/MetadataPanel';
+import Pagination from '@/components/Pagination';
 import { 
   TrashIcon, 
   ArrowPathIcon, 
-  ArrowUturnLeftIcon 
 } from '@heroicons/react/24/outline';
 
 export default function TrashPage() {
@@ -16,17 +16,22 @@ export default function TrashPage() {
   const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchTrash = async () => {
     if (!activeWorkspace) return;
     try {
       setLoading(true);
-      // Assuming we have a way to list deleted assets. 
-      // For now, let's assume the list assets endpoint supports a include_deleted or similar,
-      // or we use a separate endpoint if we implemented one.
-      // In the implementation plan, we added soft deletes.
-      const data = await apiFetch<any[]>(`/assets?workspace_id=${activeWorkspace.id}&deleted=true`);
-      setAssets(data);
+      const params = new URLSearchParams({
+        workspace_id: activeWorkspace.id,
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      const data = await apiFetch<any>(`/assets/trash?${params.toString()}`);
+      setAssets(data.assets || []);
+      setTotalPages(data.total_pages || 1);
     } catch (err) {
       console.error('Failed to fetch trash:', err);
     } finally {
@@ -34,9 +39,18 @@ export default function TrashPage() {
     }
   };
 
+  const handleRestore = async (id: string) => {
+    try {
+      await apiFetch(`/assets/${id}/restore`, { method: 'POST' });
+      fetchTrash();
+    } catch (err) {
+      console.error('Failed to restore asset:', err);
+    }
+  };
+
   useEffect(() => {
     fetchTrash();
-  }, [activeWorkspace]);
+  }, [activeWorkspace, page, limit]);
 
   if (!activeWorkspace) return null;
 
@@ -53,6 +67,18 @@ export default function TrashPage() {
               <p className="text-gray-400 text-sm mt-0.5">Recover or permanently delete items from <span className="text-gray-300 font-medium">{activeWorkspace.name}</span></p>
             </div>
             <div className="flex space-x-3">
+              <select
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="bg-gray-900 border border-gray-800 text-gray-300 text-xs font-bold rounded-xl px-3 py-2 outline-none cursor-pointer"
+              >
+                {[20, 50, 100].map(size => (
+                  <option key={size} value={size}>{size} PER PAGE</option>
+                ))}
+              </select>
               <button 
                 onClick={fetchTrash}
                 className="p-2 text-gray-500 hover:text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
@@ -62,7 +88,7 @@ export default function TrashPage() {
             </div>
           </div>
 
-          {loading ? (
+          {loading && assets.length === 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="animate-pulse bg-gray-800 aspect-square rounded-xl"></div>
@@ -75,12 +101,21 @@ export default function TrashPage() {
               <p className="text-gray-600 text-xs mt-1">Deleted items will appear here for 30 days</p>
             </div>
           ) : (
-            <AssetGrid 
-              assets={assets} 
-              onDelete={(id) => {/* Handle permanent delete */}} 
-              onSelect={(id) => setSelectedAssetId(id === selectedAssetId ? null : id)}
-              selectedIds={selectedAssetId ? [selectedAssetId] : []}
-            />
+            <>
+              <AssetGrid 
+                assets={assets} 
+                onDelete={(id) => {/* Handle permanent delete */}} 
+                onRestore={handleRestore}
+                onSelect={(id) => setSelectedAssetId(id === selectedAssetId ? null : id)}
+                selectedIds={selectedAssetId ? [selectedAssetId] : []}
+                loading={loading}
+              />
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </>
           )}
         </div>
       </div>
@@ -95,3 +130,4 @@ export default function TrashPage() {
     </div>
   );
 }
+

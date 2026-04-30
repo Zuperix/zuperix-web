@@ -16,11 +16,11 @@ test('users page shows existing user inventory', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Add New User/i })).toBeVisible();
 
   const userRow = page.getByRole('row', {
-    name: /Test User\s+blaze\.blog18@gmail\.com\s+SUPER ADMIN/i,
+    name: /John Doe\s+blaze\.blog18@gmail\.com\s+SUPER ADMIN/i,
   });
 
   await expect(userRow).toBeVisible();
-  await expect(userRow.getByText('Test User', { exact: true })).toBeVisible();
+  await expect(userRow.getByText('John Doe', { exact: true })).toBeVisible();
   await expect(userRow.getByText('blaze.blog18@gmail.com', { exact: true })).toBeVisible();
   await expect(userRow.getByText(/SUPER ADMIN/i)).toBeVisible();
   await expect(userRow.getByRole('button', { name: /Manage Access/i })).toBeVisible();
