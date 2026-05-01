@@ -44,27 +44,34 @@ function FilterChips({
 }: {
   activeFilters: Record<string, any>,
   filters: any,
+  filterConfig?: Record<string, { label: string; type: string }>,
   onRemove: (key: string, value?: any) => void,
   onClearAll: () => void,
   disabled?: boolean,
 }) {
-  const filterLabels: Record<string, string> = {
-    mime_type: 'File Type',
-    orientation: 'Orientation',
-    tag_uuids: 'Tag',
-    file_extension: 'Extension',
-    color_palette: 'Color',
-    category_uuids: 'Category',
-    collection_uuids: 'Collection',
-    q: 'Search',
-    created_at: 'Uploaded',
-    release_date: 'Released',
-    expiration_date: 'Expires',
-    aspect_ratio: 'Aspect Ratio',
-    category_paths: 'Category',
-    uploaded_by_id: 'Uploaded by',
-    average_rating: 'Rating',
-    person_ids: 'People'
+
+  const getLabel = (key: string) => {
+    const filterLabels: Record<string, string> = {
+      mime_type: 'File Type',
+      orientation: 'Orientation',
+      tag_uuids: 'Tag',
+      file_extension: 'Extension',
+      color_palette: 'Color',
+      category_uuids: 'Category',
+      collection_uuids: 'Collection',
+      q: 'Search',
+      created_at: 'Uploaded',
+      release_date: 'Released',
+      expiration_date: 'Expires',
+      aspect_ratio: 'Aspect Ratio',
+      category_paths: 'Category',
+      uploaded_by_id: 'Uploaded by',
+      average_rating: 'Rating',
+      person_ids: 'People'
+    };
+    if (filterLabels[key]) return filterLabels[key];
+    if (filterConfig && filterConfig[key]) return filterConfig[key].label;
+    return key.split('.').pop()!.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
 
   const chips: { key: string; label: string; value: any; displayValue: string; isRange?: boolean }[] = [];
@@ -89,7 +96,7 @@ function FilterChips({
     if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) return;
     if (key.startsWith('ws') || ['page', 'limit', 'is_semantic', 'sort_by', 'sort_order', 'sortBy', 'sortOrder'].includes(key.trim())) return;
 
-    const label = filterLabels[key] || key.split('.').pop()!.replace(/_/g, ' ');
+    const label = getLabel(key);
 
     if (Array.isArray(value)) {
       value.forEach(v => {
@@ -120,12 +127,17 @@ function FilterChips({
 
   // 3. Third pass: Add grouped range chips
   Object.entries(rangeGroups).forEach(([baseKey, values]) => {
-    const label = filterLabels[baseKey] || baseKey.split('.').pop()!.replace(/_/g, ' ');
+    const label = getLabel(baseKey);
 
     const formatValue = (val: any) => {
-      if (typeof val === 'number') return val.toFixed(2);
+      if (typeof val === 'number') {
+        if (Number.isInteger(val)) return val.toString();
+        return val.toFixed(2);
+      }
       if (!isNaN(parseFloat(val)) && /^-?\d*\.?\d+$/.test(String(val))) {
-        return parseFloat(val).toFixed(2);
+        const num = parseFloat(val);
+        if (Number.isInteger(num)) return num.toString();
+        return num.toFixed(2);
       }
       return String(val);
     };
@@ -203,6 +215,7 @@ function DashboardContent() {
     order: (searchParams.get('sort_order') as 'asc' | 'desc') || 'desc'
   });
   const [filters, setFilters] = useState<any>({});
+  const [filterConfig, setFilterConfig] = useState<any>({});
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [isClearingAllFilters, setIsClearingAllFilters] = useState(false);
@@ -297,6 +310,7 @@ function DashboardContent() {
         total_pages: data.pagination?.total_pages || 1
       });
       setFilters(data.filters || {});
+      setFilterConfig(data.filter_config || {});
     } catch (error) {
       console.error('Failed to fetch assets:', error);
     } finally {
@@ -490,6 +504,7 @@ function DashboardContent() {
       <FilterSidebar
         filters={decoratedFilters}
         activeFilters={activeFilters}
+        externalFilterConfig={filterConfig}
         onFilterChange={handleFilterChange}
         onClearAll={handleClearAll}
         disabled={isClearingAllFilters}
@@ -576,6 +591,7 @@ function DashboardContent() {
             <FilterChips
               activeFilters={activeFilters}
               filters={decoratedFilters}
+              filterConfig={filterConfig}
               onRemove={removeFilter}
               onClearAll={handleClearAll}
               disabled={isClearingAllFilters}

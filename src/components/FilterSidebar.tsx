@@ -148,6 +148,7 @@ function RenderCategoryNode({
 interface FilterSidebarProps {
   filters: Record<string, FilterBucket[] | { min: number; max: number; min_as_string?: string; max_as_string?: string }>;
   activeFilters: Record<string, any>;
+  externalFilterConfig?: Record<string, { label: string; type: string }>;
   onFilterChange: (keyOrUpdates: string | Record<string, any>, value?: any) => void;
   onClearAll: () => void;
   disabled?: boolean;
@@ -253,6 +254,11 @@ function RangeSlider({
   currentMax: number | undefined;
   onChange: (min: number | undefined, max: number | undefined) => void;
 }) {
+  const formatValue = (val: number) => {
+    if (Number.isInteger(val)) return val.toString();
+    return val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  };
+
   const [localMin, setLocalMin] = useState(Number(currentMin ?? min));
   const [localMax, setLocalMax] = useState(Number(currentMax ?? max));
   const rangeRef = useRef<HTMLDivElement>(null);
@@ -314,21 +320,20 @@ function RangeSlider({
       <div className="flex justify-between mt-4">
         <div className="flex flex-col">
           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Min</span>
-          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{localMin.toFixed(2)}</span>
+          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{formatValue(localMin)}</span>
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Max</span>
-          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{localMax.toFixed(2)}</span>
+          <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{formatValue(localMax)}</span>
         </div>
       </div>
     </div>
   );
 }
 
-export default function FilterSidebar({ filters, activeFilters, onFilterChange, onClearAll, disabled = false }: FilterSidebarProps) {
+export default function FilterSidebar({ filters, activeFilters, externalFilterConfig, onFilterChange, onClearAll, disabled = false }: FilterSidebarProps) {
   const { isFilterOpen, setIsFilterOpen } = useLayout();
-  // ... rest of component
-  const filterConfig: Record<string, { label: string; icon: any }> = {
+  const baseFilterConfig: Record<string, { label: string; icon: any }> = {
     mime_type: { label: 'File Type', icon: Square3Stack3DIcon },
     status: { label: 'Status', icon: ClockIcon },
     orientation: { label: 'Orientation', icon: ArrowsPointingOutIcon },
@@ -348,7 +353,13 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
 
 
   const getGroupConfig = (key: string) => {
-    if (filterConfig[key]) return filterConfig[key];
+    if (externalFilterConfig && externalFilterConfig[key]) {
+      return {
+        label: externalFilterConfig[key].label,
+        icon: externalFilterConfig[key].type === 'date' || externalFilterConfig[key].type === 'datetime' ? CalendarIcon : IdentificationIcon
+      };
+    }
+    if (baseFilterConfig[key]) return baseFilterConfig[key];
     if (key.startsWith('metadata.')) {
       const parts = key.split('.');
       const clean = parts[1].replace(/_/g, ' ');
@@ -415,7 +426,8 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
 
       if (data.min === 0 && data.max === 0) return false;
       // If it's a date and the range is basically empty (1970)
-      if ((key.endsWith('_date') || key.endsWith('_at')) && data.max < 20000) return false;
+      const isDate = key.endsWith('_date') || key.endsWith('_at') || (data as any).min_as_string;
+      if (isDate && data.max < 20000) return false;
     }
 
     if (!filterSearch) return true;
@@ -568,7 +580,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                           </div>
                         ) : !Array.isArray(data) ? (
                           <div className="px-2">
-                            {key.endsWith('_date') || key.endsWith('_at') ? (
+                            {key.endsWith('_date') || key.endsWith('_at') || (data as any).min_as_string ? (
                               <DateRangePicker
                                 min={data.min}
                                 max={data.max}
@@ -707,7 +719,7 @@ export default function FilterSidebar({ filters, activeFilters, onFilterChange, 
                       <div className="pt-4 px-1">
                         {!Array.isArray(data) ? (
                           <div className="px-2">
-                            {key.endsWith('_date') || key.endsWith('_at') ? (
+                            {key.endsWith('_date') || key.endsWith('_at') || (data as any).min_as_string ? (
                               <DateRangePicker
                                 min={data.min}
                                 max={data.max}
