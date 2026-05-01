@@ -240,13 +240,13 @@ export default function Header() {
   useEffect(() => {
     setShowSuggestions(false);
     setSuggestions([]);
-    
+
     if (pathname !== '/') {
       setSearchQuery('');
     }
-    
-    if (document.activeElement instanceof HTMLInputElement && 
-        document.activeElement.placeholder.includes('Search assets')) {
+
+    if (document.activeElement instanceof HTMLInputElement &&
+      document.activeElement.placeholder.includes('Search assets')) {
       document.activeElement.blur();
     }
   }, [pathname]);
@@ -307,13 +307,12 @@ export default function Header() {
                   <button
                     type="button"
                     onClick={toggleSemantic}
-                    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all duration-300 ${
-                      isSemantic
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all duration-300 ${isSemantic
                         ? "bg-blue-500/10 border-blue-500/50 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
                         : isLocked
                           ? "bg-gray-100/50 dark:bg-gray-800/20 border-gray-200 dark:border-gray-800 text-gray-400 opacity-60 cursor-not-allowed group/locked"
                           : "bg-transparent border-gray-200 dark:border-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    }`}
+                      }`}
                   >
                     {isLocked ? (
                       <LockClosedIcon className="h-3 w-3 text-gray-500" />

@@ -19,10 +19,10 @@ test('roles page shows built-in role inventory', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Role Management/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /Permissions List/i })).toBeVisible();
 
-  await expect(page.getByRole('row', { name: /SUPER_ADMIN/i })).toBeVisible();
-  await expect(page.getByRole('row', { name: /\bADMIN\b.*WORKSPACE/i })).toBeVisible();
-  await expect(page.getByRole('row', { name: /\bEDITOR\b.*WORKSPACE/i })).toBeVisible();
-  await expect(page.getByRole('row', { name: /\bVIEWER\b.*WORKSPACE/i })).toBeVisible();
+  await expect(page.getByRole('row', { name: /^SUPER_ADMIN/i })).toBeVisible();
+  await expect(page.getByRole('row', { name: /^ADMIN WORKSPACE/i }).first()).toBeVisible();
+  await expect(page.getByRole('row', { name: /^EDITOR WORKSPACE/i }).first()).toBeVisible();
+  await expect(page.getByRole('row', { name: /^VIEWER WORKSPACE/i }).first()).toBeVisible();
 });
 
 test('create and delete workspace role (cleanup)', async ({ page }) => {

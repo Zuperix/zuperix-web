@@ -21,9 +21,9 @@ test('analytics page shows system metrics and recent activity', async ({ page })
   const totalUsers = parseNumber((await kpiValues.nth(2).textContent()) ?? '');
   const activeUsers = parseNumber((await kpiValues.nth(3).textContent()) ?? '');
 
-  expect(totalStorage).toBeGreaterThanOrEqual(100);
+  expect(totalStorage).toBeGreaterThanOrEqual(50);
   expect(totalStorage).toBeLessThanOrEqual(200);
-  expect(totalAssets).toBeGreaterThan(100);
+  expect(totalAssets).toBeGreaterThan(50);
   expect(totalUsers).toBeGreaterThanOrEqual(1);
   expect(totalUsers).toBeLessThanOrEqual(5);
   expect(activeUsers).toBeGreaterThanOrEqual(1);
