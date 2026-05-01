@@ -29,7 +29,7 @@ import { MetadataFieldInput } from './metadata/MetadataFieldInput';
 
 const CONCURRENCY = 5;
 const MAX_FILES = 500;
-const MAX_FILE_SIZE_MB = 500;
+const MAX_FILE_SIZE_MB = 5120;
 
 type FileStatus = 'pending' | 'uploading' | 'done' | 'error' | 'duplicate';
 
@@ -511,7 +511,7 @@ export default function UploadModal({
         <div className="flex items-center justify-between px-6 py-5 border-b dark:border-gray-800 flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold dark:text-white">Bulk Upload</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Up to {MAX_FILES} files · {MAX_FILE_SIZE_MB} MB each</p>
+            <p className="text-xs text-gray-500 mt-0.5">Up to {MAX_FILES} files · 5 GB each</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
             <XMarkIcon className="h-5 w-5 text-gray-500" />
@@ -698,7 +698,7 @@ export default function UploadModal({
                 {dragging ? 'Drop files here' : 'Click or drag & drop files'}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {entries.length > 0 ? `${entries.length} selected · Add more` : `Images, Videos, InDesign, Illustrator, 3D Models, PDFs up to ${MAX_FILE_SIZE_MB} MB each`}
+                {entries.length > 0 ? `${entries.length} selected · Add more` : `Images, Videos, InDesign, Illustrator, 3D Models, PDFs up to 5 GB each`}
               </p>
               <input
                 ref={fileInputRef}
