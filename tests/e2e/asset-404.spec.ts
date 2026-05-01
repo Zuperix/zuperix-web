@@ -6,7 +6,7 @@ test('asset detail page shows 404 state for non-existent asset', async ({ page }
 
   // Check for 404 UI elements
   await expect(page.getByRole('heading', { name: 'Asset Not Found' })).toBeVisible();
-  await expect(page.getByText('This asset might have been deleted, moved, or you might not have permission to view it, or it never existed in the first place.')).toBeVisible();
+  await expect(page.getByText(/We couldn't find the asset you're looking for/i)).toBeVisible();
   
   // Check for action buttons
   await expect(page.getByRole('button', { name: /Go Back/i })).toBeVisible();

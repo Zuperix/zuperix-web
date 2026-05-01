@@ -12,12 +12,14 @@ import {
   ShieldCheckIcon,
   XMarkIcon,
   TrashIcon,
-  CheckIcon
+  CheckIcon,
+  NoSymbolIcon,
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import DeleteUserModal from '@/components/DeleteUserModal';
+import { useAuth } from '@/context/AuthContext';
 
 interface Role {
   id: string;
@@ -36,6 +38,7 @@ interface User {
   name: string;
   system_role: string;
   created_at: string;
+  disabled_at: string | null;
 }
 
 interface Membership {
@@ -48,6 +51,7 @@ interface Membership {
 }
 
 export default function UsersPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -59,6 +63,7 @@ export default function UsersPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [togglingDisable, setTogglingDisable] = useState<string | null>(null);
 
   const [newUser, setNewUser] = useState({
     email: '',
@@ -136,6 +141,23 @@ export default function UsersPage() {
       toast.success('System role updated');
     } catch (err: any) {
       toast.error(err.message || 'Failed to update system role');
+    }
+  };
+
+  const handleToggleDisable = async (user: User) => {
+    const isDisabled = !!user.disabled_at;
+    setTogglingDisable(user.id);
+    try {
+      await apiFetch(`/users/${user.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ disabled: !isDisabled }),
+      });
+      toast.success(isDisabled ? `${user.name} re-enabled` : `${user.name} disabled`);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update user');
+    } finally {
+      setTogglingDisable(null);
     }
   };
 
@@ -438,46 +460,76 @@ export default function UsersPage() {
             <tbody className="divide-y divide-gray-800/60">
               {loading ? (
                 <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500">Loading...</td></tr>
-              ) : users.map((user) => (
-                <tr key={user.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-gray-200">{user.name}</span>
-                      <span className="text-xs text-gray-500 font-mono">{user.email}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight border ${
-                      user.system_role === 'SUPER_ADMIN' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
-                    }`}>
-                      {user.system_role.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-xs text-gray-500 font-mono">{new Date(user.created_at).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-3 translate-x-1 group">
-                      <PermissionGate action={Action.Update} subject="User">
-                        <button 
-                          onClick={() => { setEditingUser(user); fetchMemberships(user.id); }}
-                          className="text-xs text-gray-500 hover:text-white transition-colors underline underline-offset-4 decoration-gray-700 hover:decoration-white"
-                        >
-                          Manage Access
-                        </button>
-                      </PermissionGate>
-                      
-                      <PermissionGate action={Action.Delete} subject="User">
-                        <button 
-                          onClick={() => handleDeleteUserRequest(user)}
-                          className="p-1 text-gray-700 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                          title="Delete User"
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
-                      </PermissionGate>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              ) : users.map((user) => {
+                const isDisabled = !!user.disabled_at;
+                const isSelf = user.id === currentUser?.id;
+                return (
+                  <tr key={user.id} className={`hover:bg-white/[0.02] transition-colors group ${isDisabled ? 'opacity-50' : ''}`}>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-gray-200">{user.name}</span>
+                          {isDisabled && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-tight bg-red-500/10 text-red-400 border border-red-500/20">
+                              Disabled
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500 font-mono">{user.email}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight border ${
+                        user.system_role === 'SUPER_ADMIN' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                      }`}>
+                        {user.system_role.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-gray-500 font-mono">{new Date(user.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <PermissionGate action={Action.Update} subject="User">
+                          <button 
+                            onClick={() => { setEditingUser(user); fetchMemberships(user.id); }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700/50 hover:border-gray-600 rounded-lg transition-all"
+                          >
+                            Manage Access
+                          </button>
+                        </PermissionGate>
+
+                        <PermissionGate action={Action.Update} subject="User">
+                          {!isSelf && (
+                            <button
+                              onClick={() => handleToggleDisable(user)}
+                              disabled={togglingDisable === user.id}
+                              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                                isDisabled
+                                  ? 'text-green-400 bg-green-500/10 border-green-500/20 hover:bg-green-500/20'
+                                  : 'text-amber-400 bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20'
+                              } disabled:opacity-40`}
+                              title={isDisabled ? 'Enable User' : 'Disable User'}
+                            >
+                              {togglingDisable === user.id ? '...' : isDisabled ? 'Enable' : 'Disable'}
+                            </button>
+                          )}
+                        </PermissionGate>
+                        
+                        <PermissionGate action={Action.Delete} subject="User">
+                          {!isSelf && (
+                            <button 
+                              onClick={() => handleDeleteUserRequest(user)}
+                              className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 rounded-lg transition-all"
+                              title="Delete User"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          )}
+                        </PermissionGate>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

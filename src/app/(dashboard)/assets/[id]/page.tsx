@@ -35,6 +35,7 @@ import {
   LockClosedIcon,
   ExclamationTriangleIcon,
   ChevronRightIcon,
+  ChevronLeftIcon,
   CheckCircleIcon,
   XCircleIcon,
   PencilIcon,
@@ -408,7 +409,8 @@ export default function AssetDetailPage() {
       });
       setValues(valueMap);
     } catch (err: any) {
-      if (err.message?.includes('404') || err.message?.toLowerCase().includes('not found')) {
+      const status = err?.status || err?.response?.status;
+      if (status === 404 || err.message?.includes('404') || err.message?.toLowerCase().includes('not found')) {
         setIsNotFound(true);
       } else {
         setError('Failed to load asset details');
@@ -910,7 +912,7 @@ export default function AssetDetailPage() {
             </div>
 
             <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 font-medium max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-              This asset might have been deleted, moved, or you might not have permission to view it, or it never existed in the first place.
+              We couldn&apos;t find the asset you&apos;re looking for. It might have been relocated, deleted, or you may need elevated permissions to access it.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
@@ -2603,13 +2605,7 @@ export default function AssetDetailPage() {
   );
 }
 
-function ChevronLeftIcon(props: any) {
-  return (
-    <svg fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-    </svg>
-  );
-}
+
 
 function flattenCategories(categories: Category[], depth = 0): any[] {
   let result: any[] = [];

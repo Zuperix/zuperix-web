@@ -151,6 +151,8 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setShowSuggestions(false);
+    setSuggestions([]);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     if (searchQuery.trim()) {
       posthog.capture("frontend_search_performed", {
         query: searchQuery,
@@ -235,6 +237,19 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    setShowSuggestions(false);
+    setSuggestions([]);
+    
+    if (pathname !== '/') {
+      setSearchQuery('');
+    }
+    
+    if (document.activeElement instanceof HTMLInputElement && 
+        document.activeElement.placeholder.includes('Search assets')) {
+      document.activeElement.blur();
+    }
+  }, [pathname]);
 
 
   return (

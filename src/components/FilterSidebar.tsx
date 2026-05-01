@@ -424,7 +424,7 @@ export default function FilterSidebar({ filters, activeFilters, externalFilterCo
       // Hide total_ratings as requested by user
       if (key === 'total_ratings') return false;
 
-      if (data.min === 0 && data.max === 0) return false;
+      if (Number(data.min) === 0 && Number(data.max) === 0) return false;
       // If it's a date and the range is basically empty (1970)
       const isDate = key.endsWith('_date') || key.endsWith('_at') || (data as any).min_as_string;
       if (isDate && data.max < 20000) return false;

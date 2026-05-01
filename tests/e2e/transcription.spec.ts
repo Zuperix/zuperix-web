@@ -16,11 +16,11 @@ test.describe('Asset Transcription', () => {
     await searchInput.press('Enter');
 
     await expect(page.locator('p', { hasText: /Showing/i }).first()).toBeVisible();
-    
-    const assetCard = page.getByRole('heading', { name: /ai transci?pt demo\.mp4/i }).first();
+
+    const assetCard = page.getByRole('heading', { name: /ai transcipt demo\.mp4/i }).first();
     await assetCard.click();
 
-    await expect(page.getByRole('heading', { level: 1, name: /ai transci?pt demo\.mp4/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { level: 1, name: /ai transcipt demo.mp4/i })).toBeVisible({ timeout: 15000 });
 
     // 3. Open Transcript Tab
     const transcriptTab = page.getByRole('button', { name: 'Transcript' });
@@ -55,14 +55,14 @@ test.describe('Asset Transcription', () => {
     // 6. Test Navigation between matches
     const nextMatchBtn = searchContainer.locator('button:has(svg)').nth(1); // Second small button in search header is 'Next'
     const prevMatchBtn = searchContainer.locator('button:has(svg)').nth(0); // First small button is 'Prev'
-    
+
     await nextMatchBtn.click();
-    
+
     // After clicking next, the match count should update (e.g., from 1/X to 2/X)
     // If there is only 1 match, it will stay 1/1
     const matchText = await matchCount.textContent();
     const [current, total] = (matchText || '').split('/').map(Number);
-    
+
     if (total > 1) {
       await expect(matchCount).toContainText(/2\/\d+/);
       await prevMatchBtn.click();
@@ -72,7 +72,7 @@ test.describe('Asset Transcription', () => {
     // 7. Test clearing search
     const clearSearchBtn = searchContainer.locator('button:has(svg.h-4.w-4)');
     await clearSearchBtn.click();
-    
+
     // expect().toHaveValue() will retry until the state update is reflected in the DOM
     await expect(transcriptSearchInput).toHaveValue('', { timeout: 7000 });
     await expect(highlightedSegment).not.toBeVisible();

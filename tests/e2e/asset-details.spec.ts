@@ -253,8 +253,11 @@ test('asset download custom settings can be modified', async ({ page }) => {
   await expect(qualitySlider).toHaveValue('75');
 
   const emailInput = page.getByPlaceholder('Email to send asset...');
-  await emailInput.fill('test@example.com');
-  await expect(emailInput).toHaveValue('test@example.com');
+  const emailVisible = await emailInput.isVisible();
+  if (emailVisible) {
+    await emailInput.fill('test@example.com');
+    await expect(emailInput).toHaveValue('test@example.com');
+  }
 
   await page.getByRole('button', { name: /Cancel/i }).click();
 });

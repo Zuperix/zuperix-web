@@ -38,6 +38,7 @@ import DocumentationLink from '@/components/DocumentationLink';
 function FilterChips({
   activeFilters,
   filters,
+  filterConfig,
   onRemove,
   onClearAll,
   disabled = false,

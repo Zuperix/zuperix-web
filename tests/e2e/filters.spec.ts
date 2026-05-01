@@ -7,7 +7,10 @@ function filterSection(page: Page, name: RegExp) {
 }
 
 async function clickFilterOption(page: Page, sectionName: RegExp, optionName: RegExp) {
-  const section = filterSection(page, sectionName);
+  const sectionButton = page.getByRole('button', { name: sectionName });
+  await sectionButton.waitFor({ state: 'visible' });
+
+  const section = sectionButton.locator('xpath=following-sibling::*[1]');
   const option = section.getByRole('checkbox', { name: optionName });
   await expect(option).toBeVisible();
   await option.click();
@@ -36,6 +39,7 @@ test('dashboard filters update results', async ({ page }) => {
 
   // Orientation: Landscape -> 20 out of 489
   await perPage.selectOption('20');
+  await expect(page.locator('p', { hasText: 'Showing' }).first()).toBeVisible();
   await clickFilterOption(page, /^Orientation$/i, /^Landscape\b/i);
   await expectShowing(page, 20, 489);
 
