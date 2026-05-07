@@ -6,6 +6,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { WorkspaceProvider } from '@/context/WorkspaceContext';
 import { LayoutProvider } from '@/context/LayoutContext';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
+import TawkChat from '@/components/TawkChat';
 
 export const metadata: Metadata = {
   title: {
@@ -32,6 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </WorkspaceProvider>
+        <TawkChat />
       </LayoutProvider>
     </ProtectedRoute>
   );

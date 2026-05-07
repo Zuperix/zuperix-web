@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { apiFetch } from '@/lib/api';
+import { apiFetch, BASE_URL } from '@/lib/api';
 import { useMarqueeSelection } from '@/hooks/useMarqueeSelection';
 import AssetGrid from '@/components/AssetGrid';
 import UploadModal from '@/components/UploadModal';
@@ -24,7 +24,8 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   SquaresPlusIcon,
-  LinkIcon
+  LinkIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import BulkActionToolbar from '@/components/BulkActionToolbar';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
@@ -228,6 +229,7 @@ function DashboardContent() {
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const q = searchParams.get('q') || '';
   const isSemantic = searchParams.get('is_semantic') === 'true';
+  const [exportLoading, setExportLoading] = useState(false);
 
   const [personMap, setPersonMap] = useState<Record<string, string>>({});
 
@@ -389,6 +391,49 @@ function DashboardContent() {
     setSelectedIds([]);
     setLastSelectedId(null);
     router.replace('/');
+  };
+  
+  const handleExport = async () => {
+    if (!activeWorkspace) return;
+    try {
+      setExportLoading(true);
+      const params = new URLSearchParams(searchParams.toString());
+      const endpoint = `/workspaces/${activeWorkspace.id}/export/search?${params.toString()}`;
+      
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${BASE_URL}${endpoint}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Export failed' }));
+        throw new Error(error.message || 'Export failed');
+      }
+
+      const contentType = response.headers.get('Content-Type');
+      if (contentType && contentType.includes('text/csv')) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `search-export-${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        toast.success('Export downloaded');
+      } else {
+        const result = await response.json();
+        toast.success(result.message || 'Export started, check your email shortly');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Export failed');
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const removeFilter = (key: string, value?: any) => {
@@ -578,6 +623,14 @@ function DashboardContent() {
                     currentSortOrder={currentSort.order}
                     onSortChange={handleSortChange}
                   />
+                  <button
+                    onClick={handleExport}
+                    disabled={exportLoading || assets.length === 0}
+                    className="p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed group"
+                    title="Export Results to CSV"
+                  >
+                    <ArrowDownTrayIcon className={`h-4 w-4 ${exportLoading ? 'animate-pulse' : 'group-hover:scale-110'} transition-all`} />
+                  </button>
                   <UploadDropdown
                     workspaceId={activeWorkspace.id}
                     onUploadClick={() => setIsUploadOpen(true)}

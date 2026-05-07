@@ -145,7 +145,7 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
           <h4 className="text-sm font-bold text-blue-100 mb-1">How it works</h4>
           <p className="text-sm text-blue-300/80 leading-relaxed">
             Bulk metadata import allows you to update multiple assets at once using a CSV file. 
-            Use the <code className="bg-blue-900/40 px-1 rounded text-blue-200">asset_id</code> or <code className="bg-blue-900/40 px-1 rounded text-blue-200">original_filename</code> columns to identify your assets.
+            Use the <code className="bg-blue-900/40 px-1 rounded text-blue-200">asset_id</code> column to identify your assets.
           </p>
         </div>
       </div>
@@ -280,7 +280,7 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-gray-800">
-                      <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">ID / Filename</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Asset ID</th>
                       <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">Status</th>
                       <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Error</th>
                     </tr>
@@ -288,8 +288,8 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
                   <tbody>
                     {success.result.preview.map((row: any, idx: number) => (
                       <tr key={idx} className="border-b last:border-0 border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                        <td className="px-3 py-2 text-[11px] font-medium text-gray-300 truncate max-w-[120px]" title={row.original_row?.asset_id || row.original_row?.original_filename}>
-                          {row.original_row?.asset_id || row.original_row?.original_filename || 'Unknown'}
+                        <td className="px-3 py-2 text-[11px] font-medium text-gray-300 truncate max-w-[120px]" title={row.original_row?.asset_id}>
+                          {row.original_row?.asset_id || 'Unknown'}
                         </td>
                         <td className="px-3 py-2 text-center">
                           {row.processed ? (
