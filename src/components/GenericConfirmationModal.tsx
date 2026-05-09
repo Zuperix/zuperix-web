@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { ExclamationTriangleIcon, XMarkIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
 export type ConfirmationVariant = 'danger' | 'warning' | 'primary' | 'success';
@@ -14,6 +15,7 @@ interface GenericConfirmationModalProps {
   cancelText?: string;
   isLoading?: boolean;
   variant?: ConfirmationVariant;
+  requiredConfirmText?: string;
 }
 
 export default function GenericConfirmationModal({
@@ -26,7 +28,17 @@ export default function GenericConfirmationModal({
   cancelText = 'Cancel',
   isLoading = false,
   variant = 'primary',
+  requiredConfirmText,
 }: GenericConfirmationModalProps) {
+  const [confirmInput, setConfirmInput] = useState('');
+
+  // Reset input when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setConfirmInput('');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const variantStyles = {
@@ -61,6 +73,7 @@ export default function GenericConfirmationModal({
   };
 
   const styles = variantStyles[variant];
+  const isConfirmDisabled = isLoading || (!!requiredConfirmText && confirmInput !== requiredConfirmText);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -89,13 +102,29 @@ export default function GenericConfirmationModal({
             <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-[280px]">
               {message}
             </p>
+
+            {requiredConfirmText && (
+              <div className="w-full mt-6 space-y-3">
+                <label className="block text-[10px] font-black text-gray-500 dark:text-gray-500 uppercase tracking-[0.2em]">
+                  Type <span className="text-red-500 dark:text-red-400 font-black">{requiredConfirmText}</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={confirmInput}
+                  onChange={(e) => setConfirmInput(e.target.value)}
+                  placeholder={requiredConfirmText}
+                  className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all font-mono tracking-widest text-center uppercase"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-3 mt-10">
             <button
               onClick={onConfirm}
-              disabled={isLoading}
-              className={`w-full py-3.5 ${styles.button} ${styles.buttonText} font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed active:scale-95`}
+              disabled={isConfirmDisabled}
+              className={`w-full py-3.5 ${styles.button} ${styles.buttonText} font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 group disabled:opacity-20 disabled:cursor-not-allowed active:scale-95`}
             >
               {isLoading ? (
                 <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />

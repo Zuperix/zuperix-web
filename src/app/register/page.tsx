@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { Typewriter } from '@/components/Typewriter';
+import { clsx } from 'clsx';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -97,8 +98,18 @@ export default function RegisterPage() {
             </div>
             
             {error && (
-              <div className="mb-6 p-4 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/10 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-900/20 animate-in fade-in slide-in-from-top-1">
-                {error}
+              <div className={clsx(
+                "mb-6 p-4 text-sm font-medium rounded-xl border animate-in fade-in slide-in-from-top-1",
+                error.toLowerCase().includes('confirm') 
+                  ? "text-blue-600 bg-blue-50 dark:bg-blue-900/10 dark:text-blue-400 border-blue-100 dark:border-blue-900/20"
+                  : "text-red-600 bg-red-50 dark:bg-red-900/10 dark:text-red-400 border-red-100 dark:border-red-900/20"
+              )}>
+                {error.toLowerCase().includes('confirm') ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="font-bold">Verification email sent!</span>
+                    <span>Please check your inbox to confirm your account and get started.</span>
+                  </div>
+                ) : error}
               </div>
             )}
 

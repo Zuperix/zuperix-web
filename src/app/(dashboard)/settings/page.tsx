@@ -11,12 +11,21 @@ import {
   TrashIcon,
   CreditCardIcon,
   MegaphoneIcon,
-  CloudArrowUpIcon
+  CloudArrowUpIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import DocumentationLink from '@/components/DocumentationLink';
 
 const BASE_SETTINGS_SECTIONS = [
+  {
+    id: 'workspaces',
+    name: 'Workspace Management',
+    description: 'Manage your organization workspaces, their identity, and lifecycle.',
+    icon: BuildingOfficeIcon,
+    href: '/settings/workspaces',
+    color: 'bg-blue-600/10 text-blue-500',
+  },
   {
     id: 'metadata',
     name: 'Metadata Management',
@@ -87,6 +96,7 @@ const ADMIN_ONLY_SECTION_IDS = [
   'maintenance',
   'features',
   'announcement',
+  'workspaces',
 ];
 
 export default function SettingsPage() {
@@ -95,7 +105,7 @@ export default function SettingsPage() {
 
   const sections = BASE_SETTINGS_SECTIONS.filter(section => {
     if (ADMIN_ONLY_SECTION_IDS.includes(section.id)) {
-      return isSuperAdmin;
+      return isSuperAdmin || user?.customer_id;
     }
     return true;
   });
@@ -112,10 +122,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-6 animate-in fade-in duration-500">
+    <div className="max-w-5xl mx-auto py-10 px-6 animate-in fade-in duration-500 pb-20">
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Settings</h1>
-        <p className="text-gray-400">Manage your workspace configuration and project preferences.</p>
+        <p className="text-gray-400 font-medium">Manage your workspace configuration and project preferences.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

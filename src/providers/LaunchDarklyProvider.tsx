@@ -89,3 +89,14 @@ export function useFeatureFlag(key: string, defaultValue = false): boolean {
 
   return defaultValue;
 }
+
+export function useFeatureFlagJson<T>(key: string, defaultValue: T): T {
+  const { flags } = useContext(LaunchDarklyContext);
+  const raw = flags[key];
+
+  if (raw !== undefined) {
+    return raw as T;
+  }
+
+  return defaultValue;
+}

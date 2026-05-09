@@ -6,6 +6,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { WorkspaceProvider } from '@/context/WorkspaceContext';
 import { LayoutProvider } from '@/context/LayoutContext';
 import { AnnouncementBanner } from '@/components/AnnouncementBanner';
+import { SystemAnnouncementBanner } from '@/components/SystemAnnouncementBanner';
 import TawkChat from '@/components/TawkChat';
 
 export const metadata: Metadata = {
@@ -22,7 +23,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <WorkspaceProvider>
           <div className="flex h-screen bg-gray-50 dark:bg-[#0f111a] overflow-hidden">
             <Sidebar />
-            <div className="flex-1 flex flex-col min-w-0"> {/* Removed overflow-hidden here */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <SystemAnnouncementBanner />
               <AnnouncementBanner />
               <Suspense fallback={<div className="h-16 bg-white dark:bg-[#0f111a]" />}>
                 <Header />

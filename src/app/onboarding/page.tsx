@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
+import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
 import { CheckCircle2, Loader2, Rocket, Building2, Globe, Sparkles, Database, Search, ShieldCheck, Mail, Briefcase } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -20,8 +21,10 @@ export default function OnboardingPage() {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [industry, setIndustry] = useState('');
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [setupProgress, setSetupProgress] = useState(0);
+  const isSampleSyncEnabled = useFeatureFlag('sample-asset-sync', false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -52,7 +55,12 @@ export default function OnboardingPage() {
           industry,
         }),
       });
-      setStage('setup');
+
+      if (isSampleSyncEnabled) {
+        setStage('setup');
+      } else {
+        window.location.href = '/';
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to initiate setup');
     } finally {
@@ -95,7 +103,7 @@ export default function OnboardingPage() {
   }
 
   if (stage === 'setup') {
-    return <SetupAnimation progress={setupProgress} />;
+    return <SetupAnimation progress={setupProgress} isSampleSyncEnabled={isSampleSyncEnabled} />;
   }
 
   return (
@@ -192,10 +200,27 @@ export default function OnboardingPage() {
               </div>
             </div>
 
+            <div className="flex items-start gap-3 px-1 py-2 group/terms cursor-pointer" onClick={() => setTermsAccepted(!termsAccepted)}>
+              <div className={clsx(
+                "mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 shrink-0",
+                termsAccepted ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-600/20" : "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 group-hover/terms:border-blue-500/50"
+              )}>
+                {termsAccepted && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  I accept the <Link href="/terms" target="_blank" className="text-blue-600 hover:text-blue-500 font-bold underline underline-offset-4 decoration-blue-600/20" onClick={(e) => e.stopPropagation()}>Terms of Service</Link>
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-500 font-medium leading-relaxed">
+                  By checking this, you agree to our data processing and acceptable use policies.
+                </p>
+              </div>
+            </div>
+
             <button
               type="submit"
-              disabled={loading || !companyName || !businessEmail}
-              className="group relative w-full py-5 font-black uppercase tracking-widest text-sm text-white bg-blue-600 rounded-[1.5rem] hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transition-all active:scale-[0.98] overflow-hidden shadow-2xl shadow-blue-600/20"
+              disabled={loading || !companyName || !businessEmail || !termsAccepted}
+              className="group relative w-full py-5 font-black uppercase tracking-widest text-sm text-white bg-blue-600 rounded-[1.5rem] hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 transition-all active:scale-[0.98] overflow-hidden shadow-2xl shadow-blue-600/20 disabled:opacity-50 disabled:grayscale disabled:scale-100 disabled:cursor-not-allowed"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Complete Setup'}
@@ -204,19 +229,21 @@ export default function OnboardingPage() {
             </button>
           </form>
 
-          <div className="flex items-center justify-center gap-2 py-4 px-6 bg-gray-50/50 dark:bg-gray-800/20 rounded-3xl border border-gray-100 dark:border-gray-800/40">
-            <div className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
-            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tighter">
-              We&apos;ll auto-populate some sample assets for you.
-            </p>
-          </div>
+          {isSampleSyncEnabled && (
+            <div className="flex items-center justify-center gap-2 py-4 px-6 bg-gray-50/50 dark:bg-gray-800/20 rounded-3xl border border-gray-100 dark:border-gray-800/40">
+              <div className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
+              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tighter">
+                We&apos;ll auto-populate some sample assets for you.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function SetupAnimation({ progress }: { progress: number }) {
+function SetupAnimation({ progress, isSampleSyncEnabled }: { progress: number; isSampleSyncEnabled: boolean }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950 text-white overflow-hidden">
       <div className="relative w-full max-w-2xl px-8 py-16 text-center space-y-12">
@@ -231,7 +258,9 @@ function SetupAnimation({ progress }: { progress: number }) {
             Getting everything <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">ready for you</span>
           </h2>
           <p className="text-gray-400 text-xl font-medium max-w-lg mx-auto leading-relaxed">
-            We&apos;re setting up your library and adding some sample assets so you can jump right in.
+            {isSampleSyncEnabled 
+              ? "We're setting up your library and adding some sample assets so you can jump right in."
+              : "We're setting up your professional digital asset management workspace."}
           </p>
         </div>
 
