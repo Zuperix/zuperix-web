@@ -9,6 +9,7 @@ import { CheckCircle2, Loader2, Rocket, Building2, Globe, Sparkles, Database, Se
 import { clsx } from 'clsx';
 
 import OnboardingBackground from '@/components/OnboardingBackground';
+import Link from 'next/link';
 
 type OnboardingStage = 'form' | 'setup';
 

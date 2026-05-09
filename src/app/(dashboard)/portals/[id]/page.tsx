@@ -80,8 +80,8 @@ export default function PortalDetailPage() {
     if (!searchQuery.trim() || !activeWorkspace) return;
     try {
       setSearching(true);
-      const data = await apiFetch<any>(`/workspaces/${activeWorkspace.id}/search/assets?q=${encodeURIComponent(searchQuery)}`);
-      setSearchResults(data.results || []);
+      const data = await apiFetch<any>(`/workspaces/${activeWorkspace.id}/search/assets/quick?q=${encodeURIComponent(searchQuery)}&limit=20`);
+      setSearchResults(data.assets || []);
     } catch (err) {
       console.error('Search failed:', err);
     } finally {

@@ -121,6 +121,12 @@ export default function LoginPage() {
               </div>
             )}
 
+            {searchParams.get('reset') === 'success' && (
+              <div className="mb-6 p-4 text-sm font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/20 animate-in fade-in slide-in-from-top-1">
+                ✅ Password updated successfully! You can now sign in with your new password.
+              </div>
+            )}
+
             {error && (
               <div className={clsx(
                 "mb-6 p-4 text-sm font-medium rounded-xl border animate-in fade-in slide-in-from-top-1",
@@ -152,7 +158,7 @@ export default function LoginPage() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300">Password</label>
-                  <Link href="#" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
+                  <Link href="/forgot-password" title="Go to forgot password page" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
                     Forgot password?
                   </Link>
                 </div>

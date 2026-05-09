@@ -14,6 +14,8 @@ interface AuthContextType {
   register: (data: components['schemas']['RegisterDto']) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => void;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,9 +34,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const redirectUser = useCallback((profile: User) => {
-    const currentPath = pathnameRef.current;
-    const isLoginOrRegister = currentPath.startsWith('/login') || currentPath.startsWith('/register');
-    const isOnboardingPage = currentPath.startsWith('/onboarding');
+    const isLoginOrRegister = pathname.startsWith('/login') || pathname.startsWith('/register');
+    const isOnboardingPage = pathname.startsWith('/onboarding');
+    const isPublicPage = pathname.startsWith('/terms') || pathname.startsWith('/privacy') || pathname.startsWith('/help');
+    const isRecoveryPage = pathname.startsWith('/reset-password') || pathname.startsWith('/forgot-password');
+
+    if (isRecoveryPage) return;
 
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
@@ -44,13 +49,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (profile.customer && (!profile.customer.is_onboarding_completed || process.env.NEXT_PUBLIC_SHOW_ONBOARDING === 'true')) {
-      if (!isOnboardingPage) {
+      if (!isOnboardingPage && !isPublicPage) {
         router.push('/onboarding');
       }
     } else if (isLoginOrRegister || isOnboardingPage) {
       router.push('/');
     }
-  }, [router]);
+  }, [router, pathname]);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -114,6 +119,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Supabase Auth Event:', event, 'Session:', !!session);
 
+      if (event === 'PASSWORD_RECOVERY') {
+        router.push('/reset-password');
+      }
+
       if (session?.access_token) {
         const currentBackendToken = localStorage.getItem('auth_token');
 
@@ -142,7 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!loading && user) {
       redirectUser(user);
     }
-  }, [user, loading, redirectUser]);
+  }, [user, loading, pathname, redirectUser]);
 
   const login = async (credentials: components['schemas']['LoginDto']) => {
     const response = await apiFetch<{ access_token: string; supabase_session: any }>('/auth/login', {
@@ -185,6 +194,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (error) throw error;
   };
+  
+  const forgotPassword = async (email: string) => {
+    await apiFetch('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  };
+
+  const resetPassword = async (password: string) => {
+    await apiFetch('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  };
 
   const value = useMemo(() => ({
     user,
@@ -192,7 +215,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     register,
     signInWithGoogle,
-    logout
+    logout,
+    forgotPassword,
+    resetPassword
   }), [user, loading, logout]);
 
   return (

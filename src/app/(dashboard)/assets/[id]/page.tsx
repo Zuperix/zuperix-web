@@ -58,6 +58,7 @@ import ThreeDPreview from '@/components/ThreeDPreview';
 import PdfPreview from '@/components/PdfPreview';
 import { splitFileName, joinFileName } from '@/lib/naming';
 import ShareAssetModal from '@/components/ShareAssetModal';
+import MarkdownPreview from '@/components/MarkdownPreview';
 import { is3D } from '@/lib/format';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
@@ -1376,6 +1377,11 @@ export default function AssetDetailPage() {
                       alt={asset?.original_name}
                       className="w-full h-[60vh] max-h-[70vh]"
                     />
+                  ) : (asset?.mime_type === 'text/markdown' || asset?.mime_type === 'application/json') ? (
+                    <MarkdownPreview
+                      src={asset?.asset_live_url || ''}
+                      className="max-w-full max-h-[70vh]"
+                    />
                   ) : asset?.mime_type === 'application/pdf' ? (
                     <PdfPreview src={asset?.asset_live_url} alt={asset?.original_name} className="max-w-full max-h-[70vh] rounded-2xl md:rounded-[32px]" />
                   ) : asset?.mime_type?.startsWith('image/') ? (
@@ -1403,7 +1409,7 @@ export default function AssetDetailPage() {
                         <DocumentIcon className="h-12 w-12 text-blue-500" />
                       </div>
                       <div className="text-center space-y-2">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white block">{asset?.original_name}</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white block">{asset?.original_name || asset?.original_filename || asset?.name || 'Untitled Asset'}</span>
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{asset?.mime_type?.split('/')[1] || 'FILE'}</span>
                       </div>
                       <button
