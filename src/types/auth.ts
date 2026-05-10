@@ -41,6 +41,7 @@ export interface User {
     name: string;
     is_onboarding_completed: boolean;
     is_single_category_enabled: boolean;
+    is_folder_upload_as_categories_enabled: boolean;
     plan?: string;
     announcement_header?: string | null;
     announcement_description?: string | null;

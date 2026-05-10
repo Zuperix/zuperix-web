@@ -29,6 +29,7 @@ interface Customer {
   is_geo_tagging_enabled: boolean;
   is_transcription_enabled: boolean;
   is_single_category_enabled: boolean;
+  is_folder_upload_as_categories_enabled: boolean;
   is_facial_recognition_enabled: boolean;
   ocr_last_toggle_at: string | null;
   geo_tagging_last_toggle_at: string | null;
@@ -44,6 +45,7 @@ interface LocalSettings {
   is_geo_tagging_enabled: boolean;
   is_transcription_enabled: boolean;
   is_single_category_enabled: boolean;
+  is_folder_upload_as_categories_enabled: boolean;
   is_facial_recognition_enabled: boolean;
 }
 
@@ -66,6 +68,7 @@ export default function ProjectFeaturesPage() {
           is_geo_tagging_enabled: data[0].is_geo_tagging_enabled,
           is_transcription_enabled: data[0].is_transcription_enabled,
           is_single_category_enabled: data[0].is_single_category_enabled,
+          is_folder_upload_as_categories_enabled: data[0].is_folder_upload_as_categories_enabled,
           is_facial_recognition_enabled: data[0].is_facial_recognition_enabled,
         });
       } else {
@@ -153,6 +156,7 @@ export default function ProjectFeaturesPage() {
           isGeoTaggingEnabled: localSettings.is_geo_tagging_enabled,
           isTranscriptionEnabled: localSettings.is_transcription_enabled,
           isSingleCategoryEnabled: localSettings.is_single_category_enabled,
+          isFolderUploadAsCategoriesEnabled: localSettings.is_folder_upload_as_categories_enabled,
           isFacialRecognitionEnabled: localSettings.is_facial_recognition_enabled,
         }),
       });
@@ -177,6 +181,7 @@ export default function ProjectFeaturesPage() {
     localSettings.is_geo_tagging_enabled !== customer.is_geo_tagging_enabled ||
     localSettings.is_transcription_enabled !== customer.is_transcription_enabled ||
     localSettings.is_single_category_enabled !== customer.is_single_category_enabled ||
+    localSettings.is_folder_upload_as_categories_enabled !== customer.is_folder_upload_as_categories_enabled ||
     localSettings.is_facial_recognition_enabled !== customer.is_facial_recognition_enabled
   );
 
@@ -474,6 +479,40 @@ export default function ProjectFeaturesPage() {
                 </p>
             </div>
         </div>
+
+        {/* Folder Upload as Categories Section */}
+        <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.is_folder_upload_as_categories_enabled ? 'border-cyan-500/30' : 'border-gray-800'}`}>
+            <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-xl transition-colors ${localSettings.is_folder_upload_as_categories_enabled ? 'bg-cyan-500/20' : 'bg-gray-800'}`}>
+                        <svg className={`h-6 w-6 ${localSettings.is_folder_upload_as_categories_enabled ? 'text-cyan-400' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-white">Folder Upload to Categories</h3>
+                        </div>
+                        <p className="text-sm text-gray-400">Map local folder structures to category hierarchies on upload.</p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => handleToggleLocal('is_folder_upload_as_categories_enabled')}
+                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all focus:outline-none ${
+                        localSettings.is_folder_upload_as_categories_enabled ? 'bg-cyan-600 shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-gray-700'
+                    }`}
+                >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                        localSettings.is_folder_upload_as_categories_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                </button>
+            </div>
+            <div className="p-4 bg-cyan-500/5 px-6">
+                <p className="text-xs text-cyan-400/80 leading-relaxed font-medium">
+                    When enabled, uploading a folder will automatically create the corresponding sub-categories and organize your assets as they are on your local machine.
+                </p>
+            </div>
+        </div>
       </div>
 
       {/* Floating Save Bar */}
@@ -506,6 +545,7 @@ export default function ProjectFeaturesPage() {
                         is_geo_tagging_enabled: customer.is_geo_tagging_enabled,
                         is_transcription_enabled: customer.is_transcription_enabled,
                         is_single_category_enabled: customer.is_single_category_enabled,
+                        is_folder_upload_as_categories_enabled: customer.is_folder_upload_as_categories_enabled,
                         is_facial_recognition_enabled: customer.is_facial_recognition_enabled,
                     })}
                     className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"

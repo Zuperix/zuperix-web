@@ -39,12 +39,12 @@ interface FileEntry {
   status: FileStatus;
   progress: number;
   error?: string;
-  force?: boolean;
-    duplicateAsset?: {
-      id: string;
-      original_name: string;
-      asset_live_url?: string;
-    };
+  relativePath?: string;
+  duplicateAsset?: {
+    id: string;
+    original_name: string;
+    asset_live_url?: string;
+  };
 }
 
 function fileIcon(file: File) {
@@ -84,7 +84,8 @@ async function uploadFileSingle(
   categoryIds: string[] = [],
   vaultId: string | null = null,
   force: boolean = false,
-  metadata: Record<string, any> = {}
+  metadata: Record<string, any> = {},
+  relativePath?: string
 ): Promise<void | { id: string; original_name: string }> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -157,6 +158,7 @@ async function uploadFileSingle(
           category_ids: categoryIds,
           vault_id: vaultId,
           metadata,
+          relative_path: relativePath,
         }),
       });
 
@@ -180,7 +182,8 @@ async function uploadFileMultipart(
   categoryIds: string[] = [],
   vaultId: string | null = null,
   force: boolean = false,
-  metadata: Record<string, any> = {}
+  metadata: Record<string, any> = {},
+  relativePath?: string
 ): Promise<void | { id: string; original_name: string }> {
   const CHUNK_SIZE = 10 * 1024 * 1024;
   const totalParts = Math.ceil(file.size / CHUNK_SIZE);
@@ -282,6 +285,7 @@ async function uploadFileMultipart(
         category_ids: categoryIds,
         vault_id: vaultId,
         metadata,
+        relative_path: relativePath,
       }
     }),
   });
@@ -300,13 +304,14 @@ function uploadFileXHR(
   categoryIds: string[] = [],
   vaultId: string | null = null,
   force: boolean = false,
-  metadata: Record<string, any> = {}
+  metadata: Record<string, any> = {},
+  relativePath?: string
 ): Promise<void | { id: string; original_name: string }> {
   // If > 10MB, use Multipart
   if (file.size > 10 * 1024 * 1024) {
-    return uploadFileMultipart(file, workspaceId, token, onProgress, categoryIds, vaultId, force, metadata);
+    return uploadFileMultipart(file, workspaceId, token, onProgress, categoryIds, vaultId, force, metadata, relativePath);
   } else {
-    return uploadFileSingle(file, workspaceId, token, onProgress, categoryIds, vaultId, force, metadata);
+    return uploadFileSingle(file, workspaceId, token, onProgress, categoryIds, vaultId, force, metadata, relativePath);
   }
 }
 
@@ -339,6 +344,7 @@ export default function UploadModal({
   const [done, setDone] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
 
   // Category & Vault selection state
@@ -392,19 +398,81 @@ export default function UploadModal({
       if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false;
       return true;
     });
-    const newEntries: FileEntry[] = valid.map((f) => ({
-      id: `${f.name}-${f.size}-${f.lastModified}-${Math.random()}`,
-      file: f,
-      status: 'pending',
-      progress: 0,
-    }));
+    const newEntries: FileEntry[] = valid.map((f) => {
+      let relativePath = undefined;
+      const path = (f as any).webkitRelativePath || (f as any).path;
+      if (path) {
+        const lastSlash = path.lastIndexOf('/');
+        if (lastSlash !== -1) {
+          relativePath = path.substring(0, lastSlash);
+        }
+      }
+
+      return {
+        id: `${f.name}-${f.size}-${f.lastModified}-${Math.random()}`,
+        file: f,
+        status: 'pending',
+        progress: 0,
+        relativePath,
+      };
+    });
     setEntries((prev) => [...prev, ...newEntries]);
   }, [entries.length]);
 
-  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+  const onDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragging(false);
-    if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
+
+    const items = e.dataTransfer.items;
+    if (!items) {
+      if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
+      return;
+    }
+
+    const files: File[] = [];
+    const traverseEntry = async (entry: any, path = "") => {
+      if (entry.isFile) {
+        const file = await new Promise<File>((resolve) => entry.file(resolve));
+        if (path) {
+          // Attach custom path property since webkitRelativePath is often read-only
+          (file as any).path = path + "/" + file.name;
+        }
+        files.push(file);
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        const entries = await new Promise<any[]>((resolve) => {
+          let allEntries: any[] = [];
+          const read = () => {
+            reader.readEntries((results: any[]) => {
+              if (results.length > 0) {
+                allEntries = allEntries.concat(results);
+                read();
+              } else {
+                resolve(allEntries);
+              }
+            });
+          };
+          read();
+        });
+        for (const child of entries) {
+          await traverseEntry(child, path ? path + "/" + entry.name : entry.name);
+        }
+      }
+    };
+
+    const promises = [];
+    for (let i = 0; i < items.length; i++) {
+      const entry = items[i].webkitGetAsEntry();
+      if (entry) {
+        promises.push(traverseEntry(entry));
+      }
+    }
+    
+    await Promise.all(promises);
+
+    if (files.length > 0) {
+      addFiles(files);
+    }
   };
 
   const updateEntry = (id: string, patch: Partial<FileEntry>) => {
@@ -432,7 +500,7 @@ export default function UploadModal({
       try {
         await uploadFileXHR(entry.file, workspaceId, token, (pct) => {
           updateEntry(entry.id, { progress: pct });
-        }, categoryIds, selectedVaultId || null, entry.force, initialMetadata);
+        }, categoryIds, selectedVaultId || null, entry.force, initialMetadata, entry.relativePath);
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: any) {
         if (err instanceof DuplicateError) {
@@ -505,13 +573,17 @@ export default function UploadModal({
 
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => e.preventDefault()}
+    >
       <div className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden transition-all">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b dark:border-gray-800 flex-shrink-0">
           <div>
-            <h2 className="text-xl font-bold dark:text-white">Bulk Upload</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Up to {MAX_FILES} files · 5 GB each</p>
+            <h2 className="text-xl font-bold dark:text-white">Upload Assets</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Up to {MAX_FILES} items · 5 GB each</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
             <XMarkIcon className="h-5 w-5 text-gray-500" />
@@ -697,9 +769,28 @@ export default function UploadModal({
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {dragging ? 'Drop files here' : 'Click or drag & drop files'}
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 mt-1 mb-4 text-center px-4">
                 {entries.length > 0 ? `${entries.length} selected · Add more` : `Images, Videos, InDesign, Illustrator, 3D Models, PDFs, CSV, Markdown, JSON up to 5 GB each`}
               </p>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                  className="px-6 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all shadow-sm"
+                >
+                  Select Files
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); folderInputRef.current?.click(); }}
+                  className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all shadow-sm flex items-center justify-center gap-2"
+                >
+                  <FolderIcon className="h-4 w-4" />
+                  Upload Folder
+                </button>
+              </div>
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -707,6 +798,20 @@ export default function UploadModal({
                 accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,text/csv,.md,text/markdown,.json,application/json,.zip,.svg,.glb,.gltf,.psd,image/vnd.adobe.photoshop,.indd,application/x-indesign,.ai,application/postscript"
                 className="hidden"
                 onChange={(e) => e.target.files && addFiles(e.target.files)}
+              />
+              <input
+                ref={folderInputRef}
+                type="file"
+                {...({ webkitdirectory: "", directory: "" } as any)}
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    addFiles(e.target.files);
+                  }
+                  // Reset value to allow same folder selection again
+                  if (folderInputRef.current) folderInputRef.current.value = '';
+                }}
               />
             </div>
           )}
@@ -737,7 +842,15 @@ export default function UploadModal({
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium dark:text-white truncate">{entry.file.name}</p>
+                        <p className="text-sm font-medium dark:text-white truncate flex items-center gap-2">
+                          {entry.file.name}
+                          {entry.relativePath && (
+                            <span className="text-[10px] font-medium text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <FolderIcon className="h-2.5 w-2.5" />
+                              {entry.relativePath}
+                            </span>
+                          )}
+                        </p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <p className="text-xs text-gray-400">{formatSize(entry.file.size)}</p>
                           {entry.error && !isDuplicate && (
