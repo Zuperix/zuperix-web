@@ -151,6 +151,40 @@ export default function AssetHistory({ assetId }: { assetId: string }) {
       );
     }
 
+    if (meta.type === 'METADATA_UPDATED') {
+      return (
+        <div className="mt-2 space-y-1.5">
+          {Object.entries(meta.changes || {}).map(([field, delta]: [string, any]) => (
+            <div key={field} className="flex flex-col gap-1">
+              <div className="flex items-center gap-1.5 text-[10px]">
+                <span className="text-gray-500 font-bold uppercase tracking-wider">{field.replace(/_/g, ' ')}:</span>
+                <div className="flex items-center gap-1">
+                  <span className="bg-red-500/10 text-red-400/80 px-1.5 py-0.5 rounded border border-red-500/10">
+                    {String(delta.old ?? 'none')}
+                  </span>
+                  <span className="text-gray-600">→</span>
+                  <span className="bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20 font-medium">
+                    {String(delta.new ?? 'none')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (meta.type === 'RATING_UPDATED') {
+      return (
+        <div className="mt-2 flex items-center gap-2 text-[11px]">
+          <span className="text-gray-500">Rating set to:</span>
+          <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-lg border border-amber-500/20 font-bold">
+            {meta.rating} / 5
+          </span>
+        </div>
+      );
+    }
+
     if (meta.type === 'VERSION_UPLOAD' || meta.type === 'VERSION_REVERT') {
         return (
           <div className="mt-2 p-2 bg-gray-900/50 rounded-lg border border-gray-800 text-[11px]">
