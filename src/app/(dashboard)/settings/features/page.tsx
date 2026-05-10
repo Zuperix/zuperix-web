@@ -188,8 +188,7 @@ export default function ProjectFeaturesPage() {
   const showBackfillWarning = localSettings && customer && (
     (!customer.is_ocr_enabled && localSettings.is_ocr_enabled) ||
     (!customer.is_text_extraction_enabled && localSettings.is_text_extraction_enabled) ||
-    (!customer.is_geo_tagging_enabled && localSettings.is_geo_tagging_enabled) ||
-    (!customer.is_facial_recognition_enabled && localSettings.is_facial_recognition_enabled)
+    (!customer.is_geo_tagging_enabled && localSettings.is_geo_tagging_enabled)
   );
 
   if (loading) {
@@ -248,7 +247,6 @@ export default function ProjectFeaturesPage() {
       </div>
 
       <div className="space-y-6">
-        {/* OCR Section */}
         <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.is_ocr_enabled ? 'border-blue-500/30' : 'border-gray-800'}`}>
             <div className="p-6 border-b border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -568,7 +566,7 @@ export default function ProjectFeaturesPage() {
                             Saving...
                         </>
                     ) : (
-                        'Save & Start Backfill'
+                        showBackfillWarning ? 'Save & Start Backfill' : 'Save Changes'
                     )}
                 </button>
             </div>

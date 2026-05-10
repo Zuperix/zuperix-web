@@ -2081,9 +2081,7 @@ export default function AssetDetailPage() {
                     )}
                   </div>
                 )}
-                {activeTab === 'history' && (
-                  <AssetHistory assetId={assetId} />
-                )}
+
                 {activeTab === 'versions' && (
                   <div className="space-y-4">
                     {(asset?.versions || []).map((v: any) => (
@@ -2467,19 +2465,7 @@ export default function AssetDetailPage() {
                 />
               </div>
             )}
-            {activeTab === 'history' && (
-              <div className="h-full animate-in fade-in slide-in-from-right-2 duration-300">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
-                    <ClockIcon className="h-5 w-5 text-blue-500" />
-                  </div>
-                  <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Audit History</h2>
-                </div>
-                <div className="bg-gray-50/30 dark:bg-gray-900/30 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                  <AssetHistory assetId={assetId} />
-                </div>
-              </div>
-            )}
+
             {activeTab === 'workflow' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-2">

@@ -14,8 +14,11 @@ import {
   PlayIcon,
   CheckCircleIcon,
   XCircleIcon,
-  CheckBadgeIcon
+  CheckBadgeIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
+import { apiFetch, apiDownload } from '@/lib/api';
+import { toast } from 'sonner';
 
 const ACTION_ICONS: Record<string, any> = {
   UPLOAD: ArrowUpTrayIcon,
@@ -73,6 +76,25 @@ export default function AssetHistory({ assetId }: { assetId: string }) {
       </div>
     );
   }
+
+  const handleDownloadCsv = async () => {
+    try {
+      const blob = await apiDownload(`/audit/assets/${assetId}/export`);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-log-${assetId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Audit log CSV downloaded successfully');
+    } catch (err: any) {
+      console.error('Download failed:', err);
+      toast.error('Failed to download audit log CSV');
+    }
+  };
 
   if (history.length === 0) {
     return (
@@ -183,8 +205,27 @@ export default function AssetHistory({ assetId }: { assetId: string }) {
   };
 
   return (
-    <div className="flow-root p-6 animate-in fade-in duration-500">
-      <ul role="list" className="-mb-8">
+    <div className="p-6 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-800/50">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-blue-500/10 rounded-xl">
+            <ClockIcon className="h-5 w-5 text-blue-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white tracking-tight">Audit Trail</h3>
+            <p className="text-[10px] text-gray-500 font-medium">{history.length} events recorded</p>
+          </div>
+        </div>
+        <button
+          onClick={handleDownloadCsv}
+          className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-[11px] font-bold text-gray-300 hover:text-white transition-all shadow-sm"
+        >
+          <DocumentArrowDownIcon className="h-4 w-4" />
+          Download Report
+        </button>
+      </div>
+
+      <ul role="list" className="space-y-0">
         {history.map((event, eventIdx) => {
           const Icon = ACTION_ICONS[event.metadata?.type || event.action] || ClockIcon;
           const colorClass = ACTION_COLORS[event.metadata?.type || event.action] || 'text-gray-400 bg-gray-400/10 border-gray-400/20';
@@ -192,16 +233,16 @@ export default function AssetHistory({ assetId }: { assetId: string }) {
           
           return (
             <li key={event.id} className="group">
-              <div className="relative pb-8">
+              <div className="relative pb-10">
                 {eventIdx !== history.length - 1 ? (
                   <span
-                    className="absolute left-[19px] top-10 -ml-px h-[calc(100%-16px)] w-0.5 bg-gradient-to-b from-gray-800 to-transparent group-hover:from-blue-900/30 transition-colors duration-300"
+                    className="absolute left-[19px] top-10 -ml-px h-[calc(100%-8px)] w-0.5 bg-gradient-to-b from-gray-800 to-transparent group-hover:from-blue-900/30 transition-colors duration-300"
                     aria-hidden="true"
                   />
                 ) : null}
                 <div className="relative flex items-start space-x-4">
                   {/* User Avatar Circle */}
-                  <div className="relative">
+                  <div className="relative shrink-0">
                     <div className="h-10 w-10 rounded-2xl bg-gray-900 border border-gray-800 flex items-center justify-center text-xs font-bold text-gray-400 shadow-xl overflow-hidden group-hover:border-blue-500/30 transition-all duration-300">
                        {event.user?.name ? (
                          <span className="z-10">{initials.slice(0, 2)}</span>
@@ -219,20 +260,20 @@ export default function AssetHistory({ assetId }: { assetId: string }) {
                   </div>
 
                   <div className="flex min-w-0 flex-1 flex-col pt-0.5">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-white tracking-tight">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-white tracking-tight truncate">
                             {event.user?.name || 'System Auto'}
                           </span>
-                          <span className="h-1 w-1 rounded-full bg-gray-700" />
-                          <span className="text-[11px] text-gray-500 font-medium lowercase tracking-wide">
+                          <span className="h-1 w-1 rounded-full bg-gray-700 shrink-0" />
+                          <span className="text-[11px] text-gray-500 font-medium lowercase tracking-wide whitespace-nowrap">
                             {getEventTitle(event)}
                           </span>
                         </div>
                         {renderMetadata(event)}
                       </div>
-                      <div className="whitespace-nowrap text-right pt-0.5">
+                      <div className="shrink-0 text-right pt-0.5">
                         <time dateTime={event.created_at} className="block text-[10px] font-bold text-gray-600 group-hover:text-blue-500/50 transition-colors">
                            {new Date(event.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </time>
