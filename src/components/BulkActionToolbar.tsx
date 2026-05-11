@@ -128,12 +128,12 @@ export default function BulkActionToolbar({
   return (
     <>
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-        <div className="bg-gray-900/90 dark:bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-2 flex items-center gap-2">
-          <div className="px-4 border-r border-white/10 flex items-center gap-3">
-            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg shadow-blue-500/20">
+        <div className="bg-[#0b0c14] backdrop-blur-2xl border border-white/10 rounded-[28px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-2.5 flex items-center gap-3">
+          <div className="px-5 border-r border-white/5 flex items-center gap-4">
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-[11px] font-black text-white shadow-[0_0_15px_rgba(37,99,235,0.6)]">
               {selectedIds.length}
             </div>
-            <span className="text-xs font-semibold text-white/90 whitespace-nowrap">
+            <span className="text-[13px] font-black text-white whitespace-nowrap tracking-tight">
               Assets Selected
             </span>
           </div>
@@ -175,29 +175,30 @@ export default function BulkActionToolbar({
             <button 
               disabled={isProcessing}
               onClick={handleBulkDownload}
-              className="p-2.5 text-white/70 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-xl transition-all flex items-center gap-2 group border-l border-white/10 ml-1 pl-3"
+              className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all flex items-center gap-3 group ml-2"
               title="Download Selected"
             >
-              <FolderArrowDownIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-medium hidden sm:inline">Download</span>
+              <FolderArrowDownIcon className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
+              <span className="text-[12px] font-bold text-white/90">Download</span>
             </button>
-            <div className="w-px h-6 bg-white/10 mx-1" />
+            
+            <div className="w-px h-6 bg-white/5 mx-2" />
 
             <button 
               disabled={isProcessing}
               onClick={() => setIsDeleteModalOpen(true)}
-              className="p-2.5 text-white/70 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all flex items-center gap-2 group"
+              className="p-3 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded-2xl transition-all flex items-center group"
               title="Delete Selected"
             >
               <TrashIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
             </button>
           </div>
 
-          <div className="w-px h-6 bg-white/10 mx-1" />
+          <div className="w-px h-6 bg-white/5 mx-1" />
 
           <button 
             onClick={onClear}
-            className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+            className="p-3 text-white/30 hover:text-white hover:bg-white/10 rounded-2xl transition-all mr-1"
             title="Clear Selection"
           >
             <XMarkIcon className="h-5 w-5" />

@@ -39,7 +39,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   PencilIcon,
-  InboxArrowDownIcon
+  InboxArrowDownIcon,
+  SwatchIcon,
 } from '@heroicons/react/24/outline';
 import DownloadModal from '@/components/DownloadModal';
 import { useCategories, Category } from '@/hooks/useCategories';
@@ -1999,7 +2000,31 @@ export default function AssetDetailPage() {
                           </div>
                         </div>
                       ))}
+
+
+                      {asset?.color_palette && asset.color_palette.length > 0 && (
+                        <div className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex flex-col gap-3 transition-all border-b-2 hover:border-b-indigo-500/50">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-2.5 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700/50`}>
+                              <SwatchIcon className={`h-5 w-5 text-indigo-500`} />
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Color Palette</span>
+                              <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                                {asset.color_palette.map((color: string, i: number) => (
+                                  <div 
+                                    key={i} 
+                                    className="h-6 w-12 rounded-lg shadow-sm border border-black/5 dark:border-white/5 shrink-0"
+                                    style={{ backgroundColor: color }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
+
                   </div>
                 )}
                 {activeTab === 'attachments' && (
@@ -2214,7 +2239,27 @@ export default function AssetDetailPage() {
                       <span className="text-[11px] font-bold text-gray-700 dark:text-gray-200 truncate leading-tight" title={item.value}>{item.value}</span>
                     </div>
                   ))}
+
+                  {asset?.color_palette && asset.color_palette.length > 0 && (
+                    <div className="col-span-2 bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl flex flex-col gap-3 transition-all hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-none group/card border-b-2 hover:border-b-indigo-500/50">
+                      <div className="flex items-center gap-2">
+                        <SwatchIcon className="h-3.5 w-3.5 text-indigo-500" />
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none">Color Palette</span>
+                      </div>
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                        {asset.color_palette.map((color: string, i: number) => (
+                          <div 
+                            key={i} 
+                            className="h-7 w-14 rounded-lg shadow-sm border border-black/5 dark:border-white/5 transition-all hover:scale-110 hover:shadow-md cursor-help shrink-0"
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+
               </div>
             )}
 
