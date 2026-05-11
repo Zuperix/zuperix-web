@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
 import Pagination from '@/components/Pagination';
 import { 
@@ -12,20 +11,23 @@ import {
   XCircleIcon, 
   ExclamationCircleIcon,
   CloudArrowUpIcon,
-  DocumentIcon
+  DocumentIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, onClick }: { status: string; onClick?: (e: React.MouseEvent) => void }) {
   const styles: Record<string, string> = {
     pending: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
     processing: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 animate-pulse',
     completed: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
     failed: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800',
-    duplicate: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
+    duplicate: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 hover:bg-amber-200 dark:hover:bg-amber-900/50 cursor-pointer',
   };
 
-  const icons: Record<string, any> = {
+  const icons: Record<string, React.ReactNode> = {
     pending: <ArrowPathIcon className="h-3 w-3" />,
     processing: <ArrowPathIcon className="h-3 w-3 animate-spin" />,
     completed: <CheckCircleIcon className="h-3 w-3" />,
@@ -36,29 +38,60 @@ function StatusBadge({ status }: { status: string }) {
   const label = status.charAt(0).toUpperCase() + status.slice(1);
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${styles[status] || styles.pending}`}>
+    <span 
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-colors ${styles[status] || styles.pending}`}
+    >
       {icons[status] || icons.pending}
       {label}
     </span>
   );
 }
 
+import AssetMatchesModal from '@/components/AssetMatchesModal';
+
+interface UploadAsset {
+  id: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  created_at: string;
+  processing_status: string;
+}
+
+interface UploadStatusResponse {
+  results: UploadAsset[];
+  pagination: {
+    page: number;
+    total_pages: number;
+  };
+}
+
 function UploadStatusContent() {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.system_role === 'SUPER_ADMIN';
   const { activeWorkspace } = useWorkspace();
   const router = useRouter();
   const searchParams = useSearchParams();
   const page = Number(searchParams.get('page')) || 1;
+  const search = searchParams.get('search') || '';
+  const status = searchParams.get('status') || '';
+  const startDate = searchParams.get('start_date') || '';
+  const endDate = searchParams.get('end_date') || '';
   
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<UploadStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedAsset, setSelectedAsset] = useState<UploadAsset | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const url = `/assets/upload-status?page=${page}&limit=20${activeWorkspace ? `&workspace_id=${activeWorkspace.id}` : ''}`;
-      const response = await apiFetch<any>(url);
+      let url = `/assets/upload-status?page=${page}&limit=20`;
+      if (activeWorkspace) url += `&workspace_id=${activeWorkspace.id}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (status) url += `&status=${status}`;
+      if (startDate) url += `&start_date=${startDate}`;
+      if (endDate) url += `&end_date=${endDate}`;
+      
+      const response = await apiFetch<UploadStatusResponse>(url);
       setData(response);
     } catch (error) {
       console.error('Failed to fetch upload status:', error);
@@ -66,7 +99,7 @@ function UploadStatusContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, activeWorkspace]);
+  }, [page, activeWorkspace, search, status, startDate, endDate]);
 
   useEffect(() => {
     fetchStatus();
@@ -74,6 +107,19 @@ function UploadStatusContent() {
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
   }, [fetchStatus]);
+
+  const updateFilters = (newFilters: Record<string, string>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+    });
+    params.set('page', '1'); // Reset to page 1 on filter change
+    router.push(`/upload-status?${params.toString()}`);
+  };
 
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -91,7 +137,7 @@ function UploadStatusContent() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
             <CloudArrowUpIcon className="h-8 w-8 text-blue-500" />
@@ -101,13 +147,76 @@ function UploadStatusContent() {
             Tracking recent asset processing and background jobs
           </p>
         </div>
-        <button
-          onClick={fetchStatus}
-          disabled={loading}
-          className="p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
-        >
-          <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchStatus}
+            disabled={loading}
+            className="p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm group"
+          >
+            <ArrowPathIcon className={`h-5 w-5 ${loading ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="relative group md:col-span-1">
+          <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+          <input
+            type="text"
+            placeholder="Search filename..."
+            defaultValue={search}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                updateFilters({ search: (e.target as HTMLInputElement).value });
+              }
+            }}
+            className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#0f111a]/60 border border-gray-200 dark:border-gray-800 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-gray-100"
+          />
+        </div>
+
+        <div className="relative group">
+          <FunnelIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+          <select
+            value={status}
+            onChange={(e) => updateFilters({ status: e.target.value })}
+            className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#0f111a]/60 border border-gray-200 dark:border-gray-800 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all dark:text-gray-100 appearance-none"
+          >
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="completed">Completed</option>
+            <option value="duplicate">Duplicate</option>
+            <option value="failed">Failed</option>
+          </select>
+        </div>
+
+        <div className="relative group md:col-span-2 flex items-center gap-2 bg-white dark:bg-[#0f111a]/60 border border-gray-200 dark:border-gray-800 rounded-2xl px-4">
+          <CalendarIcon className="h-4 w-4 text-gray-400" />
+          <input
+            type="date"
+            value={startDate}
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+            onChange={(e) => updateFilters({ start_date: e.target.value })}
+            className="flex-1 py-3 bg-transparent border-none text-sm outline-none dark:text-gray-100 focus:ring-0 cursor-pointer"
+          />
+          <span className="text-gray-400 text-xs font-bold uppercase">To</span>
+          <input
+            type="date"
+            value={endDate}
+            onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
+            onChange={(e) => updateFilters({ end_date: e.target.value })}
+            className="flex-1 py-3 bg-transparent border-none text-sm outline-none dark:text-gray-100 focus:ring-0 cursor-pointer"
+          />
+          {(startDate || endDate) && (
+            <button 
+              onClick={() => updateFilters({ start_date: '', end_date: '' })}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400"
+            >
+              <XCircleIcon className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-[#0f111a]/40 border border-gray-200 dark:border-gray-800/60 rounded-3xl overflow-hidden shadow-xl shadow-black/5 backdrop-blur-xl">
@@ -129,11 +238,17 @@ function UploadStatusContent() {
                   </td>
                 </tr>
               ) : (
-                data?.results?.map((asset: any) => (
+                data?.results?.map((asset) => (
                   <tr 
                     key={asset.id} 
                     className="border-b border-gray-50 dark:border-gray-800/40 hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors group cursor-pointer"
-                    onClick={() => asset.processing_status === 'completed' && router.push(`/assets/${asset.id}`)}
+                    onClick={() => {
+                      if (asset.processing_status === 'completed') {
+                        router.push(`/assets/${asset.id}`);
+                      } else if (asset.processing_status === 'duplicate') {
+                        setSelectedAsset(asset);
+                      }
+                    }}
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -144,14 +259,22 @@ function UploadStatusContent() {
                           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate max-w-[240px]">
                             {asset.original_name}
                           </span>
-                          <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider uppercase">
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">
                             {asset.mime_type?.split('/')[1] || 'file'}
                           </span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <StatusBadge status={asset.processing_status} />
+                      <StatusBadge 
+                        status={asset.processing_status} 
+                        onClick={(e) => {
+                          if (asset.processing_status === 'duplicate') {
+                            e.stopPropagation();
+                            setSelectedAsset(asset);
+                          }
+                        }}
+                      />
                     </td>
                     <td className="px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
                       {formatSize(asset.size)}
@@ -176,6 +299,13 @@ function UploadStatusContent() {
           </div>
         )}
       </div>
+
+      {selectedAsset && (
+        <AssetMatchesModal 
+          asset={selectedAsset}
+          onClose={() => setSelectedAsset(null)}
+        />
+      )}
     </div>
   );
 }
