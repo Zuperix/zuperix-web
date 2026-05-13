@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { canvaApi } from '@/services/canva.api';
 
-export default function CanvaCallbackPage() {
+function CallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -50,5 +50,13 @@ export default function CanvaCallbackPage() {
         <p className="mt-2 text-sm text-[#64748b]">Please wait while we securely link your Zuperix account.</p>
       </div>
     </div>
+  );
+}
+
+export default function CanvaCallbackPage() {
+  return (
+    <Suspense fallback={null}>
+      <CallbackHandler />
+    </Suspense>
   );
 }

@@ -235,9 +235,9 @@ export default function CanvaMicrofrontendPage() {
   };
 
   const handleDisconnectCanva = async () => {
-    if (!connection?.id) return;
+    if (!workspaceId || !connection?.id) return;
     try {
-      await canvaApi.disconnect(connection.id);
+      await canvaApi.disconnect(workspaceId, connection.id);
       setConnection(null);
       setAssets([]);
       toast.success('Canva disconnected');

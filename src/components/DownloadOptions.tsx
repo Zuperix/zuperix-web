@@ -14,6 +14,7 @@ import {
 import { apiDownload, apiFetch } from '@/lib/api';
 import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
 import { FEATURES } from '@/constants/features';
+import { toast } from 'sonner';
 
 interface DownloadOptionsProps {
   assetId: string;

@@ -50,3 +50,5 @@ node_modules/
 /playwright/.auth/
 tests/.auth/user.json
 tests/.auth/user.json
+Caddyfile
+setup-https.sh

@@ -45,6 +45,7 @@ interface FileEntry {
     original_name: string;
     asset_live_url?: string;
   };
+  force?: boolean;
 }
 
 function fileIcon(file: File) {

@@ -70,6 +70,7 @@ import { MicrophoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline
 import { MetadataFieldInput } from '@/components/metadata/MetadataFieldInput';
 import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
 import { FEATURES } from '@/constants/features';
+import { googleDriveApi } from '@/services/google-drive.api';
 
 interface Field {
   id: string;
@@ -393,7 +394,7 @@ export default function AssetDetailPage() {
       setSelectedCollectionIds(assetData.collections?.map((c: any) => c.id) || []);
 
       const [fieldDefs, currentValues, workflowData] = await Promise.all([
-        apiFetch<Field[]>(`/workspaces/${activeWorkspace.id}/metadata/fields`),
+        apiFetch<Field[]>(`/workspaces/${activeWorkspace.id}/metadata/fields?asset_id=${assetId}`),
         apiFetch<MetadataValue[]>(`/assets/${assetId}/metadata`),
         fetchAssetWorkflow(assetId).catch(() => null),
         fetchComments(),
@@ -580,6 +581,12 @@ export default function AssetDetailPage() {
     } finally {
       setIsSavingName(false);
     }
+  };
+
+  const handleCopyFilename = () => {
+    if (!asset?.original_name) return;
+    navigator.clipboard.writeText(asset.original_name);
+    toast.success('Filename copied to clipboard');
   };
 
   const handleRate = async (rating: number) => {
@@ -1005,6 +1012,13 @@ export default function AssetDetailPage() {
                 >
                   <PencilIcon className="h-4 w-4" strokeWidth={2.5} />
                 </button>
+                <button
+                  onClick={handleCopyFilename}
+                  className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-all"
+                  title="Copy Filename"
+                >
+                  <DocumentDuplicateIcon className="h-4 w-4" strokeWidth={2} />
+                </button>
               </div>
             )}
 
@@ -1168,8 +1182,8 @@ export default function AssetDetailPage() {
                 )}
                 {asset?.source === 'google_drive' && !asset?.is_imported && (
                   <button
-                    onClick={async (e) => { 
-                      e.stopPropagation(); 
+                    onClick={async (e) => {
+                      e.stopPropagation();
                       try {
                         await googleDriveApi.promoteAsset(assetId);
                         toast.success('Asset promotion started! It will be fully imported in a few moments.');
@@ -1528,8 +1542,8 @@ export default function AssetDetailPage() {
                               <div
                                 onClick={() => handleToggleCategory(cat.id)}
                                 className={`flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all duration-200 mb-1 ${isSelected
-                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 active:scale-[0.98]'
-                                    : 'hover:bg-gray-50 dark:hover:bg-gray-800/80 text-gray-700 dark:text-gray-300'
+                                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 active:scale-[0.98]'
+                                  : 'hover:bg-gray-50 dark:hover:bg-gray-800/80 text-gray-700 dark:text-gray-300'
                                   }`}
                                 style={{ marginLeft: `${depth * 1.5}rem` }}
                               >
@@ -2012,8 +2026,8 @@ export default function AssetDetailPage() {
                               <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-2">Color Palette</span>
                               <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
                                 {asset.color_palette.map((color: string, i: number) => (
-                                  <div 
-                                    key={i} 
+                                  <div
+                                    key={i}
                                     className="h-6 w-12 rounded-lg shadow-sm border border-black/5 dark:border-white/5 shrink-0"
                                     style={{ backgroundColor: color }}
                                   />
@@ -2248,8 +2262,8 @@ export default function AssetDetailPage() {
                       </div>
                       <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
                         {asset.color_palette.map((color: string, i: number) => (
-                          <div 
-                            key={i} 
+                          <div
+                            key={i}
                             className="h-7 w-14 rounded-lg shadow-sm border border-black/5 dark:border-white/5 transition-all hover:scale-110 hover:shadow-md cursor-help shrink-0"
                             style={{ backgroundColor: color }}
                             title={color}

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { apiFetch, apiDownload } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import { apiFetch, apiDownload, BASE_URL } from '@/lib/api';
 import { 
   CloudArrowUpIcon, 
   DocumentArrowDownIcon, 
@@ -23,17 +23,47 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<{ jobId: string; status: string; progress?: number; result?: any } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('global');
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const data = await apiFetch<any[]>(`/workspaces/${workspaceId}/metadata/templates`);
+        setTemplates(data || []);
+      } catch (err) {
+        console.error('Failed to fetch templates');
+      }
+    };
+    fetchTemplates();
+  }, [workspaceId]);
 
   const handleDownloadTemplate = async () => {
     try {
-      const blob = await apiDownload(`/workspaces/${workspaceId}/metadata/bulk/template`);
-      const url = window.URL.createObjectURL(blob);
+      const url = `/workspaces/${workspaceId}/metadata/bulk/template${selectedTemplate !== 'global' ? `?templateId=${selectedTemplate}` : ''}`;
+      const response = await fetch(`${BASE_URL}${url}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to download template');
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `metadata_template_${selectedTemplate}.csv`;
+      
+      if (contentDisposition && contentDisposition.indexOf('filename=') !== -1) {
+        filename = contentDisposition.split('filename=')[1].replace(/["']/g, '');
+      }
+
+      const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `metadata_template_${workspaceId}.csv`;
+      a.href = downloadUrl;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
       a.remove();
     } catch (err: any) {
       setError(err.message || 'Failed to download template');
@@ -145,7 +175,7 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
           <h4 className="text-sm font-bold text-blue-100 mb-1">How it works</h4>
           <p className="text-sm text-blue-300/80 leading-relaxed">
             Bulk metadata import allows you to update multiple assets at once using a CSV file. 
-            Use the <code className="bg-blue-900/40 px-1 rounded text-blue-200">asset_id</code> column to identify your assets.
+            Identify assets using <code className="bg-blue-900/40 px-1 rounded text-blue-200">asset_id</code>, <code className="bg-blue-900/40 px-1 rounded text-blue-200">filename</code>, or <code className="bg-blue-900/40 px-1 rounded text-blue-200">original_name</code>.
           </p>
         </div>
       </div>
@@ -157,12 +187,40 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
             <DocumentArrowDownIcon className="h-6 w-6 text-blue-400" />
           </div>
           <h3 className="text-xl font-bold text-white mb-2">1. Download Template</h3>
-          <p className="text-gray-400 text-sm mb-8 leading-relaxed">
-            Get a CSV file with all your custom metadata fields as column headers.
+          <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+            Select a template to get a CSV file with specific metadata fields as column headers.
           </p>
+
+          <div className="space-y-4 mb-8">
+            <div>
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2 block">
+                Metadata Context
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedTemplate}
+                  onChange={(e) => setSelectedTemplate(e.target.value)}
+                  className="w-full bg-gray-800/50 border border-gray-700 text-white text-sm rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none cursor-pointer pr-10"
+                >
+                  <option value="global">Global (All Fields)</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} Template
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <button
             onClick={handleDownloadTemplate}
-            className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-bold transition-all"
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-600/20 rounded-2xl font-bold transition-all active:scale-[0.98]"
           >
             <DocumentArrowDownIcon className="h-5 w-5" />
             Download CSV Template
@@ -280,7 +338,7 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-gray-800">
-                      <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Asset ID</th>
+                      <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Identifier</th>
                       <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">Status</th>
                       <th className="px-3 py-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Error</th>
                     </tr>
@@ -288,8 +346,8 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
                   <tbody>
                     {success.result.preview.map((row: any, idx: number) => (
                       <tr key={idx} className="border-b last:border-0 border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                        <td className="px-3 py-2 text-[11px] font-medium text-gray-300 truncate max-w-[120px]" title={row.original_row?.asset_id}>
-                          {row.original_row?.asset_id || 'Unknown'}
+                        <td className="px-3 py-2 text-[11px] font-medium text-gray-300 truncate max-w-[120px]" title={row.original_row?.asset_id || row.original_row?.filename || row.original_row?.original_name}>
+                          {row.original_row?.asset_id || row.original_row?.filename || row.original_row?.original_name || 'Unknown'}
                         </td>
                         <td className="px-3 py-2 text-center">
                           {row.processed ? (

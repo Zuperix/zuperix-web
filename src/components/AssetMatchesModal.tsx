@@ -123,7 +123,7 @@ export default function AssetMatchesModal({
                     <div className="aspect-square bg-gray-50 dark:bg-gray-950 rounded-xl overflow-hidden border dark:border-gray-800 relative shadow-inner">
                       {match.mime_type?.startsWith('image/') ? (
                         <CustomImage 
-                          src={match.thumbnail_lg_url || match.asset_live_url}
+                          src={match.thumbnail_lg_url || match.asset_live_url || ''}
                           fill
                           alt={match.original_name}
                           className="object-cover transition-transform group-hover:scale-105 duration-500"
