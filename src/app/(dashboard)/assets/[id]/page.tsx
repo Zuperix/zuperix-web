@@ -1993,6 +1993,38 @@ export default function AssetDetailPage() {
                       <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-wide uppercase">Technical specifications</h2>
                     </div>
 
+                    <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                      <div className="bg-gray-50/30 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl mb-6 transition-all hover:bg-white dark:hover:bg-gray-800/60 group/rating border-b-2 hover:border-b-yellow-500/50">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <StarIconOutline className="h-3.5 w-3.5 text-yellow-500" />
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Rating</span>
+                          </div>
+                          {asset?.average_rating > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <StarSolid className="h-3 w-3 text-yellow-400" />
+                              <span className="text-xs font-black text-gray-900 dark:text-gray-100">{Number(asset.average_rating).toFixed(1)}</span>
+                              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter ml-1">
+                                ({asset.total_ratings} {asset.total_ratings === 1 ? 'review' : 'reviews'})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between bg-white/40 dark:bg-gray-950/20 p-2.5 rounded-xl border border-gray-100/50 dark:border-gray-800/30">
+                          <StarRating
+                            value={asset?.user_rating || 0}
+                            onRate={handleRate}
+                            size="md"
+                            interactive={true}
+                          />
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">
+                            {asset?.user_rating > 0 ? `${asset.user_rating} / 5` : 'Rate this'}
+                          </span>
+                        </div>
+                      </div>
+                    </PermissionGate>
+
                     <div className="grid grid-cols-1 gap-4">
                       {[
                         { label: 'Filename', value: asset?.original_name, icon: DocumentIcon, color: 'text-blue-500' },
@@ -2127,18 +2159,131 @@ export default function AssetDetailPage() {
                 )}
 
                 {activeTab === 'versions' && (
-                  <div className="space-y-4">
-                    {(asset?.versions || []).map((v: any) => (
-                      <div key={v.id} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <ClockIcon className="h-5 w-5 text-amber-500" />
-                          <div>
-                            <p className="text-xs font-bold">Version {v.version_number}</p>
-                            <p className="text-[10px] text-gray-400">{new Date(v.created_at).toLocaleString()}</p>
-                          </div>
+                  <div className="space-y-8 animate-in fade-in slide-in-from-right-2 duration-300">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-xl">
+                          <ClockIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest">History</h3>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Version Timeline</p>
                         </div>
                       </div>
-                    ))}
+                      <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                        <button
+                          onClick={() => setShowVersionUpload(!showVersionUpload)}
+                          disabled={isLocked}
+                          className={`p-2 rounded-xl shadow-lg transition-all ${showVersionUpload ? 'bg-gray-100 dark:bg-gray-800 text-gray-400' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/20'}`}
+                        >
+                          <PlusIcon className={`h-4 w-4 transition-transform duration-300 ${showVersionUpload ? 'rotate-45' : ''}`} />
+                        </button>
+                      </PermissionGate>
+                    </div>
+
+                    {showVersionUpload && (
+                      <div className="p-6 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-3xl space-y-4 animate-in slide-in-from-top-4 duration-300">
+                        <div
+                          onClick={() => versionFileInputRef.current?.click()}
+                          className="border-2 border-dashed border-amber-200 dark:border-amber-900/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-all"
+                        >
+                          <CloudArrowUpIcon className="h-8 w-8 text-amber-500" />
+                          <div className="text-center">
+                            <p className="text-xs font-bold text-gray-900 dark:text-white">Choose a new file</p>
+                            <p className="text-[10px] text-gray-500 font-medium">Max 50MB per version</p>
+                          </div>
+                        </div>
+                        <input
+                          type="file"
+                          ref={versionFileInputRef}
+                          className="hidden"
+                          onChange={handleUploadNewVersion}
+                        />
+                        <textarea
+                          placeholder="What's changed in this version? (Optional)"
+                          value={versionNotes}
+                          onChange={(e) => setVersionNotes(e.target.value)}
+                          className="w-full bg-white dark:bg-[#0a0b10] border border-amber-100 dark:border-amber-900/30 rounded-2xl p-4 text-xs outline-none focus:ring-2 focus:ring-amber-500/20 min-h-[100px] transition-all"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      {(asset?.versions || []).map((version: any, index: number) => {
+                        const isLatest = index === 0;
+                        return (
+                          <div
+                            key={version.id}
+                            className={`group relative bg-white dark:bg-[#151720] border rounded-2xl p-4 transition-all hover:shadow-xl ${isLatest
+                              ? 'border-blue-500 dark:border-blue-500/50 shadow-blue-500/5'
+                              : 'border-gray-100 dark:border-gray-800'
+                              }`}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex gap-4">
+                                <div className={`h-10 w-10 flex-shrink-0 rounded-xl flex items-center justify-center ${isLatest ? 'bg-blue-600' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                                  <span className={`text-xs font-bold ${isLatest ? 'text-white' : 'text-gray-400'}`}>
+                                    v{version.version_number}
+                                  </span>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
+                                      {isLatest ? 'Current Version' : `Version ${version.version_number}`}
+                                    </span>
+                                    {isLatest && (
+                                      <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[8px] font-extrabold uppercase rounded tracking-tighter">Active</span>
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2 italic">
+                                    {version.notes || 'No change notes provided.'}
+                                  </p>
+                                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-400 font-medium">
+                                    <span className="flex items-center gap-1">
+                                      <ClockIcon className="h-3 w-3" />
+                                      {version.created_at ? new Date(version.created_at).toLocaleString() : 'N/A'}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <DocumentIcon className="h-3 w-3" />
+                                      {(version.size / 1024 / 1024).toFixed(2)} MB
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-2">
+                                <a
+                                  href={version.asset_live_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                  title="View original"
+                                >
+                                  <ArrowDownTrayIcon className="h-4 w-4" />
+                                </a>
+                                {!isLatest && (
+                                  <button
+                                    onClick={() => handleRevert(version.id)}
+                                    disabled={isLocked}
+                                    className="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors disabled:opacity-50"
+                                    title={isLocked ? 'Locked during workflow' : 'Revert to this version'}
+                                  >
+                                    <ArrowPathIcon className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {(asset?.versions?.length || 0) === 0 && (
+                        <div className="p-12 text-center bg-gray-50 dark:bg-gray-900/20 border border-dashed border-gray-200 dark:border-gray-800 rounded-3xl">
+                          <ClockIcon className="h-12 w-12 text-gray-300 dark:text-gray-800 mx-auto mb-4" />
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No version history available</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 {activeTab === 'transcript' && (

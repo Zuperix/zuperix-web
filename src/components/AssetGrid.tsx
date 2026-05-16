@@ -94,6 +94,7 @@ const AssetCard = ({
 }) => {
   const { activeWorkspace } = useWorkspace();
   const [imgError, setImgError] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const mimeType = asset.mime_type || 'application/octet-stream';
   const Icon = getIcon(mimeType);
 
@@ -121,15 +122,33 @@ const AssetCard = ({
     }
   };
 
+  const handleCardClick = () => {
+    if (onSelect) {
+      setIsNavigating(true);
+      onSelect(assetId);
+      // Reset loading state after 5s just in case navigation fails or user navigates back
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 5000);
+    }
+  };
+
   return (
     <div
-      onClick={() => onSelect?.(assetId)}
+      onClick={handleCardClick}
       data-asset-id={assetId}
       className={`group relative bg-white dark:bg-gray-900/60 rounded-2xl border-2 transition-all duration-500 cursor-pointer overflow-hidden flex flex-col ${isSelected
           ? 'border-indigo-500 shadow-2xl shadow-indigo-500/20 z-10 scale-[1.02]'
           : 'border-transparent hover:border-indigo-500/30 hover:shadow-2xl hover:bg-gray-800/40'
-        }`}
+        } ${isNavigating ? 'opacity-80 scale-[0.98]' : ''}`}
     >
+      {/* Navigation Loading Overlay */}
+      {isNavigating && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 dark:bg-black/40 backdrop-blur-[2px]">
+          <div className="w-8 h-8 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
+        </div>
+      )}
+
       {/* Top Banner with Image/Preview/3D */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-gray-950/50">
         {is3D(mimeType, originalName) ? (
