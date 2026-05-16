@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { XMarkIcon, DocumentDuplicateIcon, CheckIcon, TagIcon, InformationCircleIcon, MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/lib/api';
 import { useCategories } from '@/hooks/useCategories';
@@ -28,6 +28,7 @@ export default function GuestUploadLinkDialog({
   const [initialMetadata, setInitialMetadata] = useState<Record<string, any>>({});
   const [showMetadata, setShowMetadata] = useState(false);
   const [metadataSearch, setMetadataSearch] = useState('');
+  const [activeTemplateFields, setActiveTemplateFields] = useState<string[] | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -55,12 +56,31 @@ export default function GuestUploadLinkDialog({
   const flattenCategories = (cats: any[], depth = 0): any[] => {
     let result: any[] = [];
     cats.forEach(cat => {
-      result.push({ id: cat.id, name: cat.name, depth });
+      result.push({ id: cat.id, name: cat.name, depth, metadata_template_id: cat.metadata_template_id });
       if (cat.children?.length > 0) result = result.concat(flattenCategories(cat.children, depth + 1));
     });
     return result;
   };
   const flatCategories = flattenCategories(categories);
+
+  useEffect(() => {
+    if (!categoryId) {
+      setActiveTemplateFields(null);
+      return;
+    }
+    const cat = flatCategories.find(c => c.id === categoryId);
+    if (cat?.metadata_template_id) {
+      apiFetch<any>(`/workspaces/${workspaceId}/metadata/templates/${cat.metadata_template_id}`)
+        .then(data => {
+          setActiveTemplateFields(data.field_ids || data.fieldIds || []);
+          setShowMetadata(true);
+        })
+        .catch(() => setActiveTemplateFields(null));
+    } else {
+      setActiveTemplateFields(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryId, workspaceId]);
 
   const handleGenerate = async () => {
     if (!linkName.trim()) {
@@ -285,6 +305,7 @@ export default function GuestUploadLinkDialog({
 
                         <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                           {metadataFields
+                            .filter(f => !categoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
                             .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase()))
                             .map((field) => (
                             <div key={field.id} className="space-y-1">
@@ -314,6 +335,17 @@ export default function GuestUploadLinkDialog({
                               )}
                             </div>
                           ))}
+                          {metadataFields
+                            .filter(f => !categoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
+                            .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
+                            <div className="py-4 text-center bg-gray-200/5 dark:bg-white/5 rounded-xl border border-dashed border-gray-700/50">
+                                {metadataSearch ? (
+                                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching &quot;{metadataSearch}&quot;</p>
+                                ) : (
+                                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No metadata fields required for this category</p>
+                                )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
