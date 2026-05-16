@@ -107,3 +107,5 @@ export const googleDriveApi = {
   sync: (connectionId: string) =>
     apiFetch(`/google-drive/sync/${connectionId}`, { method: 'POST' }),
 };
+
+export default googleDriveApi;

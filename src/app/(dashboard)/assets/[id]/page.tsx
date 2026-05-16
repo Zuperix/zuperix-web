@@ -70,7 +70,7 @@ import { MicrophoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline
 import { MetadataFieldInput } from '@/components/metadata/MetadataFieldInput';
 import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
 import { FEATURES } from '@/constants/features';
-import { googleDriveApi } from '@/services/google-drive.api';
+import googleDriveApi from '@/services/google-drive.api';
 
 interface Field {
   id: string;
