@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { googleDriveApi } from '@/services/google-drive.api';
+import googleDriveApi from '@/services/google-drive.api';
 import { toast } from 'sonner';
 
 export default function GoogleDriveCallbackPage() {

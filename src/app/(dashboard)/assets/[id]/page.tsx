@@ -70,7 +70,7 @@ import { MicrophoneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline
 import { MetadataFieldInput } from '@/components/metadata/MetadataFieldInput';
 import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
 import { FEATURES } from '@/constants/features';
-import googleDriveApi from '@/services/google-drive.api';
+import gdrive from '@/services/google-drive.api';
 
 interface Field {
   id: string;
@@ -1185,7 +1185,7 @@ export default function AssetDetailPage() {
                     onClick={async (e) => {
                       e.stopPropagation();
                       try {
-                        await googleDriveApi.promoteAsset(assetId);
+                        await gdrive.promoteAsset(assetId);
                         toast.success('Asset promotion started! It will be fully imported in a few moments.');
                         fetchData();
                       } catch (err: any) {

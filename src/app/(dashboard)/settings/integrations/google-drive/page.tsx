@@ -22,7 +22,7 @@ import {
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
-import { googleDriveApi, DriveConnection, DriveItem, DriveImportMode, DriveImportJob, DriveImportJobStatus } from '@/services/google-drive.api';
+import googleDriveApi, { DriveConnection, DriveItem, DriveImportMode, DriveImportJob, DriveImportJobStatus } from '@/services/google-drive.api';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import GenericConfirmationModal from '@/components/GenericConfirmationModal';
 import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';

@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { googleDriveApi } from '@/services/google-drive.api';
+import googleDriveApi from '@/services/google-drive.api';
 
 const INTEGRATIONS_CONFIG = [
   {
