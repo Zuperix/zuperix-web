@@ -1926,7 +1926,7 @@ export default function AssetDetailPage() {
         </div>
 
         {/* Floating Mobile Tabs (Mobile only) */}
-        <div className="md:hidden fixed bottom-8 left-4 right-4 z-[50]">
+        <div className="md:hidden fixed bottom-8 left-4 right-4 z-30">
           <div className="bg-gray-900/90 dark:bg-[#0a0b10]/95 backdrop-blur-2xl border border-white/10 dark:border-gray-800/50 p-2 rounded-[32px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] flex items-center gap-1">
             {[
               { id: 'file-info', label: 'Specs', icon: InboxIcon },
@@ -2095,6 +2095,11 @@ export default function AssetDetailPage() {
                         fetchComments();
                       }}
                     />
+                  </div>
+                )}
+                {activeTab === 'history' && (
+                  <div className="animate-in fade-in slide-in-from-right-2 duration-300 h-full">
+                    <AssetHistory assetId={assetId} />
                   </div>
                 )}
                 {activeTab === 'workflow' && (

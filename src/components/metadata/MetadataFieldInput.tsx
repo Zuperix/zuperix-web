@@ -88,14 +88,14 @@ export function MetadataFieldInput({ field, value, onChange, disabled }: Props) 
 
       case 'date':
         return (
-          <div className="relative group">
+          <div className="relative group min-w-0">
             <input
               id={id}
               type="date"
               value={value || ''}
               onChange={(e) => handleChange(e.target.value)}
               disabled={disabled}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium dark:text-gray-200"
+              className="w-full min-w-0 pl-10 pr-4 py-2 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium dark:text-gray-200"
             />
             <CalendarIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
           </div>
@@ -115,14 +115,14 @@ export function MetadataFieldInput({ field, value, onChange, disabled }: Props) 
         };
         const dtValue = toLocalDatetimeStr(value);
         return (
-          <div className="relative group">
+          <div className="relative group min-w-0">
             <input
               id={id}
               type="datetime-local"
               value={dtValue}
               onChange={(e) => handleChange(e.target.value)}
               disabled={disabled}
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium dark:text-gray-200"
+              className="w-full min-w-0 pl-10 pr-4 py-2 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium dark:text-gray-200"
             />
             <ClockIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
           </div>
