@@ -459,7 +459,14 @@ export default function UsersPage() {
             </thead>
             <tbody className="divide-y divide-gray-800/60">
               {loading ? (
-                <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500">Loading...</td></tr>
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex justify-center flex-col items-center gap-2">
+                      <div className="h-5 w-5 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                      <span className="text-xs">Loading users...</span>
+                    </div>
+                  </td>
+                </tr>
               ) : users.map((user) => {
                 const isDisabled = !!user.disabled_at;
                 const isSelf = user.id === currentUser?.id;

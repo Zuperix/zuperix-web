@@ -248,7 +248,10 @@ export default function ApiKeysPage() {
 
       <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
         {loading ? (
-          <div className="p-10 text-center text-gray-500">Loading API keys...</div>
+          <div className="p-10 text-center text-gray-500 flex flex-col justify-center items-center gap-2">
+            <div className="h-5 w-5 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+            <span className="text-xs">Loading API keys...</span>
+          </div>
         ) : keys.length === 0 ? (
           <div className="p-10 text-center text-gray-500 flex flex-col items-center gap-4">
             <KeyIcon className="h-10 w-10 opacity-20" />
