@@ -183,19 +183,19 @@ export default function AnnouncementSettingsPage() {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Active period<span className="text-rose-500">*</span>
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
                   <input
                     type="date"
                     value={formData.announcementStartAt}
                     onChange={(e) => setFormData({...formData, announcementStartAt: e.target.value})}
-                    className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 transition-all [color-scheme:dark]"
+                    className="w-full sm:flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 transition-all [color-scheme:dark]"
                   />
-                  <span className="text-gray-600">—</span>
+                  <span className="text-gray-600 hidden sm:block">—</span>
                   <input
                     type="date"
                     value={formData.announcementEndAt}
                     onChange={(e) => setFormData({...formData, announcementEndAt: e.target.value})}
-                    className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 transition-all [color-scheme:dark]"
+                    className="w-full sm:flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 transition-all [color-scheme:dark]"
                   />
                 </div>
               </div>
@@ -227,11 +227,11 @@ export default function AnnouncementSettingsPage() {
             </div>
           </div>
 
-          <div className="pt-6 border-t border-gray-800 flex justify-end gap-3">
+          <div className="pt-6 border-t border-gray-800 flex flex-col-reverse sm:flex-row justify-end gap-3">
             <button
               onClick={handleClear}
               disabled={isLoading || !customer?.announcement_header}
-              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-700 text-gray-300 font-semibold rounded-2xl transition-all active:scale-[0.98] flex items-center gap-2"
+              className="w-full sm:w-auto px-6 py-3 bg-gray-800 hover:bg-gray-700 disabled:bg-gray-900 disabled:text-gray-700 text-gray-300 font-semibold rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center sm:justify-start gap-2"
             >
               <TrashIcon className="h-5 w-5" />
               Clear Banner
@@ -245,7 +245,7 @@ export default function AnnouncementSettingsPage() {
                 !formData.announcementStartAt ||
                 !formData.announcementEndAt
               }
-              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98]"
+              className="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] flex justify-center"
             >
               {isLoading ? 'Saving...' : 'Save changes'}
             </button>

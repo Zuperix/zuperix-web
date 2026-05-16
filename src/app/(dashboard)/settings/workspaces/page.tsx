@@ -96,7 +96,8 @@ export default function WorkspacesManagementPage() {
             No workspaces found.
           </div>
         ) : (
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[600px]">
             <thead className="bg-gray-800/50 text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-800">
               <tr>
                 <th className="px-6 py-4 w-12 text-center"></th>
@@ -191,6 +192,7 @@ export default function WorkspacesManagementPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

@@ -593,7 +593,7 @@ export default function UploadModal({
 
         {/* Category Selector */}
         <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-800/20 border-b dark:border-gray-800 flex-shrink-0">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">
                 Target Category

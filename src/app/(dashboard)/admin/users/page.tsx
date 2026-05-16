@@ -448,7 +448,7 @@ export default function UsersPage() {
 
       <div className="bg-gray-900/50 border border-gray-800/60 rounded-2xl overflow-hidden backdrop-blur-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-gray-800/30 font-mono text-[10px] text-gray-400 uppercase tracking-widest">
                 <th className="px-6 py-4 border-b border-gray-800/60">User info</th>

@@ -180,14 +180,14 @@ export default function DownloadModal({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-[#0f111a] rounded-[32px] w-full max-w-5xl shadow-2xl border border-gray-200 dark:border-white/5 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col md:flex-row h-[85vh] md:h-[90vh]"
+        className="bg-white dark:bg-[#0f111a] rounded-[32px] w-full max-w-5xl shadow-2xl border border-gray-200 dark:border-white/5 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col md:flex-row h-[90vh] md:max-h-[800px]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Left Side: Preview & Crop Area */}
-        <div className="flex-1 bg-gray-50 dark:bg-black/40 flex items-center justify-center p-6 relative min-h-[300px] border-r border-gray-100 dark:border-white/5 overflow-hidden">
+        <div className="w-full md:w-auto h-[250px] md:h-auto md:flex-1 bg-gray-50 dark:bg-black/40 flex items-center justify-center p-4 md:p-6 relative border-b md:border-b-0 md:border-r border-gray-100 dark:border-white/5 overflow-hidden flex-shrink-0">
           <div 
             ref={containerRef}
-            className="relative max-w-full max-h-full aspect-auto flex items-center justify-center group"
+            className="relative w-full max-h-full aspect-auto flex items-center justify-center group"
           >
             {mimeType.startsWith('image/') ? (
               <div className="relative w-full h-full flex items-center justify-center">
@@ -200,11 +200,11 @@ export default function DownloadModal({
                     crossOrigin="anonymous"
                     width={originalWidth || 1000}
                     height={originalHeight || 1000}
-                    className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl ring-1 ring-white/10 select-none"
+                    className="max-w-full max-h-full md:max-h-[70vh] object-contain rounded-xl shadow-2xl ring-1 ring-white/10 select-none"
                     priority
                   />
                 ) : (
-                  <div className="w-[400px] aspect-square bg-white/5 rounded-2xl animate-pulse flex items-center justify-center">
+                  <div className="w-[200px] md:w-[400px] aspect-square bg-white/5 rounded-2xl animate-pulse flex items-center justify-center">
                     <PhotoIcon className="w-12 h-12 text-white/10" />
                   </div>
                 )}
@@ -264,28 +264,28 @@ export default function DownloadModal({
           </div>
           
           {/* Metadata Overlay */}
-          <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between pointer-events-none z-10">
-            <div className="px-4 py-2 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center gap-3">
-              <span className="text-[10px] font-black text-white uppercase tracking-widest">
+          <div className="absolute bottom-3 left-3 right-3 md:bottom-6 md:left-6 md:right-6 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
+            <div className="px-2 md:px-4 py-1.5 md:py-2 bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl md:rounded-2xl flex items-center gap-1.5 md:gap-3 whitespace-nowrap">
+              <span className="text-[8px] md:text-[10px] font-black text-white uppercase tracking-widest">
                 {originalWidth || '?' } × {originalHeight || '?'} px
               </span>
               <div className="h-2 w-px bg-white/20" />
-              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+              <span className="text-[8px] md:text-[10px] font-black text-blue-400 uppercase tracking-widest">
                 {showCrop ? `${Math.round((originalWidth || 0) * crop.width / 100)} × ${Math.round((originalHeight || 0) * crop.height / 100)}` : 'Original'}
               </span>
             </div>
-            <div className="px-4 py-2 bg-white/10 backdrop-blur-xl border border-white/5 rounded-2xl">
-              <span className="text-[10px] font-bold text-white uppercase tracking-widest">
-                {showCrop ? 'Cropping Active' : 'Select Crop Option'}
+            <div className="px-2 md:px-4 py-1.5 md:py-2 bg-white/10 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl whitespace-nowrap">
+              <span className="text-[8px] md:text-[10px] font-bold text-white uppercase tracking-widest">
+                {showCrop ? 'Cropping Active' : 'Select Crop'}
               </span>
             </div>
           </div>
         </div>
 
         {/* Right Side: Options */}
-        <div className="w-full md:w-[420px] flex flex-col bg-white dark:bg-[#0f111a] overflow-hidden">
+        <div className="w-full md:w-[420px] flex-1 min-h-0 flex flex-col bg-white dark:bg-[#0f111a] overflow-hidden">
           {/* Header */}
-          <div className="px-8 py-5 border-b border-gray-100 dark:border-white/5 flex items-center justify-between">
+          <div className="px-6 md:px-8 py-5 border-b border-gray-100 dark:border-white/5 flex items-center justify-between flex-shrink-0">
             <div className="min-w-0">
               <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">
                 Download Options
@@ -303,7 +303,7 @@ export default function DownloadModal({
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pt-6">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 pt-6">
             <DownloadOptions 
               assetId={assetId}
               originalName={originalName}
@@ -320,10 +320,10 @@ export default function DownloadModal({
           </div>
 
           {/* Footer */}
-          <div className="px-8 py-4 bg-gray-50 dark:bg-white/2 border-t border-gray-100 dark:border-white/5 flex justify-end">
+          <div className="px-6 md:px-8 py-4 bg-gray-50 dark:bg-white/2 border-t border-gray-100 dark:border-white/5 flex justify-center md:justify-end flex-shrink-0">
             <button
               onClick={onClose}
-              className="px-6 py-2 text-[10px] font-black text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors uppercase tracking-[0.2em]"
+              className="w-full md:w-auto px-6 py-3 md:py-2 text-[10px] font-black text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors uppercase tracking-[0.2em]"
             >
               Cancel
             </button>

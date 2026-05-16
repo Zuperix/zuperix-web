@@ -203,7 +203,7 @@ export default function MetadataManagementPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-6 animate-in fade-in duration-500">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
         <div>
           <Link 
             href="/settings" 
@@ -221,10 +221,10 @@ export default function MetadataManagementPage() {
           <p className="text-gray-400 mt-2 text-sm">Define custom properties to store alongside your digital assets.</p>
         </div>
 
-        <div className="flex bg-gray-900/40 p-1.5 rounded-2xl border border-gray-800 self-center">
+        <div className="flex bg-gray-900/40 p-1.5 rounded-2xl border border-gray-800 self-start xl:self-center overflow-x-auto w-full xl:w-auto custom-scrollbar">
           <button
             onClick={() => setActiveTab('fields')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+            className={`whitespace-nowrap flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'fields' 
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
                 : 'text-gray-500 hover:text-gray-300'
@@ -235,7 +235,7 @@ export default function MetadataManagementPage() {
           </button>
           <button
             onClick={() => setActiveTab('templates')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+            className={`whitespace-nowrap flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'templates' 
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
                 : 'text-gray-500 hover:text-gray-300'
@@ -246,7 +246,7 @@ export default function MetadataManagementPage() {
           </button>
           <button
             onClick={() => setActiveTab('bulk')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+            className={`whitespace-nowrap flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'bulk' 
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
                 : 'text-gray-500 hover:text-gray-300'
@@ -257,7 +257,7 @@ export default function MetadataManagementPage() {
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
+            className={`whitespace-nowrap flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'history' 
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
                 : 'text-gray-500 hover:text-gray-300'
@@ -461,17 +461,17 @@ export default function MetadataManagementPage() {
                           {field.fieldType}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-xs">
-                        <span className="text-gray-500 font-mono">{field.key}</span>
-                        <div className="h-1 w-1 rounded-full bg-gray-700" />
+                      <div className="flex items-center flex-wrap gap-y-2 gap-x-3 text-xs">
+                        <span className="text-gray-500 font-mono truncate max-w-[120px] sm:max-w-none">{field.key}</span>
+                        <div className="h-1 w-1 rounded-full bg-gray-700 hidden sm:block" />
                         <span className={field.is_required ? 'text-amber-500/80 font-medium' : 'text-gray-600'}>
                           {field.is_required ? 'Required' : 'Optional'}
                         </span>
-                        <div className="h-1 w-1 rounded-full bg-gray-700" />
+                        <div className="h-1 w-1 rounded-full bg-gray-700 hidden sm:block" />
                         <span className={field.is_searchable ? 'text-blue-400/80 font-medium' : 'text-gray-600'}>
                           {field.is_searchable ? 'Searchable' : 'Hidden'}
                         </span>
-                        <div className="h-1 w-1 rounded-full bg-gray-700" />
+                        <div className="h-1 w-1 rounded-full bg-gray-700 hidden sm:block" />
                         <span className={field.is_filterable ? 'text-purple-400/80 font-medium' : 'text-gray-600'}>
                           {field.is_filterable ? 'Filterable' : 'No Filter'}
                         </span>

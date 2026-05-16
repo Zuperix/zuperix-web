@@ -358,7 +358,8 @@ export default function RolesPage() {
 
       {activeTab === 'roles' ? (
         <div className="bg-gray-900/50 border border-gray-800/60 rounded-2xl overflow-hidden backdrop-blur-sm">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
               <tr className="bg-gray-800/30">
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-800/60">Role Name</th>
@@ -450,10 +451,12 @@ export default function RolesPage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       ) : (
         <div className="bg-gray-900/50 border border-gray-800/60 rounded-2xl overflow-hidden backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
               <tr className="bg-gray-800/30">
                 <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-800/60">Action</th>
@@ -482,6 +485,7 @@ export default function RolesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

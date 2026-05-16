@@ -258,7 +258,8 @@ export default function ApiKeysPage() {
             No API keys found.
           </div>
         ) : (
-          <table className="w-full text-left">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[600px]">
             <thead className="bg-gray-800/50 text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-800">
               <tr>
                 <th className="px-6 py-4 text-center w-5"></th>
@@ -315,6 +316,7 @@ export default function ApiKeysPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
@@ -365,7 +367,8 @@ export default function ApiKeysPage() {
                 </div>
 
                 <div className="bg-gray-950 rounded-2xl border border-gray-800 overflow-hidden">
-                  <table className="w-full text-left">
+                  <div className="overflow-x-auto">
+                  <table className="w-full text-left min-w-[500px]">
                     <thead className="bg-gray-900/50 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">
                       <tr>
                         <th className="px-6 py-3">Date</th>
@@ -388,6 +391,7 @@ export default function ApiKeysPage() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             )}

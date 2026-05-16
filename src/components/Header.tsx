@@ -265,7 +265,7 @@ export default function Header() {
             <Bars3Icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
           </button>
 
-          <div className="flex flex-col">
+          <div className="hidden md:flex flex-col">
             <span className="text-[10px] font-black text-blue-600 dark:text-blue-500 uppercase tracking-[0.2em] leading-none">
               {activeWorkspace?.name || "Workspace"}
             </span>
@@ -355,7 +355,7 @@ export default function Header() {
                     </button>
 
                     {showSearchInfo && (
-                      <div className="absolute top-full right-0 mt-3 w-80 p-5 bg-gray-900/95 backdrop-blur-md border border-gray-700/50 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[60] animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="absolute top-full -right-16 md:right-0 mt-3 w-72 md:w-80 p-5 bg-gray-900/95 backdrop-blur-md border border-gray-700/50 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[60] animate-in fade-in slide-in-from-top-2 duration-300">
                         <div className="flex items-center gap-2 mb-3">
                           <div
                             className={`p-1.5 rounded-lg ${isLocked ? "bg-amber-500/10" : "bg-blue-500/10"}`}

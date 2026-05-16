@@ -218,7 +218,7 @@ export default function WebhooksPage() {
       {/* Webhook List */}
       <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden backdrop-blur-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-[800px]">
             <thead>
               <tr className="bg-gray-800/30 text-[10px] text-gray-400 uppercase tracking-widest">
                 <th className="px-6 py-4">Status</th>
