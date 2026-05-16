@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('canva_token')) {
+      if (searchParams.get('canva_token') || searchParams.get('figma_device_code')) {
         return;
       }
     }
@@ -186,10 +186,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    const searchParams = window.location.search;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + '/login',
+        redirectTo: `${window.location.origin}/login${searchParams}`,
       },
     });
     if (error) throw error;

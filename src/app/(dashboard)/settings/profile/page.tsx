@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 import { toast } from 'sonner';
-import { 
-  UserIcon, 
-  KeyIcon, 
-  EnvelopeIcon, 
+import {
+  UserIcon,
+  KeyIcon,
+  EnvelopeIcon,
   CloudArrowUpIcon,
   CheckCircleIcon,
   ArrowPathIcon,
@@ -55,7 +55,7 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password && formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -161,7 +161,7 @@ export default function ProfilePage() {
     <div className="max-w-5xl mx-auto p-8 space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-300">
       {/* Profile Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center gap-8 border-b border-gray-800/60 pb-10">
-        <div 
+        <div
           className="relative group shrink-0"
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -177,7 +177,7 @@ export default function ProfilePage() {
             ) : (
               <UserIcon className={`h-14 w-14 transition-colors ${isDragging ? 'text-blue-500' : 'text-gray-600'}`} />
             )}
-            
+
             {uploading && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <ArrowPathIcon className="h-8 w-8 text-white animate-spin" />
@@ -193,7 +193,7 @@ export default function ProfilePage() {
             )}
 
             {/* Hover Action */}
-            <button 
+            <button
               onClick={() => fileInputRef.current?.click()}
               className="absolute inset-0 bg-gray-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1"
             >
@@ -201,19 +201,19 @@ export default function ProfilePage() {
               <span className="text-[9px] font-black text-white uppercase tracking-tighter">Change Photo</span>
             </button>
           </div>
-          
+
           {/* Action indicator for first-time users */}
           {!profile.avatar_url && !isDragging && (
             <div className="absolute -bottom-1 -right-1 h-6 w-6 bg-blue-600 rounded-full flex items-center justify-center border-2 border-gray-950 shadow-xl">
-               <CameraIcon className="h-3 w-3 text-white" />
+              <CameraIcon className="h-3 w-3 text-white" />
             </div>
           )}
 
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleAvatarUpload} 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleAvatarUpload}
+            className="hidden"
             accept="image/*"
           />
         </div>
@@ -222,19 +222,19 @@ export default function ProfilePage() {
           <div className="space-y-1">
             <h1 className="text-4xl font-black text-white tracking-tight">{profile.name}</h1>
             <div className="flex items-center gap-3">
-               <span className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
-                 <EnvelopeIcon className="h-4 w-4" />
-                 {profile.email}
-               </span>
-               <span className="h-1 w-1 bg-gray-800 rounded-full" />
-               <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-                 {profile.system_role?.replace('_', ' ') || 'USER'}
-               </span>
+              <span className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
+                <EnvelopeIcon className="h-4 w-4" />
+                {profile.email}
+              </span>
+              <span className="h-1 w-1 bg-gray-800 rounded-full" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                {profile.system_role?.replace('_', ' ') || 'USER'}
+              </span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3 pt-2">
-            <button 
+            <button
               onClick={() => fileInputRef.current?.click()}
               className="px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2"
             >
@@ -255,7 +255,7 @@ export default function ProfilePage() {
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">General Information</h2>
                 <div className="h-px bg-gray-800 flex-grow" />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Full Name</label>
@@ -269,7 +269,7 @@ export default function ProfilePage() {
                   />
                   <p className="text-[10px] text-gray-600">This will be visible to your teammates across all workspaces.</p>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Email Address</label>
                   <div className="relative">
@@ -281,7 +281,6 @@ export default function ProfilePage() {
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold text-gray-600 uppercase tracking-widest">Locked</div>
                   </div>
-                  <p className="text-[10px] text-gray-600">Contact admin to change your registered email.</p>
                 </div>
               </div>
             </section>
@@ -320,7 +319,7 @@ export default function ProfilePage() {
                       minLength={8}
                     />
                   </div>
-                  
+
                   {formData.password && (
                     <div className="space-y-2 animate-in fade-in duration-300">
                       <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Confirm Password</label>
@@ -368,21 +367,21 @@ export default function ProfilePage() {
                 <span className="font-bold text-white">{profile.avatar_url ? '100%' : '75%'}</span>
               </div>
               <div className="h-1 bg-gray-900 rounded-full overflow-hidden">
-                <div 
+                <div
                   className={`h-full transition-all duration-700 ${profile.avatar_url ? 'bg-blue-500' : 'bg-blue-600/40'}`}
                   style={{ width: profile.avatar_url ? '100%' : '75%' }}
                 />
               </div>
             </div>
-            
+
             <div className="space-y-3">
-               <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Resources</h3>
-               <nav className="flex flex-col gap-2">
-                 <a href="/admin/users" className="text-xs text-gray-500 hover:text-blue-500 transition-colors flex items-center gap-2 group">
-                   <span className="h-1.5 w-1.5 rounded-full bg-gray-800 group-hover:bg-blue-500 transition-colors" />
-                   Organization Management
-                 </a>
-               </nav>
+              <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Resources</h3>
+              <nav className="flex flex-col gap-2">
+                <a href="/admin/users" className="text-xs text-gray-500 hover:text-blue-500 transition-colors flex items-center gap-2 group">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gray-800 group-hover:bg-blue-500 transition-colors" />
+                  Organization Management
+                </a>
+              </nav>
             </div>
           </div>
         </div>

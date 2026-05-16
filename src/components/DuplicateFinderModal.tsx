@@ -135,11 +135,11 @@ export default function DuplicateFinderModal({
                           className="group relative bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 p-3 hover:shadow-xl hover:shadow-black/5 transition-all"
                         >
                           <div className="aspect-square bg-gray-50 dark:bg-gray-950 rounded-xl overflow-hidden border dark:border-gray-800 relative shadow-inner">
-                            {asset.mimeType?.startsWith('image/') ? (
+                            {asset.mime_type?.startsWith('image/') ? (
                               <CustomImage 
                                 src={asset.thumbnail_lg_url || asset.asset_live_url}
                                 fill
-                                alt={asset.originalName}
+                                alt={asset.original_name}
                                 className="object-cover transition-transform group-hover:scale-105 duration-500"
                               />
                             ) : (
@@ -149,12 +149,12 @@ export default function DuplicateFinderModal({
                             )}
                           </div>
                           <div className="mt-3">
-                            <p className="text-xs font-bold dark:text-white truncate" title={asset.originalName}>
-                              {asset.originalName}
+                            <p className="text-xs font-bold dark:text-white truncate" title={asset.original_name}>
+                              {asset.original_name}
                             </p>
                             <div className="flex items-center justify-between mt-1">
                               <p className="text-[10px] text-gray-500 font-medium">
-                                {formatSize(asset.size)} • {new Date(asset.createdAt).toLocaleDateString()}
+                                {formatSize(asset.size)} • {new Date(asset.created_at).toLocaleDateString()}
                               </p>
                               <button 
                                 onClick={() => handleDelete(asset.id)}
