@@ -19,7 +19,8 @@ function LoginForm() {
   const [figmaWorkspaceId, setFigmaWorkspaceId] = useState('');
   const [figmaLoading, setFigmaLoading] = useState(false);
   const [figmaLoadingWorkspaces, setFigmaLoadingWorkspaces] = useState(false);
-  const { user, login, signInWithGoogle, logout } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { user, loading: authLoading, login, signInWithGoogle, logout } = useAuth();
   const searchParams = useSearchParams();
   const canvaToken = searchParams.get('canva_token');
   const figmaDeviceCode = searchParams.get('figma_device_code');
@@ -107,12 +108,54 @@ function LoginForm() {
 
   const handleGoogleSignIn = async () => {
     setError('');
+    setGoogleLoading(true);
     try {
       await signInWithGoogle();
     } catch (err: any) {
       setError(err.message || 'Google sign-in failed');
+      setGoogleLoading(false);
     }
   };
+
+  const isRedirectingOrSyncing = typeof window !== 'undefined' && (
+    localStorage.getItem('auth_token') || 
+    window.location.hash.includes('access_token=') ||
+    window.location.search.includes('canva_token') ||
+    window.location.search.includes('figma_device_code')
+  );
+
+  const showLoadingOverlay = googleLoading || (authLoading && isRedirectingOrSyncing);
+  const loadingMessage = googleLoading ? 'Connecting to Google' : 'Signing you in';
+  const loadingSubMessage = googleLoading 
+    ? 'Redirecting to secure authorization page...' 
+    : 'Securing your session and loading your workspace...';
+
+  if (showLoadingOverlay) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/40 dark:bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in">
+        <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-xs w-full text-center space-y-6 transform scale-100 transition-all duration-300 animate-in zoom-in-95">
+          <div className="relative flex items-center justify-center w-20 h-20">
+            {/* Outer pulsing ring with gradient */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 animate-spin opacity-75 blur-[2px]" style={{ animationDuration: '3s' }} />
+            {/* Inner solid white/dark circle to create the ring effect */}
+            <div className="absolute inset-[3px] rounded-full bg-white dark:bg-zinc-900 z-10" />
+            {/* Middle spinner */}
+            <div className="absolute inset-[6px] rounded-full border-t-2 border-l-2 border-indigo-600 dark:border-indigo-400 animate-spin z-20" style={{ animationDuration: '1s' }} />
+            {/* Inner logo/pulsing dot */}
+            <div className="absolute w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-pulse z-30" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-zinc-950 dark:text-white tracking-tight">
+              {loadingMessage}
+            </h3>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed">
+              {loadingSubMessage}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const marketingTexts = [
     "The home for all your digital assets.",
