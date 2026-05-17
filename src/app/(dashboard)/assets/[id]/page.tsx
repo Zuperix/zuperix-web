@@ -194,11 +194,21 @@ export default function AssetDetailPage() {
   const [faceDragStart, setFaceDragStart] = useState<{ x: number; y: number } | null>(null);
   const [faceDragCurrent, setFaceDragCurrent] = useState<{ x: number; y: number } | null>(null);
   const [isManualFaceSaving, setIsManualFaceSaving] = useState(false);
+  const [pendingManualFace, setPendingManualFace] = useState<{
+    boundingBox: number[];
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [manualFaceNameInput, setManualFaceNameInput] = useState('');
   const mediaWrapperRef = useRef<HTMLDivElement>(null);
 
   const { fetchAssetWorkflow, processTask, loading: processingTask } = useWorkflows();
   const { user } = useAuth();
+  
   const isFaceDetectionEnabled = useFeatureFlag(FEATURES.FACE_DETECTION.key, false);
+
 
   const canApprove = () => {
     if (!user || !activeWorkspace || !activeWorkflow || activeWorkflow.status !== 'ACTIVE') return false;
@@ -326,45 +336,22 @@ export default function AssetDetailPage() {
     }
   };
 
-  const handleManualFaceSave = async () => {
-    if (!faceDragStart || !faceDragCurrent || !asset) return;
-
-    const rect = mediaWrapperRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    // Normalize coordinates relative to media wrapper
-    const x1 = Math.min(faceDragStart.x, faceDragCurrent.x) - rect.left;
-    const y1 = Math.min(faceDragStart.y, faceDragCurrent.y) - rect.top;
-    const x2 = Math.max(faceDragStart.x, faceDragCurrent.x) - rect.left;
-    const y2 = Math.max(faceDragStart.y, faceDragCurrent.y) - rect.top;
-
-    // Scale to original dimensions
-    const scaleX = asset.width / rect.width;
-    const scaleY = asset.height / rect.height;
-
-    const boundingBox = [
-      Math.round(x1 * scaleX),
-      Math.round(y1 * scaleY),
-      Math.round(x2 * scaleX),
-      Math.round(y2 * scaleY)
-    ];
+  const handleSaveManualFace = async (name: string) => {
+    if (!pendingManualFace || !assetId) return;
 
     try {
       setIsManualFaceSaving(true);
-      const name = prompt('Name this person (optional):');
-
       await apiFetch(`/assets/${assetId}/faces`, {
         method: 'POST',
         body: JSON.stringify({
-          bounding_box: boundingBox,
-          person_name: name || undefined
+          bounding_box: pendingManualFace.boundingBox,
+          person_name: name.trim() || undefined
         })
       });
 
       toast.success('Manual face tag added');
+      setPendingManualFace(null);
       setIsFaceTaggingMode(false);
-      setFaceDragStart(null);
-      setFaceDragCurrent(null);
       fetchData();
     } catch (err: any) {
       toast.error(err.message || 'Failed to save manual face tag');
@@ -1173,7 +1160,12 @@ export default function AssetDetailPage() {
                 )} */}
                 {isFaceDetectionEnabled && asset?.mime_type?.startsWith('image/') && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setIsFaceTaggingMode(!isFaceTaggingMode); if (!isFaceTaggingMode) setShowFaces(true); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsFaceTaggingMode(!isFaceTaggingMode);
+                      setPendingManualFace(null);
+                      if (!isFaceTaggingMode) setShowFaces(true);
+                    }}
                     className={`p-3.5 backdrop-blur-2xl border rounded-2xl shadow-2xl transition-all hover:scale-110 active:scale-95 group/btn ${isFaceTaggingMode ? 'bg-amber-500 border-amber-400 text-white' : 'bg-white/90 dark:bg-gray-900/90 border-white dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:text-amber-500'}`}
                   >
                     <PlusIcon className="h-5 w-5" />
@@ -1259,11 +1251,10 @@ export default function AssetDetailPage() {
                   )}
 
                   {/* Manual Face Tagging Overlay */}
-                  {isFaceDetectionEnabled && isFaceTaggingMode && (
+                  {isFaceDetectionEnabled && isFaceTaggingMode && !pendingManualFace && (
                     <div
                       className="absolute inset-0 z-40 cursor-crosshair"
                       onMouseDown={(e) => {
-                        const r = e.currentTarget.getBoundingClientRect();
                         setFaceDragStart({ x: e.clientX, y: e.clientY });
                         setFaceDragCurrent({ x: e.clientX, y: e.clientY });
                       }}
@@ -1271,14 +1262,46 @@ export default function AssetDetailPage() {
                         if (faceDragStart) setFaceDragCurrent({ x: e.clientX, y: e.clientY });
                       }}
                       onMouseUp={() => {
-                        if (faceDragStart && faceDragCurrent) {
-                          const dist = Math.sqrt(Math.pow(faceDragCurrent.x - faceDragStart.x, 2) + Math.pow(faceDragCurrent.y - faceDragStart.y, 2));
-                          if (dist > 10) {
-                            handleManualFaceSave();
-                          } else {
-                            setFaceDragStart(null);
-                            setFaceDragCurrent(null);
+                        if (faceDragStart && faceDragCurrent && asset) {
+                          const rect = mediaWrapperRef.current?.getBoundingClientRect();
+                          if (rect) {
+                            const dist = Math.sqrt(Math.pow(faceDragCurrent.x - faceDragStart.x, 2) + Math.pow(faceDragCurrent.y - faceDragStart.y, 2));
+                            if (dist > 10) {
+                              // Normalize coordinates relative to media wrapper
+                              const x1 = Math.min(faceDragStart.x, faceDragCurrent.x) - rect.left;
+                              const y1 = Math.min(faceDragStart.y, faceDragCurrent.y) - rect.top;
+                              const x2 = Math.max(faceDragStart.x, faceDragCurrent.x) - rect.left;
+                              const y2 = Math.max(faceDragStart.y, faceDragCurrent.y) - rect.top;
+
+                              // Scale to original dimensions
+                              const scaleX = asset.width / rect.width;
+                              const scaleY = asset.height / rect.height;
+
+                              const boundingBox = [
+                                Math.round(x1 * scaleX),
+                                Math.round(y1 * scaleY),
+                                Math.round(x2 * scaleX),
+                                Math.round(y2 * scaleY)
+                              ];
+
+                              // Convert to percentages relative to rect size
+                              const left = (x1 / rect.width) * 100;
+                              const top = (y1 / rect.height) * 100;
+                              const width = ((x2 - x1) / rect.width) * 100;
+                              const height = ((y2 - y1) / rect.height) * 100;
+
+                              setPendingManualFace({
+                                boundingBox,
+                                left,
+                                top,
+                                width,
+                                height
+                              });
+                              setManualFaceNameInput('');
+                            }
                           }
+                          setFaceDragStart(null);
+                          setFaceDragCurrent(null);
                         }
                       }}
                     >
@@ -1295,6 +1318,68 @@ export default function AssetDetailPage() {
                       )}
                       <div className="absolute top-4 left-4 bg-amber-600/90 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg backdrop-blur animate-pulse">
                         DRAW A BOX AROUND THE FACE
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pending Manual Face Box with Input */}
+                  {isFaceDetectionEnabled && pendingManualFace && (
+                    <div
+                      className="absolute border-2 rounded transition-all duration-300 z-30"
+                      style={{
+                        left: `${pendingManualFace.left}%`,
+                        top: `${pendingManualFace.top}%`,
+                        width: `${pendingManualFace.width}%`,
+                        height: `${pendingManualFace.height}%`,
+                        borderColor: '#f59e0b', // amber-500
+                        boxShadow: '0 0 0 2px rgba(0,0,0,0.4), 0 0 20px #f59e0b'
+                      }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {/* Badge / Name popover */}
+                      <div
+                        className={`absolute left-1/2 -translate-x-1/2 transition-all duration-300 whitespace-nowrap z-50 ${pendingManualFace.top < 20 ? 'top-full mt-2' : 'bottom-full mb-2'
+                          }`}
+                      >
+                        <div className="bg-[#0f111a]/95 border border-white/10 rounded-xl p-1.5 flex items-center gap-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl ring-1 ring-white/5" onClick={e => e.stopPropagation()}>
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              autoFocus
+                              value={manualFaceNameInput}
+                              onChange={e => setManualFaceNameInput(e.target.value)}
+                              placeholder="Name..."
+                              className="bg-white/5 text-white text-[10px] font-bold border border-white/10 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/50 w-28 tracking-wide placeholder:text-gray-500"
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') handleSaveManualFace(manualFaceNameInput);
+                                if (e.key === 'Escape') {
+                                  setPendingManualFace(null);
+                                  setIsFaceTaggingMode(false);
+                                }
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center gap-1 flex-none border-l border-white/10 pl-1.5 ml-0.5">
+                            <button
+                              onClick={() => handleSaveManualFace(manualFaceNameInput)}
+                              disabled={isManualFaceSaving}
+                              className="p-1 text-emerald-400 hover:bg-emerald-500/10 rounded-md transition-colors disabled:opacity-50"
+                              title="Save"
+                            >
+                              <CheckIcon className="w-3.5 h-3.5 stroke-[3]" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setPendingManualFace(null);
+                                setIsFaceTaggingMode(false);
+                              }}
+                              className="p-1 text-gray-400 hover:bg-white/10 rounded-md transition-colors"
+                              title="Cancel"
+                            >
+                              <XMarkIcon className="w-3.5 h-3.5 stroke-[3]" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

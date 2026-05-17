@@ -60,7 +60,7 @@ export default function RegisterPage() {
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-white blur-[120px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400 blur-[120px]" />
         </div>
-        
+
         <div className="relative z-10 max-w-xl text-white">
           <div className="mb-8">
             <img src="/logo_transparant.png" alt="Zuperix Logo" className="h-20 w-auto brightness-0 invert" />
@@ -72,14 +72,10 @@ export default function RegisterPage() {
             <Typewriter texts={marketingTexts} />
           </div>
         </div>
-        
+
         {/* Bottom Decorative Element */}
         <div className="absolute bottom-12 left-20 right-20 flex justify-between items-center text-indigo-200/50 text-sm font-medium">
-          <span>© 2026 Zuperix AI</span>
-          <div className="flex gap-6">
-            <span>Security</span>
-            <span>Privacy</span>
-          </div>
+          <span>© 2026 Zuperix</span>
         </div>
       </div>
 
@@ -96,11 +92,11 @@ export default function RegisterPage() {
               <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-2">Create Account</h1>
               <p className="text-zinc-500 dark:text-zinc-400">Join the Zuperix community today.</p>
             </div>
-            
+
             {error && (
               <div className={clsx(
                 "mb-6 p-4 text-sm font-medium rounded-xl border animate-in fade-in slide-in-from-top-1",
-                error.toLowerCase().includes('confirm') 
+                error.toLowerCase().includes('confirm')
                   ? "text-blue-600 bg-blue-50 dark:bg-blue-900/10 dark:text-blue-400 border-blue-100 dark:border-blue-900/20"
                   : "text-red-600 bg-red-50 dark:bg-red-900/10 dark:text-red-400 border-red-100 dark:border-red-900/20"
               )}>

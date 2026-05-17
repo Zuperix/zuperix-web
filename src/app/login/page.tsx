@@ -118,7 +118,7 @@ function LoginForm() {
   };
 
   const isRedirectingOrSyncing = typeof window !== 'undefined' && (
-    localStorage.getItem('auth_token') || 
+    localStorage.getItem('auth_token') ||
     window.location.hash.includes('access_token=') ||
     window.location.search.includes('canva_token') ||
     window.location.search.includes('figma_device_code')
@@ -126,8 +126,8 @@ function LoginForm() {
 
   const showLoadingOverlay = googleLoading || (authLoading && isRedirectingOrSyncing);
   const loadingMessage = googleLoading ? 'Connecting to Google' : 'Signing you in';
-  const loadingSubMessage = googleLoading 
-    ? 'Redirecting to secure authorization page...' 
+  const loadingSubMessage = googleLoading
+    ? 'Redirecting to secure authorization page...'
     : 'Securing your session and loading your workspace...';
 
   if (showLoadingOverlay) {
@@ -174,7 +174,7 @@ function LoginForm() {
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-white blur-[120px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400 blur-[120px]" />
         </div>
-        
+
         <div className="relative z-10 max-w-xl text-white">
           <div className="mb-8">
             <img src="/logo_transparant.png" alt="Zuperix Logo" className="h-20 w-auto brightness-0 invert" />
@@ -186,14 +186,10 @@ function LoginForm() {
             <Typewriter texts={marketingTexts} />
           </div>
         </div>
-        
+
         {/* Bottom Decorative Element */}
         <div className="absolute bottom-12 left-20 right-20 flex justify-between items-center text-indigo-200/50 text-sm font-medium">
-          <span>© 2026 Zuperix AI</span>
-          <div className="flex gap-6">
-            <span>Security</span>
-            <span>Privacy</span>
-          </div>
+          <span>© 2026 Zuperix</span>
         </div>
       </div>
 
@@ -214,7 +210,7 @@ function LoginForm() {
                 {user ? `You are signed in as ${user.email}` : 'Welcome back! Please enter your details.'}
               </p>
             </div>
-            
+
             {isLinked && (
               <div className="mb-6 p-4 text-sm font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/20 animate-in fade-in slide-in-from-top-1">
                 ✅ Successfully linked with Canva! You may close this tab and return to the Canva application.
@@ -283,7 +279,7 @@ function LoginForm() {
             {error && (
               <div className={clsx(
                 "mb-6 p-4 text-sm font-medium rounded-xl border animate-in fade-in slide-in-from-top-1",
-                error.toLowerCase().includes('confirm') 
+                error.toLowerCase().includes('confirm')
                   ? "text-blue-600 bg-blue-50 dark:bg-blue-900/10 dark:text-blue-400 border-blue-100 dark:border-blue-900/20"
                   : "text-red-600 bg-red-50 dark:bg-red-900/10 dark:text-red-400 border-red-100 dark:border-red-900/20"
               )}>
@@ -379,8 +375,8 @@ function LoginForm() {
             )}
             {user && (
               <div className="mt-8 pt-6 border-t border-zinc-100 dark:border-zinc-800 text-center">
-                <button 
-                  onClick={logout} 
+                <button
+                  onClick={logout}
                   className="text-sm font-medium text-zinc-500 hover:text-indigo-600 transition-colors"
                 >
                   Sign in with a different account
