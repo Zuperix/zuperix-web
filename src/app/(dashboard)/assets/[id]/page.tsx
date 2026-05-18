@@ -46,6 +46,7 @@ import DownloadModal from '@/components/DownloadModal';
 import { useCategories, Category } from '@/hooks/useCategories';
 import { useCollections, Collection as CollectionType } from '@/hooks/useCollections';
 import { PermissionGate } from '@/components/PermissionGate';
+import { usePermissions } from '@/hooks/usePermissions';
 import SimilarAssets from '@/components/SimilarAssets';
 import { Action } from '@/types/auth';
 import { toast } from 'sonner';
@@ -206,6 +207,8 @@ export default function AssetDetailPage() {
 
   const { fetchAssetWorkflow, processTask, loading: processingTask } = useWorkflows();
   const { user } = useAuth();
+  const permissions = usePermissions();
+  const canUpdateAsset = permissions.can(Action.UPDATE, 'Asset', activeWorkspace?.id);
   
   const isFaceDetectionEnabled = useFeatureFlag(FEATURES.FACE_DETECTION.key, false);
 
@@ -986,19 +989,21 @@ export default function AssetDetailPage() {
             ) : (
               <div className="flex items-center gap-2 md:gap-3 group/title flex-1 min-w-0">
                 <h1
-                  onClick={handleStartNameEdit}
-                  className="text-lg md:text-xl font-extrabold truncate leading-tight text-blue-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                  title="Click to rename"
+                  onClick={canUpdateAsset ? handleStartNameEdit : undefined}
+                  className={`text-lg md:text-xl font-extrabold truncate leading-tight text-blue-900 dark:text-gray-100 transition-colors ${canUpdateAsset ? 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400' : ''}`}
+                  title={canUpdateAsset ? "Click to rename" : undefined}
                 >
                   {asset?.original_name || 'Asset Details'}
                 </h1>
-                <button
-                  onClick={handleStartNameEdit}
-                  className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-all"
-                  title="Rename Asset"
-                >
-                  <PencilIcon className="h-4 w-4" strokeWidth={2.5} />
-                </button>
+                {canUpdateAsset && (
+                  <button
+                    onClick={handleStartNameEdit}
+                    className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-all"
+                    title="Rename Asset"
+                  >
+                    <PencilIcon className="h-4 w-4" strokeWidth={2.5} />
+                  </button>
+                )}
                 <button
                   onClick={handleCopyFilename}
                   className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-500/10 rounded-lg transition-all"
