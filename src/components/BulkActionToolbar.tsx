@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import { apiFetch, apiDownload } from '@/lib/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useAuth } from '@/context/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
+import { Action } from '@/types/auth';
 import BulkAddCategoryModal from '@/components/BulkAddCategoryModal';
 import BulkAddCollectionModal from '@/components/BulkAddCollectionModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
@@ -37,6 +39,9 @@ export default function BulkActionToolbar({
 }: BulkActionToolbarProps) {
   const { user } = useAuth();
   const { activeWorkspace } = useWorkspace();
+  const { can } = usePermissions();
+  const canUpdateAsset = can(Action.Update, 'Asset', activeWorkspace?.id);
+  const canDeleteAsset = can(Action.Delete, 'Asset', activeWorkspace?.id);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
@@ -139,28 +144,32 @@ export default function BulkActionToolbar({
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            <button 
-              onClick={() => setIsCategoryModalOpen(true)}
-              disabled={isProcessing}
-              className="p-2 sm:p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group shrink-0"
-              title="Add to Categories"
-            >
-              <FolderIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-medium hidden md:inline">Categories</span>
-            </button>
+            {canUpdateAsset && (
+              <>
+                <button 
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  disabled={isProcessing}
+                  className="p-2 sm:p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group shrink-0"
+                  title="Add to Categories"
+                >
+                  <FolderIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium hidden md:inline">Categories</span>
+                </button>
 
-            <button 
-              onClick={() => setIsCollectionModalOpen(true)}
-              disabled={isProcessing}
-              className="p-2 sm:p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group shrink-0"
-              title="Add to Collection"
-            >
-              <Square3Stack3DIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
-              <span className="text-xs font-medium hidden md:inline">Collection</span>
-            </button>
+                <button 
+                  onClick={() => setIsCollectionModalOpen(true)}
+                  disabled={isProcessing}
+                  className="p-2 sm:p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all flex items-center gap-2 group shrink-0"
+                  title="Add to Collection"
+                >
+                  <Square3Stack3DIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-medium hidden md:inline">Collection</span>
+                </button>
+              </>
+            )}
 
 
-            {onRemoveFromVault && (
+            {canUpdateAsset && onRemoveFromVault && (
               <button 
                 onClick={onRemoveFromVault}
                 disabled={isProcessing}
@@ -182,16 +191,20 @@ export default function BulkActionToolbar({
               <span className="hidden sm:inline text-[12px] font-bold text-white/90">Download</span>
             </button>
             
-            <div className="hidden sm:block w-px h-6 bg-white/5 mx-1 sm:mx-2 shrink-0" />
+            {canDeleteAsset && (
+              <>
+                <div className="hidden sm:block w-px h-6 bg-white/5 mx-1 sm:mx-2 shrink-0" />
 
-            <button 
-              disabled={isProcessing}
-              onClick={() => setIsDeleteModalOpen(true)}
-              className="p-2 sm:p-3 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded-xl sm:rounded-2xl transition-all flex items-center group shrink-0"
-              title="Delete Selected"
-            >
-              <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
-            </button>
+                <button 
+                  disabled={isProcessing}
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="p-2 sm:p-3 text-white/50 hover:text-red-400 hover:bg-red-400/10 rounded-xl sm:rounded-2xl transition-all flex items-center group shrink-0"
+                  title="Delete Selected"
+                >
+                  <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform" />
+                </button>
+              </>
+            )}
           </div>
 
           <div className="w-px h-5 sm:h-6 bg-white/5 mx-1 shrink-0" />

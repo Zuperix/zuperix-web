@@ -208,7 +208,7 @@ export default function AssetDetailPage() {
   const { fetchAssetWorkflow, processTask, loading: processingTask } = useWorkflows();
   const { user } = useAuth();
   const permissions = usePermissions();
-  const canUpdateAsset = permissions.can(Action.UPDATE, 'Asset', activeWorkspace?.id);
+  const canUpdateAsset = permissions.can(Action.Update, 'Asset', activeWorkspace?.id);
   
   const isFaceDetectionEnabled = useFeatureFlag(FEATURES.FACE_DETECTION.key, false);
 
