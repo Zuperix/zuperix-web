@@ -212,6 +212,7 @@ export default function AssetDetailPage() {
   const canUpdateAsset = permissions.can(Action.Update, 'Asset', activeWorkspace?.id);
   
   const isFaceDetectionEnabled = useFeatureFlag(FEATURES.FACE_DETECTION.key, false);
+  const isAiTaggingEnabled = useFeatureFlag(FEATURES.AI_TAGGING.key, false);
 
 
   const canApprove = () => {
@@ -1768,19 +1769,21 @@ export default function AssetDetailPage() {
                       </div>
                       <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest leading-none">Smart Tags</label>
                     </div>
-                    <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
-                      <button
-                        onClick={handleReprocessTags}
-                        disabled={isReprocessingTags || isLocked}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 rounded-xl text-[10px] font-extrabold tracking-wide uppercase transition-all shadow-[0_2px_8px_rgba(99,102,241,0.05)] active:scale-95 disabled:opacity-50 shrink-0"
-                        title="AI Generate Tags"
-                      >
-                        <svg className={`h-3 w-3 ${isReprocessingTags ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                        </svg>
-                        {isReprocessingTags ? 'Generating...' : 'AI Generate'}
-                      </button>
-                    </PermissionGate>
+                    {isAiTaggingEnabled && (
+                      <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                        <button
+                          onClick={handleReprocessTags}
+                          disabled={isReprocessingTags || isLocked}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 rounded-xl text-[10px] font-extrabold tracking-wide uppercase transition-all shadow-[0_2px_8px_rgba(99,102,241,0.05)] active:scale-95 disabled:opacity-50 shrink-0"
+                          title="AI Generate Tags"
+                        >
+                          <svg className={`h-3 w-3 ${isReprocessingTags ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                          </svg>
+                          {isReprocessingTags ? 'Generating...' : 'AI Generate'}
+                        </button>
+                      </PermissionGate>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2.5 pt-2">
                     {(asset?.tags || []).map((tag: any, i: number) => (

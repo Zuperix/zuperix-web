@@ -18,6 +18,10 @@ export const FEATURES = {
     key: "email-asset",
     name: "Email Asset",
   },
+  AI_TAGGING: {
+    key: "ai-tagging",
+    name: "AI Tagging",
+  },
 } as const;
 
 export type FeatureKey = (typeof FEATURES)[keyof typeof FEATURES]["key"];
