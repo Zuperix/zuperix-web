@@ -27,7 +27,15 @@ export async function apiFetch<T>(
     let message = `HTTP error! status: ${response.status}`;
     try {
       const error = await response.json();
-      message = error.message || message;
+      if (error) {
+        if (Array.isArray(error.message)) {
+          message = error.message.join(', ');
+        } else if (typeof error.message === 'string') {
+          message = error.message;
+        } else if (error.error) {
+          message = error.error;
+        }
+      }
     } catch {
       // If not JSON, try to get text or just stick with status
       try {

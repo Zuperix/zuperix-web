@@ -133,6 +133,7 @@ export default function AssetDetailPage() {
   const [isManagingCollections, setIsManagingCollections] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [isReprocessingTags, setIsReprocessingTags] = useState(false);
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [filteredSuggestions, setFilteredSuggestions] = useState<any[]>([]);
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
@@ -211,6 +212,7 @@ export default function AssetDetailPage() {
   const canUpdateAsset = permissions.can(Action.Update, 'Asset', activeWorkspace?.id);
   
   const isFaceDetectionEnabled = useFeatureFlag(FEATURES.FACE_DETECTION.key, false);
+  const isAiTaggingEnabled = useFeatureFlag(FEATURES.AI_TAGGING.key, false);
 
 
   const canApprove = () => {
@@ -369,6 +371,21 @@ export default function AssetDetailPage() {
       toast.success('AI face detection triggered. Refresh in a few moments.');
     } catch (err: any) {
       toast.error(err.message || 'Failed to trigger AI detection');
+    }
+  };
+
+  const handleReprocessTags = async () => {
+    setIsReprocessingTags(true);
+    try {
+      await apiFetch(`/assets/${assetId}/process/tags`, { method: 'POST' });
+      toast.success('AI smart tag generation triggered. Refreshing in a few moments...');
+      setTimeout(() => {
+        fetchData();
+      }, 3000);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to trigger AI tag generation');
+    } finally {
+      setIsReprocessingTags(false);
     }
   };
 
@@ -1745,15 +1762,44 @@ export default function AssetDetailPage() {
               {/* Tags & Dates Group */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                 <section className="space-y-4 md:space-y-6 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-8 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
-                  <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800/60 pb-4">
-                    <div className="h-8 w-8 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
-                      <TagIcon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800/60 pb-4 w-full">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
+                        <TagIcon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                      </div>
+                      <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest leading-none">Smart Tags</label>
                     </div>
-                    <label className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-widest leading-none">Smart Tags</label>
+                    {isAiTaggingEnabled && (
+                      <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
+                        <button
+                          onClick={handleReprocessTags}
+                          disabled={isReprocessingTags || isLocked}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 rounded-xl text-[10px] font-extrabold tracking-wide uppercase transition-all shadow-[0_2px_8px_rgba(99,102,241,0.05)] active:scale-95 disabled:opacity-50 shrink-0"
+                          title="AI Generate Tags"
+                        >
+                          <svg className={`h-3 w-3 ${isReprocessingTags ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                          </svg>
+                          {isReprocessingTags ? 'Generating...' : 'AI Generate'}
+                        </button>
+                      </PermissionGate>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2.5 pt-2">
                     {(asset?.tags || []).map((tag: any, i: number) => (
-                      <span key={i} className="group/tag flex items-center gap-1.5 px-3 py-2 bg-gray-100/50 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300 rounded-xl text-[11px] font-bold border border-gray-200 dark:border-gray-700/60 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all">
+                      <span
+                        key={i}
+                        className={`group/tag flex items-center gap-1.5 px-3 py-2 ${
+                          tag.is_ai_generated
+                            ? 'bg-indigo-500/5 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-200/50 dark:border-indigo-800/40 hover:border-indigo-400 dark:hover:border-indigo-600'
+                            : 'bg-gray-100/50 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700/60 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20'
+                        } rounded-xl text-[11px] font-bold border transition-all`}
+                      >
+                        {tag.is_ai_generated && (
+                          <svg className="h-3 w-3 text-indigo-500 dark:text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                          </svg>
+                        )}
                         {tag.name}
                         <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
                           <button

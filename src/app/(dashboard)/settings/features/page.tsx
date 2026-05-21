@@ -18,6 +18,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
+import { FEATURES } from '@/constants/features';
 
 interface Customer {
   id: string;
@@ -31,12 +33,15 @@ interface Customer {
   is_single_category_enabled: boolean;
   is_folder_upload_as_categories_enabled: boolean;
   is_facial_recognition_enabled: boolean;
+  is_ai_tags_enabled: boolean;
   ocr_last_toggle_at: string | null;
   geo_tagging_last_toggle_at: string | null;
   text_extraction_last_toggle_at: string | null;
   transcription_last_toggle_at: string | null;
   facial_recognition_last_toggle_at: string | null;
   created_at: string;
+  custom_ai_keywords?: string | null;
+  custom_ai_stopwords?: string | null;
 }
 
 interface LocalSettings {
@@ -47,6 +52,9 @@ interface LocalSettings {
   is_single_category_enabled: boolean;
   is_folder_upload_as_categories_enabled: boolean;
   is_facial_recognition_enabled: boolean;
+  is_ai_tags_enabled: boolean;
+  custom_ai_keywords: string;
+  custom_ai_stopwords: string;
 }
 
 export default function ProjectFeaturesPage() {
@@ -55,6 +63,8 @@ export default function ProjectFeaturesPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isAiTaggingFeatureEnabled = useFeatureFlag(FEATURES.AI_TAGGING.key, false);
 
   const fetchCustomer = async () => {
     try {
@@ -70,6 +80,9 @@ export default function ProjectFeaturesPage() {
           is_single_category_enabled: data[0].is_single_category_enabled,
           is_folder_upload_as_categories_enabled: data[0].is_folder_upload_as_categories_enabled,
           is_facial_recognition_enabled: data[0].is_facial_recognition_enabled,
+          is_ai_tags_enabled: data[0].is_ai_tags_enabled,
+          custom_ai_keywords: data[0].custom_ai_keywords || '',
+          custom_ai_stopwords: data[0].custom_ai_stopwords || '',
         });
       } else {
         setError('No customer settings found.');
@@ -98,7 +111,9 @@ export default function ProjectFeaturesPage() {
           ? customer.is_geo_tagging_enabled
           : feature === 'is_facial_recognition_enabled'
             ? customer.is_facial_recognition_enabled
-            : customer.is_single_category_enabled;
+            : feature === 'is_ai_tags_enabled'
+              ? customer.is_ai_tags_enabled
+              : customer.is_single_category_enabled;
 
     const lastToggleAt = feature === 'is_ocr_enabled'
       ? customer.ocr_last_toggle_at
@@ -156,8 +171,10 @@ export default function ProjectFeaturesPage() {
           isGeoTaggingEnabled: localSettings.is_geo_tagging_enabled,
           isTranscriptionEnabled: localSettings.is_transcription_enabled,
           isSingleCategoryEnabled: localSettings.is_single_category_enabled,
-          isFolderUploadAsCategoriesEnabled: localSettings.is_folder_upload_as_categories_enabled,
           isFacialRecognitionEnabled: localSettings.is_facial_recognition_enabled,
+          isAiTagsEnabled: localSettings.is_ai_tags_enabled,
+          customAiKeywords: localSettings.custom_ai_keywords,
+          customAiStopwords: localSettings.custom_ai_stopwords,
         }),
       });
       
@@ -180,9 +197,11 @@ export default function ProjectFeaturesPage() {
     localSettings.is_text_extraction_enabled !== customer.is_text_extraction_enabled ||
     localSettings.is_geo_tagging_enabled !== customer.is_geo_tagging_enabled ||
     localSettings.is_transcription_enabled !== customer.is_transcription_enabled ||
-    localSettings.is_single_category_enabled !== customer.is_single_category_enabled ||
     localSettings.is_folder_upload_as_categories_enabled !== customer.is_folder_upload_as_categories_enabled ||
-    localSettings.is_facial_recognition_enabled !== customer.is_facial_recognition_enabled
+    localSettings.is_facial_recognition_enabled !== customer.is_facial_recognition_enabled ||
+    localSettings.is_ai_tags_enabled !== customer.is_ai_tags_enabled ||
+    localSettings.custom_ai_keywords !== (customer.custom_ai_keywords || '') ||
+    localSettings.custom_ai_stopwords !== (customer.custom_ai_stopwords || '')
   );
 
   const showBackfillWarning = localSettings && customer && (
@@ -446,6 +465,90 @@ export default function ProjectFeaturesPage() {
             </div>
         </div>
 
+        {/* AI Smart Tags Section */}
+        {isAiTaggingFeatureEnabled && (
+          <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.is_ai_tags_enabled ? 'border-indigo-500/30' : 'border-gray-800'}`}>
+              <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                      <div className={`p-2.5 rounded-xl transition-colors ${localSettings.is_ai_tags_enabled ? 'bg-indigo-500/20' : 'bg-gray-800'}`}>
+                          <svg className={`h-6 w-6 ${localSettings.is_ai_tags_enabled ? 'text-indigo-400' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                          </svg>
+                      </div>
+                      <div>
+                          <div className="flex items-center gap-2">
+                              <h3 className="text-lg font-bold text-white">AI Smart Tags</h3>
+                          </div>
+                          <p className="text-sm text-gray-400">Automatically generate descriptive labels for assets during upload.</p>
+                      </div>
+                  </div>
+                  {customer.plan === 'SILVER' || customer.plan === 'GOLD' ? (
+                    <button
+                        onClick={() => handleToggleLocal('is_ai_tags_enabled')}
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all focus:outline-none ${
+                            localSettings.is_ai_tags_enabled ? 'bg-indigo-600 shadow-[0_0_15px_rgba(99,102,241,0.4)]' : 'bg-gray-700'
+                        }`}
+                    >
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                            localSettings.is_ai_tags_enabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                    </button>
+                  ) : (
+                    <div className="text-xs px-2.5 py-1 bg-gray-800 text-gray-400 rounded-md font-bold border border-gray-700 uppercase">
+                      SILVER & GOLD PLANS ONLY
+                    </div>
+                  )}
+              </div>
+              
+              {localSettings.is_ai_tags_enabled && (
+                  <div className="px-6 pb-6 pt-6 border-b border-gray-800 bg-indigo-950/10 space-y-5 animate-in slide-in-from-top duration-300">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                              <label className="block text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                                  Custom Keywords (Boost)
+                              </label>
+                              <textarea
+                                  value={localSettings.custom_ai_keywords}
+                                  onChange={(e) => setLocalSettings({
+                                      ...localSettings,
+                                      custom_ai_keywords: e.target.value,
+                                  })}
+                                  placeholder="e.g. zuperix, canva, custom-product, brand-name"
+                                  className="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none h-24"
+                              />
+                              <p className="text-[11px] text-gray-500 leading-relaxed">
+                                  Enter a comma-separated list of proprietary terms, product lines, or vocabulary you want the AI tagger to proactively extract.
+                              </p>
+                          </div>
+                          <div className="space-y-2">
+                              <label className="block text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                                  Custom Stop Words (Exclude)
+                              </label>
+                              <textarea
+                                  value={localSettings.custom_ai_stopwords}
+                                  onChange={(e) => setLocalSettings({
+                                      ...localSettings,
+                                      custom_ai_stopwords: e.target.value,
+                                  })}
+                                  placeholder="e.g. blur, photo, design, draft, logo"
+                                  className="w-full bg-gray-950/60 border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none h-24"
+                              />
+                              <p className="text-[11px] text-gray-500 leading-relaxed">
+                                  Enter a comma-separated list of generic terms or noise words you want to explicitly hide from the automatically generated tags.
+                              </p>
+                          </div>
+                      </div>
+                  </div>
+              )}
+
+              <div className="p-4 bg-indigo-500/5 px-6">
+                  <p className="text-xs text-indigo-400/80 leading-relaxed font-medium">
+                      Silver & Gold tier feature: The AI engine uses Florence-2 to analyze uploaded assets and automatically tag them with relevant semantic labels.
+                  </p>
+              </div>
+          </div>
+        )}
+
         {/* Single Category Section */}
         <div className={`bg-gray-900/40 border rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-300 ${localSettings.is_single_category_enabled ? 'border-orange-500/30' : 'border-gray-800'}`}>
             <div className="p-6 border-b border-gray-800 flex items-center justify-between">
@@ -545,6 +648,9 @@ export default function ProjectFeaturesPage() {
                         is_single_category_enabled: customer.is_single_category_enabled,
                         is_folder_upload_as_categories_enabled: customer.is_folder_upload_as_categories_enabled,
                         is_facial_recognition_enabled: customer.is_facial_recognition_enabled,
+                        is_ai_tags_enabled: customer.is_ai_tags_enabled,
+                        custom_ai_keywords: customer.custom_ai_keywords || '',
+                        custom_ai_stopwords: customer.custom_ai_stopwords || '',
                     })}
                     className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors"
                     disabled={isSaving}

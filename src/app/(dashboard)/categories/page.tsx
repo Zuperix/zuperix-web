@@ -23,6 +23,7 @@ import { Action } from '@/types/auth';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function CategoriesPage() {
   const { categories, updateCategory, deleteCategory, refresh } = useCategories();
@@ -58,6 +59,7 @@ export default function CategoriesPage() {
           smart_filter: isSmart ? smartFilter : null,
         }),
       });
+      toast.success('Category created successfully');
       setNewName('');
       setIsSmart(false);
       setSmartFilter({});
@@ -66,8 +68,9 @@ export default function CategoriesPage() {
       if (parentId && parentId !== 'root') {
         setExpandedIds(prev => new Set(prev).add(parentId));
       }
-    } catch (err) {
-      console.error('Failed to create category');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create category');
+      console.error('Failed to create category:', err);
     }
   };
 
@@ -78,12 +81,14 @@ export default function CategoriesPage() {
         is_smart: isSmart,
         smart_filter: isSmart ? smartFilter : null,
       });
+      toast.success('Category updated successfully');
       setEditingId(null);
       setNewName('');
       setIsSmart(false);
       setSmartFilter({});
-    } catch (err) {
-      console.error('Failed to update category');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update category');
+      console.error('Failed to update category:', err);
     }
   };
 
@@ -104,10 +109,12 @@ export default function CategoriesPage() {
     setIsDeleting(true);
     try {
       await deleteCategory(categoryToDelete.id);
+      toast.success('Category deleted successfully');
       setIsDeleteModalOpen(false);
       setCategoryToDelete(null);
-    } catch (err) {
-      console.error('Failed to delete category');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete category');
+      console.error('Failed to delete category:', err);
     } finally {
       setIsDeleting(false);
     }
