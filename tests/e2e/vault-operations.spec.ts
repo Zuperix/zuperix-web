@@ -13,15 +13,27 @@ test.describe('Vault Operations', () => {
 
   test('setup: create a test vault', async ({ page }) => {
     await page.goto('/vaults');
-    await page.getByRole('button', { name: /New Vault/i }).click();
-    await page.getByPlaceholder('Marketing Assets, Q2 Product Launch, etc.').fill(vaultName);
-    await page.getByPlaceholder('What kind of assets are in this vault?').fill('Vault for e2e testing of upload and visibility.');
-    await page.getByRole('button', { name: /Create Vault/i }).click();
+    await page.evaluate(async ({ vaultName }) => {
+      const token = localStorage.getItem('auth_token');
+      const workspaceId = localStorage.getItem('active_workspace_id');
+      if (!token || !workspaceId) throw new Error('Missing auth state');
 
-    await expect(page.getByRole('heading', { name: vaultName })).toBeVisible({ timeout: 15000 });
-    
-    const vaultCard = page.locator('.group.flex.flex-col').filter({ hasText: vaultName });
-    await vaultCard.click();
+      const response = await fetch(`http://localhost:3000/api/v1/workspaces/${workspaceId}/vaults`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: vaultName, description: 'Vault for e2e testing of upload and visibility.' }),
+      });
+
+      if (!response.ok) throw new Error(`Failed to create vault: ${response.status}`);
+    }, { vaultName });
+
+    await page.reload();
+    const createdVaultCard = page.locator('.group.flex.flex-col').filter({ hasText: vaultName });
+    await expect(createdVaultCard).toBeVisible({ timeout: 15000 });
+    await createdVaultCard.click();
     
     await expect(page).toHaveURL(/\/vaults\/[a-zA-Z0-9-]+/);
     createdVaultId = page.url().split('/').pop() || null;

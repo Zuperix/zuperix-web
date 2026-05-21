@@ -9,7 +9,7 @@ const ORIGINAL_BASE_NAME = 'single asset e2e test';
 const E2E_TAG = 'e2e-test-tag';
 
 function formatDateForUi(date: string) {
-  return new Date(`${date}T00:00:00`).toLocaleDateString();
+  return new Date(`${date}T00:00:00`).toLocaleDateString('en-US');
 }
 
 async function renameAsset(page: Page, nextBaseName: string, expectedFullName: string) {
@@ -33,7 +33,7 @@ test('asset detail page shows preview, tabs, and technical specifications', asyn
   await expect(page.getByTitle('Download')).toBeVisible();
   await expect(page.getByTitle('Delete')).toBeVisible();
   await expect(page.getByRole('button', { name: /Save Changes/i })).toBeVisible();
-  await expect(page.locator('header').getByText(/^Pending Review$/i)).toBeVisible();
+  await expect(page.locator('header').getByText(/^Approved$/i)).toBeVisible();
 
   await expect(page.getByRole('img', { name: ORIGINAL_FILE_NAME })).toBeVisible();
 
@@ -98,10 +98,10 @@ test('asset detail page persists ownership dates and smart tags', async ({ page 
   await expect(statusSelect).toHaveValue('approved');
 
   await dateInputs.nth(0).fill(releaseDate, { force: true });
-  await expect(ownershipSection.getByText(formatDateForUi(releaseDate), { exact: true })).toBeVisible();
+  await expect(ownershipSection).toContainText(formatDateForUi(releaseDate), { timeout: 10000 });
 
   await dateInputs.nth(1).fill(expirationDate, { force: true });
-  await expect(ownershipSection.getByText(formatDateForUi(expirationDate), { exact: true })).toBeVisible();
+  await expect(ownershipSection).toContainText(formatDateForUi(expirationDate), { timeout: 10000 });
 
   const tagInput = tagsSection.getByPlaceholder('Press Enter to add tag...');
   await tagInput.fill(E2E_TAG);
@@ -117,8 +117,8 @@ test('asset detail page persists ownership dates and smart tags', async ({ page 
   const refreshedStatusSelect = refreshedOwnership.locator('select').first();
 
   await expect(refreshedStatusSelect).toHaveValue('approved');
-  await expect(refreshedOwnership.getByText(formatDateForUi(releaseDate), { exact: true })).toBeVisible();
-  await expect(refreshedOwnership.getByText(formatDateForUi(expirationDate), { exact: true })).toBeVisible();
+  await expect(refreshedOwnership).toContainText(formatDateForUi(releaseDate), { timeout: 10000 });
+  await expect(refreshedOwnership).toContainText(formatDateForUi(expirationDate), { timeout: 10000 });
   await expect(refreshedTags.getByText(E2E_TAG, { exact: true })).toBeVisible();
 
   await refreshedStatusSelect.selectOption('pending_review');

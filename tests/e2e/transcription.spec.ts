@@ -12,15 +12,15 @@ test.describe('Asset Transcription', () => {
 
     // 1. Search for the video asset
     const searchInput = page.getByPlaceholder(/Search assets, metadata, tags/i);
-    await searchInput.fill('ai transcipt demo.mp4');
+    await searchInput.fill('ai transcript demo.mp4');
     await searchInput.press('Enter');
 
     await expect(page.locator('p', { hasText: /Showing/i }).first()).toBeVisible();
 
-    const assetCard = page.getByRole('heading', { name: /ai transcipt demo\.mp4/i }).first();
+    const assetCard = page.getByRole('heading', { name: /ai transcript demo\.mp4/i }).first();
     await assetCard.click();
 
-    await expect(page.getByRole('heading', { level: 1, name: /ai transcipt demo.mp4/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { level: 1, name: /ai transcript demo.mp4/i })).toBeVisible({ timeout: 15000 });
 
     // 3. Open Transcript Tab
     const transcriptTab = page.getByRole('button', { name: 'Transcript' });

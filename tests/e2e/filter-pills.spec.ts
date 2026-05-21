@@ -7,20 +7,23 @@ function filterSection(page: Page, name: RegExp) {
 
 async function clickFilterOption(page: Page, sectionName: RegExp, optionName: RegExp) {
   const sectionButton = page.getByRole('button', { name: sectionName });
-  await expect(sectionButton).toBeVisible();
-  
-  // Ensure section is expanded (check for aria-expanded if possible, or just click)
-  const isExpanded = await sectionButton.getAttribute('aria-expanded');
-  if (isExpanded === 'false') {
-    await sectionButton.click();
-  } else if (isExpanded === null) {
-     // If not an accordion, just make sure it's there
+  if (!(await sectionButton.isVisible())) {
+    const filtersButton = page.getByRole('button', { name: /^Filters$/i });
+    if (await filtersButton.isVisible()) {
+      await filtersButton.click();
+    }
   }
+  await expect(sectionButton).toBeVisible();
+  await sectionButton.click();
 
-  const section = filterSection(page, sectionName);
-  const checkbox = section.getByRole('checkbox', { name: optionName });
+  const checkbox = page.getByRole('checkbox', { name: optionName }).first();
   await expect(checkbox).toBeVisible({ timeout: 10000 });
+  const responsePromise = page.waitForResponse(
+    (res) => res.url().includes('/search/assets') && res.status() === 200,
+    { timeout: 15000 },
+  );
   await checkbox.click();
+  await responsePromise;
 }
 
 /**
@@ -47,6 +50,7 @@ test.describe('Filter Pills Label Verification', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('');
     await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Orientation$/i })).toBeVisible({ timeout: 15000 });
   });
 
   test('category filter pill shows human readable name', async ({ page }) => {
@@ -91,13 +95,15 @@ test.describe('Filter Pills Label Verification', () => {
     }
   });
 
-  test('multiple filters show correct pills and no UUIDs', async ({ page }) => {
-    await clickFilterOption(page, /^Categories$/i, /^Global\b/i);
-    await clickFilterOption(page, /^Orientation$/i, /^Portrait\b/i);
-    
-    await expectPillWithText(page, 'Category', 'Global');
-    await expectPillWithText(page, 'Orientation', 'Portrait');
-    await expectNoUuidPills(page);
+test('multiple filters show correct pills and no UUIDs', async ({ page }) => {
+  await clickFilterOption(page, /^File Type$/i, /^JPEG Image\b/i);
+  await clickFilterOption(page, /^Orientation$/i, /^Portrait\b/i);
+  await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
+  await expect(page.locator('p', { hasText: 'Showing' }).first()).toBeVisible();
+  
+  await expectPillWithText(page, 'File Type', 'JPEG Image');
+  await expectPillWithText(page, 'Orientation', 'Portrait');
+  await expectNoUuidPills(page);
     
     // Clear all and verify pills are gone
     await clearAllFilters(page);

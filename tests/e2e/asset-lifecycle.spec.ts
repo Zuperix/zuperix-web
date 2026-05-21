@@ -24,7 +24,7 @@ test('upload and delete asset (cleanup)', async ({ page }, testInfo) => {
   await expect(modal.getByText(fileName)).toBeVisible({ timeout: 10000 });
 
   await modal.getByRole('button', { name: /^Upload \d+ file(s)?$/i }).click({ force: true });
-  await expect(modal.getByText(/1\s*\/\s*1 complete/i)).toBeVisible({ timeout: 20000 });
+  await expect(modal.getByTestId('upload-status-text')).toContainText(/1\s*\/\s*1 complete/i, { timeout: 20000 });
 
   await modal.getByRole('button', { name: /Close|Cancel/i }).click();
   await expect(modal).toBeHidden();

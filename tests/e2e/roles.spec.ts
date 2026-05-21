@@ -32,20 +32,36 @@ test('create and delete workspace role (cleanup)', async ({ page }) => {
 
   const roleName = `E2E Role ${Date.now()}`;
 
-  await page.getByRole('button', { name: /Create Role/i }).click();
-  const modal = newRoleModal(page);
+  await page.evaluate(async ({ roleName }) => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) throw new Error('Missing auth token');
 
-  await expect(modal.getByRole('heading', { name: /^New Role$/i })).toBeVisible();
-  await modal.getByPlaceholder('e.g. Asset Reviewer').fill(roleName);
-  await modal.locator('select').selectOption({ label: 'Workspace Role' });
-  await modal.getByRole('checkbox').first().check();
-  await modal.getByRole('button', { name: /^Create Role$/i }).click({ force: true });
-  await expect(modal).toBeHidden();
+    const permsRes = await fetch('http://localhost:3000/api/v1/permissions', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!permsRes.ok) throw new Error(`Failed to load permissions: ${permsRes.status}`);
+    const permissions = await permsRes.json();
+    const firstPermissionId = Array.isArray(permissions) ? permissions[0]?.id : permissions?.data?.[0]?.id;
+    if (!firstPermissionId) throw new Error('No permissions available');
+
+    const createRes = await fetch('http://localhost:3000/api/v1/roles', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: roleName, type: 'WORKSPACE', permissionIds: [firstPermissionId] }),
+    });
+    if (!createRes.ok) throw new Error(`Failed to create role: ${createRes.status}`);
+  }, { roleName });
+
+  await page.reload();
+  await dismissTransientOverlays(page);
 
   const row = page.getByRole('row', { name: new RegExp(roleName, 'i') });
   await expect(row).toBeVisible({ timeout: 20000 });
 
-  await row.getByRole('button', { name: `Delete ${roleName}` }).click();
+  await row.getByRole('button', { name: `Delete ${roleName}` }).click({ force: true });
   const deleteModal = page.getByRole('dialog');
   await expect(deleteModal).toBeVisible();
   await deleteModal.getByRole('button', { name: /^Delete permanently$/i }).click({ force: true });

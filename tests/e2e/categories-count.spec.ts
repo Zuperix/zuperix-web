@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { expectShowing } from './helpers';
+import { expectShowing, getShowingCounts } from './helpers';
 
 const categoriesHeadingPattern = /Cat(?:eogry|egory) Management/i;
 
@@ -59,8 +59,14 @@ test.describe('category asset counts', () => {
           verifiedCount++;
 
           await viewBtn.click();
-          const { total } = await getShowingCounts(page);
-          expect(total).toBeGreaterThan(0);
+          await expect.poll(async () => {
+            const { total } = await getShowingCounts(page);
+            return total;
+          }, {
+            message: `Waiting for assets to load for category: ${name}`,
+            intervals: [500, 1000],
+            timeout: 15000,
+          }).toBeGreaterThan(0);
 
           await page.goto('/categories');
           await expect(page.getByRole('heading', { name: categoriesHeadingPattern })).toBeVisible();

@@ -6,13 +6,13 @@ test.describe('collection asset counts', () => {
     await page.goto('/collections');
     await expect(page.getByRole('heading', { name: /My Collections/i })).toBeVisible();
 
-    const targetCollections = [/do_not_delete_test_collection/i, /do_no_delete_test_collection/i];
+    const targetCollections = [/2024 Copa America/i, /My Collection/i];
 
     for (const nameRegex of targetCollections) {
-      const card = page.locator('div.group').filter({ 
-        has: page.getByRole('heading', { name: nameRegex, level: 3 }) 
+      const card = page.locator('div.group').filter({
+        has: page.getByRole('heading', { name: nameRegex, level: 3 })
       }).first();
-      
+
       await expect(card).toBeVisible({ timeout: 15000 });
 
       const countText = await card.locator('span:has-text(" Assets")').textContent();

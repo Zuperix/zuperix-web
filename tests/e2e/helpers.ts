@@ -28,10 +28,17 @@ export async function dismissTransientOverlays(page: Page) {
     if (await accept.isVisible()) await accept.click();
   }
 
+  const apiKeySaved = page.getByRole('button', { name: /^I have saved this key$/i });
+  try {
+    await apiKeySaved.waitFor({ state: 'visible', timeout: 1500 });
+    await apiKeySaved.click();
+  } catch {}
+
   const savedSecret = page.getByRole('button', { name: /I've saved the secret/i });
-  if (await savedSecret.isVisible()) {
+  try {
+    await savedSecret.waitFor({ state: 'visible', timeout: 1500 });
     await savedSecret.click();
-  }
+  } catch {}
 
   // Dismiss any sonner toasts that might be overlapping buttons
   const toasts = page.locator('li[data-sonner-toast]');
