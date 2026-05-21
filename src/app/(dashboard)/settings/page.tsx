@@ -12,7 +12,8 @@ import {
   CreditCardIcon,
   MegaphoneIcon,
   CloudArrowUpIcon,
-  BuildingOfficeIcon
+  BuildingOfficeIcon,
+  LinkIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import DocumentationLink from '@/components/DocumentationLink';
@@ -89,6 +90,14 @@ const BASE_SETTINGS_SECTIONS = [
     icon: CloudArrowUpIcon,
     href: '/settings/integrations',
     color: 'bg-blue-600/10 text-blue-400',
+  },
+  {
+    id: 'share-links',
+    name: 'Share Links',
+    description: 'Track, edit, or revoke active public shared asset links.',
+    icon: LinkIcon,
+    href: '/settings/share-links',
+    color: 'bg-teal-500/10 text-teal-400',
   }
 ];
 

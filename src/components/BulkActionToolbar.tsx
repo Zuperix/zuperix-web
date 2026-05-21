@@ -11,7 +11,8 @@ import {
   CheckBadgeIcon,
   ShieldCheckIcon,
   ShieldExclamationIcon,
-  LockClosedIcon
+  LockClosedIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import AddToVaultModal from './AddToVaultModal';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ import { Action } from '@/types/auth';
 import BulkAddCategoryModal from '@/components/BulkAddCategoryModal';
 import BulkAddCollectionModal from '@/components/BulkAddCollectionModal';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import ShareAssetModal from './ShareAssetModal';
 
 interface BulkActionToolbarProps {
   selectedIds: string[];
@@ -46,6 +48,7 @@ export default function BulkActionToolbar({
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleBulkDownload = async () => {
@@ -190,6 +193,16 @@ export default function BulkActionToolbar({
               <FolderArrowDownIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white/70 group-hover:text-white transition-colors" />
               <span className="hidden sm:inline text-[12px] font-bold text-white/90">Download</span>
             </button>
+
+            <button 
+              disabled={isProcessing}
+              onClick={() => setIsShareModalOpen(true)}
+              className="px-3 sm:px-5 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-2xl transition-all flex items-center gap-2 sm:gap-3 group sm:ml-2 shrink-0 shadow-lg shadow-indigo-600/10"
+              title="Share Selected Assets"
+            >
+              <GlobeAltIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white/90 group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline text-[12px] font-bold text-white">Share</span>
+            </button>
             
             {canDeleteAsset && (
               <>
@@ -235,6 +248,13 @@ export default function BulkActionToolbar({
         />
       )}
 
+      {isShareModalOpen && (
+        <ShareAssetModal 
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          assetIds={selectedIds}
+        />
+      )}
 
       <DeleteConfirmationModal 
         isOpen={isDeleteModalOpen}

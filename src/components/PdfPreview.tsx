@@ -1,10 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import * as pdfjs from 'pdfjs-dist';
 import { DocumentIcon } from '@heroicons/react/24/outline';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PdfPreviewProps {
   src: string;
@@ -26,6 +23,10 @@ export default function PdfPreview({ src, assetId, alt, className = '' }: PdfPre
       try {
         setLoading(true);
         setError(false);
+
+        // Dynamically import pdfjs-dist on client-side only to bypass SSR DOMMatrix issues
+        const pdfjs = await import('pdfjs-dist');
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
         loadingTask = pdfjs.getDocument({
           url: src,
