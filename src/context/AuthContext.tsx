@@ -43,6 +43,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (typeof window !== 'undefined') {
       const searchParams = new URLSearchParams(window.location.search);
+      
+      // If a specific return URL was provided, redirect there and abort the default flow
+      const returnUrl = searchParams.get('return_url');
+      if (returnUrl) {
+        router.push(returnUrl);
+        return;
+      }
+
       if (searchParams.get('canva_token') || searchParams.get('figma_device_code')) {
         return;
       }
