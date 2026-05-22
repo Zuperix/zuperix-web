@@ -201,7 +201,7 @@ function FilterChips({
 
 
 function DashboardContent() {
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, loading: workspaceLoading } = useWorkspace();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -392,14 +392,14 @@ function DashboardContent() {
     setLastSelectedId(null);
     router.replace('/');
   };
-  
+
   const handleExport = async () => {
     if (!activeWorkspace) return;
     try {
       setExportLoading(true);
       const params = new URLSearchParams(searchParams.toString());
       const endpoint = `/workspaces/${activeWorkspace.id}/export/search?${params.toString()}`;
-      
+
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${BASE_URL}${endpoint}`, {
         headers: {
@@ -537,7 +537,28 @@ function DashboardContent() {
     });
   };
 
+  const [showNoWorkspaceMsg, setShowNoWorkspaceMsg] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (!activeWorkspace && !workspaceLoading) {
+      timer = setTimeout(() => {
+        setShowNoWorkspaceMsg(true);
+      }, 5000);
+    } else {
+      setShowNoWorkspaceMsg(false);
+    }
+    return () => clearTimeout(timer);
+  }, [activeWorkspace, workspaceLoading]);
+
   if (!activeWorkspace) {
+    if (workspaceLoading || !showNoWorkspaceMsg) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <ArrowPathIcon className="h-6 w-6 text-gray-400 animate-spin" />
+        </div>
+      );
+    }
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-gray-500">Please select or create a workspace to continue</p>
