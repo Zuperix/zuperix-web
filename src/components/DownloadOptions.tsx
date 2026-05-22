@@ -30,7 +30,7 @@ interface DownloadOptionsProps {
 }
 
 const ASPECT_RATIOS = [
-  { label: 'None', value: 'none' },
+  { label: 'Original', value: 'none' },
   { label: 'Freehand', value: 'freehand' },
   { label: '1:1', value: 1 },
   { label: '2:3', value: 2/3 },

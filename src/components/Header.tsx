@@ -25,6 +25,7 @@ import NotificationCenter from "./NotificationCenter";
 import CustomImage from "./CustomImage";
 import { FEATURES } from "@/constants/features";
 import LogoutConfirmationModal from "./LogoutConfirmationModal";
+import VisualSearchModal from "./VisualSearchModal";
 import { useFeatureFlag } from "@/providers/LaunchDarklyProvider";
 import FileTypeIcon from "./FileTypeIcon";
 
@@ -57,6 +58,9 @@ export default function Header() {
   const [showSearchInfo, setShowSearchInfo] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isVisualSearchModalOpen, setIsVisualSearchModalOpen] = useState(false);
+  const [visualSearchFileUrl, setVisualSearchFileUrl] = useState<string | null>(null);
+  const [visualSearchResults, setVisualSearchResults] = useState<SearchAsset[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -414,6 +418,10 @@ export default function Header() {
                         const file = e.target.files?.[0];
                         if (!file || !activeWorkspace) return;
 
+                        // Create local object URL for previewing in the modal
+                        const objectUrl = URL.createObjectURL(file);
+                        setVisualSearchFileUrl(objectUrl);
+
                         const formData = new FormData();
                         formData.append("file", file);
 
@@ -438,8 +446,8 @@ export default function Header() {
                                 results_count: response.results.length,
                               },
                             );
-                            setSuggestions(response.results);
-                            setShowSuggestions(true);
+                            setVisualSearchResults(response.results);
+                            setIsVisualSearchModalOpen(true);
                           }
                         } catch (err) {
                           console.error("Visual search failed", err);
@@ -660,6 +668,26 @@ export default function Header() {
         onConfirm={async () => {
           setShowLogoutModal(false);
           await logout();
+        }}
+      />
+      <VisualSearchModal
+        isOpen={isVisualSearchModalOpen}
+        onClose={() => {
+          setIsVisualSearchModalOpen(false);
+          if (visualSearchFileUrl) {
+            URL.revokeObjectURL(visualSearchFileUrl);
+            setVisualSearchFileUrl(null);
+          }
+        }}
+        uploadedImageUrl={visualSearchFileUrl}
+        results={visualSearchResults}
+        onNavigateToAsset={(assetId) => {
+          setIsVisualSearchModalOpen(false);
+          if (visualSearchFileUrl) {
+            URL.revokeObjectURL(visualSearchFileUrl);
+            setVisualSearchFileUrl(null);
+          }
+          router.push(`/assets/${assetId}`);
         }}
       />
     </>

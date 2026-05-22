@@ -274,11 +274,6 @@ export default function DownloadModal({
                 {showCrop ? `${Math.round((originalWidth || 0) * crop.width / 100)} × ${Math.round((originalHeight || 0) * crop.height / 100)}` : 'Original'}
               </span>
             </div>
-            <div className="px-2 md:px-4 py-1.5 md:py-2 bg-white/10 backdrop-blur-xl border border-white/5 rounded-xl md:rounded-2xl whitespace-nowrap">
-              <span className="text-[8px] md:text-[10px] font-bold text-white uppercase tracking-widest">
-                {showCrop ? 'Cropping Active' : 'Select Crop'}
-              </span>
-            </div>
           </div>
         </div>
 
