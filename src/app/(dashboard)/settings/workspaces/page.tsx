@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch } from '@/lib/api';
 import { toast } from 'sonner';
@@ -14,7 +14,10 @@ import {
   RectangleStackIcon,
   UsersIcon,
   FolderIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  Cog6ToothIcon,
+  MagnifyingGlassIcon,
+  ChevronLeftIcon
 } from '@heroicons/react/24/outline';
 import DocumentationLink from '@/components/DocumentationLink';
 import GenericConfirmationModal from '@/components/GenericConfirmationModal';
@@ -29,6 +32,96 @@ export default function WorkspacesManagementPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [settings, setSettings] = useState<string[]>([]);
+  const [requireDownloadPurpose, setRequireDownloadPurpose] = useState<boolean>(false);
+  const [allowedPurposes, setAllowedPurposes] = useState<string[]>([]);
+  const [fetchingSettings, setFetchingSettings] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsError, setSettingsError] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [settingsWorkspace, setSettingsWorkspace] = useState<any>(null);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  const fetchSettings = async (workspaceId: string) => {
+    try {
+      setFetchingSettings(true);
+      setSettingsError(false);
+      const data = (await apiFetch(`/workspaces/${workspaceId}/settings`)) as any;
+      setSettings(Array.isArray(data.disable_download_states) ? data.disable_download_states : []);
+      setRequireDownloadPurpose(data.require_download_purpose || false);
+      setAllowedPurposes(Array.isArray(data.allowed_purposes) ? data.allowed_purposes : []);
+    } catch (err) {
+      setSettingsError(true);
+    } finally {
+      setFetchingSettings(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeWorkspace) {
+      setSettingsWorkspace(activeWorkspace);
+    }
+  }, [activeWorkspace]);
+
+  useEffect(() => {
+    if (settingsWorkspace?.id) {
+      fetchSettings(settingsWorkspace.id);
+    }
+  }, [settingsWorkspace?.id]);
+
+  const handleToggleSetting = async (stateKey: string) => {
+    if (!settingsWorkspace?.id) return;
+    const newSettings = settings.includes(stateKey)
+      ? settings.filter(s => s !== stateKey)
+      : [...settings, stateKey];
+    
+    setSettings(newSettings);
+
+    try {
+      setSavingSettings(true);
+      await apiFetch(`/workspaces/${settingsWorkspace.id}/settings`, {
+        method: 'PATCH',
+        body: JSON.stringify({ disable_download_states: newSettings }),
+      });
+      toast.success('Download lifecycle gating updated');
+    } catch (err) {
+      // Revert on error
+      if (settingsWorkspace?.id) {
+        fetchSettings(settingsWorkspace.id);
+      }
+      toast.error('Failed to update download gating settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  // 1. Filter workspaces by search query
+  const filteredWorkspaces = workspaces.filter((ws: any) =>
+    ws.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // 2. Sort workspaces so active/current workspace is always on top
+  const sortedWorkspaces = [...filteredWorkspaces].sort((a: any, b: any) => {
+    if (a.id === activeWorkspace?.id) return -1;
+    if (b.id === activeWorkspace?.id) return 1;
+    return 0;
+  });
+
+  // 3. Paginate workspaces (10 per page)
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(sortedWorkspaces.length / itemsPerPage);
+  const paginatedWorkspaces = sortedWorkspaces.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+  };
 
   const handleStartEdit = (ws: any) => {
     setEditingId(ws.id);
@@ -77,124 +170,481 @@ export default function WorkspacesManagementPage() {
 
   return (
     <div className="max-w-5xl mx-auto py-10 px-6 animate-in fade-in duration-500 pb-20">
-      <div className="flex justify-between items-center mb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Workspaces</h1>
           <p className="text-gray-400">Manage your organization workspaces and their resources.</p>
+        </div>
+        <div className="relative w-full md:w-64">
+          <input
+            type="text"
+            placeholder="Search workspaces..."
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-gray-950/60 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 text-sm outline-none transition-all"
+          />
+          <MagnifyingGlassIcon className="absolute left-3.5 top-2.5 h-4 w-4 text-gray-500" />
         </div>
       </div>
 
       <div className="bg-gray-900/40 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
         {loading ? (
           <div className="p-10 text-center text-gray-500 flex flex-col items-center gap-3">
-            <ArrowPathIcon className="h-6 w-6 animate-spin" />
+            <ArrowPathIcon className="h-6 w-6 animate-spin animate-infinite duration-1000" />
             Loading workspaces...
           </div>
-        ) : workspaces.length === 0 ? (
+        ) : sortedWorkspaces.length === 0 ? (
           <div className="p-10 text-center text-gray-500 flex flex-col items-center gap-4">
             <BuildingOfficeIcon className="h-10 w-10 opacity-20" />
             No workspaces found.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[600px]">
-            <thead className="bg-gray-800/50 text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-800">
-              <tr>
-                <th className="px-6 py-4 w-12 text-center"></th>
-                <th className="px-6 py-4">Workspace Name</th>
-                <th className="px-6 py-4 text-center">Assets</th>
-                <th className="px-6 py-4 text-center">Members</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {workspaces.map((ws: any) => (
-                <tr key={ws.id} className="group hover:bg-gray-800/20 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-black text-xs transition-all shadow-inner
-                      ${activeWorkspace?.id === ws.id ? 'bg-blue-600 text-white shadow-blue-500/20' : 'bg-gray-800 text-gray-500'}
-                    `}>
-                      {ws.name.charAt(0).toUpperCase()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      {editingId === ws.id ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            autoFocus
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSaveName(ws.id)}
-                            className="bg-gray-950 border border-blue-500/50 rounded-lg px-3 py-1.5 text-white text-sm outline-none"
-                          />
-                          <button 
-                            onClick={() => handleSaveName(ws.id)} 
-                            disabled={saving}
-                            className="p-1.5 bg-blue-600 rounded-md text-white hover:bg-blue-500 transition-colors"
-                          >
-                            {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : <CheckIcon className="h-4 w-4" />}
-                          </button>
-                          <button onClick={() => setEditingId(null)} className="p-1.5 bg-gray-800 rounded-md text-gray-400 hover:text-white transition-colors">
-                            <XMarkIcon className="h-4 w-4" />
-                          </button>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead className="bg-gray-800/50 text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-800">
+                  <tr>
+                    <th className="px-6 py-4 w-12 text-center"></th>
+                    <th className="px-6 py-4">Workspace Name</th>
+                    <th className="px-6 py-4 text-center">Assets</th>
+                    <th className="px-6 py-4 text-center">Members</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {paginatedWorkspaces.map((ws: any) => (
+                    <tr key={ws.id} className="group hover:bg-gray-800/20 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-black text-xs transition-all shadow-inner
+                          ${activeWorkspace?.id === ws.id ? 'bg-blue-600 text-white shadow-blue-500/20' : 'bg-gray-800 text-gray-500'}
+                        `}>
+                          {ws.name.charAt(0).toUpperCase()}
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2 group/name">
-                          <div className="flex flex-col">
-                            <span className="text-gray-200 font-bold flex items-center gap-2">
-                              {ws.name}
-                              {activeWorkspace?.id === ws.id && (
-                                <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-blue-500/10">
-                                  Active
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {editingId === ws.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                autoFocus
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSaveName(ws.id)}
+                                className="bg-gray-950 border border-blue-500/50 rounded-lg px-3 py-1.5 text-white text-sm outline-none"
+                              />
+                              <button 
+                                onClick={() => handleSaveName(ws.id)} 
+                                disabled={saving}
+                                className="p-1.5 bg-blue-600 rounded-md text-white hover:bg-blue-500 transition-colors"
+                              >
+                                {saving ? <ArrowPathIcon className="h-4 w-4 animate-spin animate-infinite duration-1000" /> : <CheckIcon className="h-4 w-4" />}
+                              </button>
+                              <button onClick={() => setEditingId(null)} className="p-1.5 bg-gray-800 rounded-md text-gray-400 hover:text-white transition-colors">
+                                <XMarkIcon className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 group/name">
+                              <div className="flex flex-col">
+                                <span className="text-gray-200 font-bold flex items-center gap-2">
+                                  {ws.name}
+                                  {activeWorkspace?.id === ws.id && (
+                                    <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-blue-500/10 animate-pulse">
+                                      Active
+                                    </span>
+                                  )}
                                 </span>
-                              )}
-                            </span>
-                          </div>
-                          <button 
-                            onClick={() => handleStartEdit(ws)}
-                            className="opacity-0 group-hover/name:opacity-100 transition-opacity p-1 text-gray-500 hover:text-blue-400"
+                              </div>
+                              <button 
+                                onClick={() => handleStartEdit(ws)}
+                                className="opacity-0 group-hover/name:opacity-100 transition-opacity p-1 text-gray-500 hover:text-blue-400"
+                              >
+                                <PencilSquareIcon className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2 text-gray-400 text-sm font-medium">
+                          <RectangleStackIcon className="h-4 w-4 opacity-30" />
+                          {ws.asset_count?.toLocaleString() || '0'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2 text-gray-400 text-sm font-medium">
+                          <UsersIcon className="h-4 w-4 opacity-30" />
+                          {ws.member_count?.toLocaleString() || '0'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setSettingsWorkspace(ws);
+                              setIsSettingsModalOpen(true);
+                            }}
+                            className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
+                            title="Configure Download Lifecycles"
                           >
-                            <PencilSquareIcon className="h-4 w-4" />
+                            <Cog6ToothIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setWorkspaceToDelete(ws);
+                              setIsDeleteModalOpen(true);
+                            }}
+                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                            title="Delete Workspace"
+                          >
+                            <TrashIcon className="h-5 w-5" />
                           </button>
                         </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-2 text-gray-400 text-sm font-medium">
-                      <RectangleStackIcon className="h-4 w-4 opacity-30" />
-                      {ws.asset_count?.toLocaleString() || '0'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-2 text-gray-400 text-sm font-medium">
-                      <UsersIcon className="h-4 w-4 opacity-30" />
-                      {ws.member_count?.toLocaleString() || '0'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => {
-                          setWorkspaceToDelete(ws);
-                          setIsDeleteModalOpen(true);
-                        }}
-                        className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
-                        title="Delete Workspace"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {sortedWorkspaces.length > itemsPerPage && (
+              <div className="px-6 py-4 bg-gray-950/30 border-t border-gray-800 flex items-center justify-between">
+                <span className="text-xs text-gray-500 font-medium">
+                  Showing <span className="text-gray-300 font-bold">{((currentPage - 1) * itemsPerPage) + 1}</span> to{' '}
+                  <span className="text-gray-300 font-bold">
+                    {Math.min(currentPage * itemsPerPage, sortedWorkspaces.length)}
+                  </span>{' '}
+                  of <span className="text-gray-300 font-bold">{sortedWorkspaces.length}</span> workspaces
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="px-3.5 py-1.5 bg-gray-800 border border-gray-700/50 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                  >
+                    <ChevronLeftIcon className="h-3.5 w-3.5" /> Previous
+                  </button>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    className="px-3.5 py-1.5 bg-gray-800 border border-gray-700/50 rounded-lg text-xs font-bold text-gray-300 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                  >
+                    Next <ChevronRightIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
+
+
+
+      {/* Floating Settings Modal */}
+      {isSettingsModalOpen && settingsWorkspace && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-gray-900 border border-gray-800 w-full max-w-2xl rounded-2xl p-6 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -z-10" />
+            
+            <div className="flex items-start justify-between mb-6 border-b border-gray-800 pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-1">
+                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                  Asset Lifecycle Settings
+                </h2>
+                <p className="text-xs text-gray-400">
+                  Configure dynamic download restrictions for <span className="text-blue-400 font-extrabold">{settingsWorkspace.name}</span>.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {fetchingSettings ? (
+              <div className="py-12 flex flex-col items-center justify-center gap-3 text-gray-400">
+                <ArrowPathIcon className="h-6 w-6 animate-spin text-blue-500 animate-infinite duration-1000" />
+                <span>Loading lifecycle settings...</span>
+              </div>
+            ) : settingsError ? (
+              <div className="py-12 text-center text-red-400 text-sm">
+                ⚠️ Failed to load settings. Make sure you are an administrator.
+              </div>
+            ) : (
+              <>
+                <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3.5 mb-6 flex items-start gap-3">
+                  <span className="text-blue-400 text-xs mt-0.5 font-bold">ℹ️</span>
+                  <p className="text-[11px] text-blue-300 leading-relaxed">
+                    <strong>Bypass Rules:</strong> System administrators and workspace managers (Admins) automatically bypass lifecycle download restrictions. These policies strictly apply to regular contributors, consumer members, and guest download workflows.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-1">
+                  {[
+                    {
+                      id: 'draft',
+                      title: 'Draft Assets',
+                      desc: 'Disable downloads for assets in the Draft state.',
+                      icon: '✏️',
+                    },
+                    {
+                      id: 'non-approved',
+                      title: 'Non-Approved Assets',
+                      desc: 'Restrict downloads for any assets pending approval or archived.',
+                      icon: '⏳',
+                    },
+                    {
+                      id: 'expired',
+                      title: 'Expired Assets',
+                      desc: 'Gate downloads automatically once the asset expiration date passes.',
+                      icon: '⚠️',
+                    },
+                    {
+                      id: 'unreleased',
+                      title: 'Unreleased Assets',
+                      desc: 'Prevent downloads of assets before their designated release date.',
+                      icon: '🚀',
+                    },
+                  ].map((option) => {
+                    const isChecked = settings.includes(option.id);
+                    return (
+                      <div
+                        key={option.id}
+                        onClick={() => !savingSettings && handleToggleSetting(option.id)}
+                        className={`group relative flex items-start justify-between p-4 rounded-xl border transition-all duration-300 cursor-pointer select-none
+                          ${isChecked 
+                            ? 'bg-blue-950/20 border-blue-500/30 hover:border-blue-500/50 shadow-md shadow-blue-500/5' 
+                            : 'bg-gray-950/40 border-gray-800/80 hover:border-gray-700/80 hover:bg-gray-800/10'
+                          }
+                        `}
+                      >
+                        <div className="flex gap-3">
+                          <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-base transition-all duration-300
+                            ${isChecked ? 'bg-blue-500/10 scale-105' : 'bg-gray-800 group-hover:bg-gray-700'}
+                          `}>
+                            {option.icon}
+                          </div>
+                          <div className="flex flex-col pr-3">
+                            <span className="text-xs font-bold text-gray-200 group-hover:text-white transition-colors">
+                              {option.title}
+                            </span>
+                            <span className="text-[10px] text-gray-400 mt-0.5 leading-relaxed">
+                              {option.desc}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-1
+                          ${isChecked ? 'bg-blue-600' : 'bg-gray-800'}
+                        `}>
+                          <span
+                            aria-hidden="true"
+                            className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
+                              ${isChecked ? 'translate-x-3' : 'translate-x-0'}
+                            `}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Download Purpose Auditing Section */}
+                <div className="border-t border-gray-800 pt-6 mt-6">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
+                    🛡️ Download Auditing & Compliance
+                  </h3>
+                  
+                  <div 
+                    onClick={async () => {
+                      if (savingSettings) return;
+                      const newVal = !requireDownloadPurpose;
+                      setRequireDownloadPurpose(newVal);
+                      try {
+                        setSavingSettings(true);
+                        await apiFetch(`/workspaces/${settingsWorkspace.id}/settings`, {
+                          method: 'PATCH',
+                          body: JSON.stringify({ require_download_purpose: newVal }),
+                        });
+                        toast.success('Download purpose auditing toggled');
+                      } catch (err) {
+                        setRequireDownloadPurpose(!newVal);
+                        toast.error('Failed to toggle download purpose requirement');
+                      } finally {
+                        setSavingSettings(false);
+                      }
+                    }}
+                    className={`flex items-start justify-between p-4 rounded-xl border cursor-pointer transition-all duration-300 select-none
+                      ${requireDownloadPurpose 
+                        ? 'bg-blue-950/20 border-blue-500/30 shadow-md shadow-blue-500/5' 
+                        : 'bg-gray-950/40 border-gray-800/80 hover:border-gray-700/80 hover:bg-gray-800/10'
+                      }
+                    `}
+                  >
+                    <div className="flex gap-3">
+                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-base transition-all duration-300
+                        ${requireDownloadPurpose ? 'bg-blue-500/10 scale-105' : 'bg-gray-800'}
+                      `}>
+                        ✍️
+                      </div>
+                      <div className="flex flex-col pr-3">
+                        <span className="text-xs font-bold text-gray-200">Require Purpose for Downloads</span>
+                        <span className="text-[10px] text-gray-400 mt-0.5 leading-relaxed">
+                          Force users to specify their usage purpose before downloading or sharing assets.
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mt-1
+                      ${requireDownloadPurpose ? 'bg-blue-600' : 'bg-gray-800'}
+                    `}>
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
+                          ${requireDownloadPurpose ? 'translate-x-3' : 'translate-x-0'}
+                        `}
+                      />
+                    </div>
+                  </div>
+
+                  {requireDownloadPurpose && (
+                    <div className="mt-4 bg-gray-950/45 border border-gray-800/60 rounded-xl p-4 animate-in slide-in-from-top-2 duration-200">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-2">
+                        Allowed Purposes Options
+                      </label>
+                      
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {allowedPurposes.map((purpose) => (
+                          <span 
+                            key={purpose} 
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-850 text-gray-300 rounded-lg text-[10px] font-bold border border-gray-800"
+                          >
+                            {purpose}
+                            <button 
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (savingSettings) return;
+                                const newPurposes = allowedPurposes.filter(p => p !== purpose);
+                                setAllowedPurposes(newPurposes);
+                                try {
+                                  setSavingSettings(true);
+                                  await apiFetch(`/workspaces/${settingsWorkspace.id}/settings`, {
+                                    method: 'PATCH',
+                                    body: JSON.stringify({ allowed_purposes: newPurposes }),
+                                  });
+                                  toast.success('Purpose option removed');
+                                } catch (err) {
+                                  setAllowedPurposes(allowedPurposes);
+                                  toast.error('Failed to update purposes');
+                                } finally {
+                                  setSavingSettings(false);
+                                }
+                              }}
+                              className="text-gray-500 hover:text-red-400 transition-colors ml-1 font-black"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                        {allowedPurposes.length === 0 && (
+                          <span className="text-[10px] text-gray-500 italic">No custom purposes. "Others" will be the only option.</span>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="e.g., Marketing Campaign, Internal Design"
+                          id="new-purpose-input"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const input = e.currentTarget;
+                              const val = input.value.trim();
+                              if (!val) return;
+                              if (allowedPurposes.includes(val)) {
+                                toast.error('Purpose already exists');
+                                return;
+                              }
+                              const newPurposes = [...allowedPurposes, val];
+                              setAllowedPurposes(newPurposes);
+                              input.value = '';
+                              try {
+                                setSavingSettings(true);
+                                await apiFetch(`/workspaces/${settingsWorkspace.id}/settings`, {
+                                  method: 'PATCH',
+                                  body: JSON.stringify({ allowed_purposes: newPurposes }),
+                                });
+                                toast.success('Purpose option added');
+                              } catch (err) {
+                                setAllowedPurposes(allowedPurposes);
+                                toast.error('Failed to add purpose');
+                              } finally {
+                                setSavingSettings(false);
+                              }
+                            }
+                          }}
+                          className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-3 py-1.5 text-gray-200 text-xs outline-none focus:border-blue-500/50"
+                        />
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const input = document.getElementById('new-purpose-input') as HTMLInputElement;
+                            const val = input?.value.trim();
+                            if (!val) return;
+                            if (allowedPurposes.includes(val)) {
+                              toast.error('Purpose already exists');
+                              return;
+                            }
+                            const newPurposes = [...allowedPurposes, val];
+                            setAllowedPurposes(newPurposes);
+                            if (input) input.value = '';
+                            try {
+                              setSavingSettings(true);
+                              await apiFetch(`/workspaces/${settingsWorkspace.id}/settings`, {
+                                    method: 'PATCH',
+                                    body: JSON.stringify({ allowed_purposes: newPurposes }),
+                              });
+                              toast.success('Purpose option added');
+                            } catch (err) {
+                              setAllowedPurposes(allowedPurposes);
+                              toast.error('Failed to add purpose');
+                            } finally {
+                              setSavingSettings(false);
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-500 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      <p className="text-[9px] text-gray-500 mt-1">Press Enter or click Add to add to allowed purposes list.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-gray-800 flex justify-end">
+                  <button
+                    onClick={() => setIsSettingsModalOpen(false)}
+                    className="px-5 py-2 bg-gray-800 text-white rounded-xl text-xs font-bold hover:bg-gray-700 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <DocumentationLink href="https://docs.zuperix.com/docs/admin/workspaces" />
 

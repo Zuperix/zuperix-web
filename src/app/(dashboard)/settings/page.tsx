@@ -106,6 +106,7 @@ const ADMIN_ONLY_SECTION_IDS = [
   'features',
   'announcement',
   'workspaces',
+  'project-settings',
 ];
 
 export default function SettingsPage() {

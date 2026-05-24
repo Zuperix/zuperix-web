@@ -63,6 +63,29 @@ export default function DownloadOptions({
   const [quality, setQuality] = useState(90);
   const [email, setEmail] = useState('');
   const [pageRange, setPageRange] = useState('');
+  const [workspaceSettings, setWorkspaceSettings] = useState<{
+    require_download_purpose: boolean;
+    allowed_purposes: string[];
+  } | null>(null);
+  const [purpose, setPurpose] = useState('');
+  const [customPurpose, setCustomPurpose] = useState('');
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const endpoint = portalSlug 
+          ? `/p/${portalSlug}/assets/${assetId}`
+          : `/assets/${assetId}`;
+        const asset = await apiFetch(endpoint) as any;
+        if (asset && asset.workspace_settings) {
+          setWorkspaceSettings(asset.workspace_settings);
+        }
+      } catch (err) {
+        console.error('Failed to fetch asset workspace settings:', err);
+      }
+    };
+    fetchSettings();
+  }, [assetId, portalSlug]);
 
   const emailAssetEnabled = useFeatureFlag(FEATURES.EMAIL_ASSET.key, true);
 
@@ -176,11 +199,26 @@ export default function DownloadOptions({
   const handleCustomDownload = async () => {
     setLoading('custom');
     try {
+      if (workspaceSettings?.require_download_purpose) {
+        if (!purpose) {
+          toast.error('Please select a usage purpose');
+          setLoading(null);
+          return;
+        }
+        if (purpose === 'Others' && !customPurpose.trim()) {
+          toast.error('Please specify your custom purpose');
+          setLoading(null);
+          return;
+        }
+      }
+
       const options: any = {
         format,
         quality: parseInt(quality as any),
         crop: getCropPayload(),
         pageRange: pageRange.trim() || undefined,
+        usage_type: purpose || 'download',
+        custom_purpose: purpose === 'Others' ? customPurpose : undefined,
       };
       if (width) options.width = parseInt(width as string);
       if (height) options.height = parseInt(height as string);
@@ -211,12 +249,27 @@ export default function DownloadOptions({
     }
     setLoading('email');
     try {
+      if (workspaceSettings?.require_download_purpose) {
+        if (!purpose) {
+          toast.error('Please select a usage purpose');
+          setLoading(null);
+          return;
+        }
+        if (purpose === 'Others' && !customPurpose.trim()) {
+          toast.error('Please specify your custom purpose');
+          setLoading(null);
+          return;
+        }
+      }
+
       const options: any = {
         email,
         format,
         quality: parseInt(quality as any),
         crop: getCropPayload(),
         pageRange: pageRange.trim() || undefined,
+        usage_type: purpose || 'download',
+        custom_purpose: purpose === 'Others' ? customPurpose : undefined,
       };
       if (width) options.width = parseInt(width as string);
       if (height) options.height = parseInt(height as string);
@@ -470,6 +523,48 @@ export default function DownloadOptions({
                     />
                     <EnvelopeIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                  </div>
+              </div>
+            )}
+
+            {/* Download Purpose Audit form */}
+            {workspaceSettings?.require_download_purpose && (
+              <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-white/5 animate-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center justify-between px-1">
+                  <label className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <span>🛡️ Usage Purpose</span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  </label>
+                  <span className="text-[8px] font-bold text-gray-450 uppercase tracking-wider">Required for Audit</span>
+                </div>
+                
+                <div className="relative group">
+                  <select
+                    value={purpose}
+                    onChange={(e) => {
+                      setPurpose(e.target.value);
+                    }}
+                    className="w-full bg-gray-50 dark:bg-white/5 border border-gray-150 dark:border-white/5 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none transition-all dark:text-gray-200"
+                  >
+                    <option value="" disabled>Select usage intent...</option>
+                    {workspaceSettings.allowed_purposes.map((p: string) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                    <option value="Others">Others (Specify below)</option>
+                  </select>
+                  <ChevronDownIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-450 pointer-events-none group-hover:text-gray-200 transition-colors" />
+                </div>
+
+                {purpose === 'Others' && (
+                  <div className="relative group animate-in slide-in-from-top-1 duration-200">
+                    <textarea
+                      value={customPurpose}
+                      onChange={(e) => setCustomPurpose(e.target.value)}
+                      placeholder="Please specify your custom usage reason here..."
+                      rows={2}
+                      className="w-full bg-gray-50 dark:bg-white/5 border border-gray-150 dark:border-white/5 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20 transition-all placeholder:text-gray-500 dark:text-gray-200"
+                    />
+                  </div>
+                )}
               </div>
             )}
 

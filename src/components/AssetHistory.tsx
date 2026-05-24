@@ -215,8 +215,23 @@ export default function AssetHistory({ assetId }: { assetId: string }) {
       );
     }
 
+    if (event.action === 'DOWNLOAD' && meta) {
+      return (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded font-extrabold uppercase tracking-wider">
+            {meta.usage_type || 'download'}
+          </span>
+          {meta.custom_purpose && (
+            <span className="text-[10px] text-gray-500 italic border-l-2 border-gray-700 pl-2">
+              &ldquo;{meta.custom_purpose}&rdquo;
+            </span>
+          )}
+        </div>
+      );
+    }
+
     if (meta.filename) {
-      return <p className="mt-1 text-[11px] text-blue-400/80 italic">"{meta.filename}"</p>;
+      return <p className="mt-1 text-[11px] text-blue-400/80 italic">&ldquo;{meta.filename}&rdquo;</p>;
     }
 
     return null;
@@ -234,6 +249,7 @@ export default function AssetHistory({ assetId }: { assetId: string }) {
       case 'WORKFLOW_STEP_APPROVED': return 'Approved workflow stage';
       case 'WORKFLOW_STEP_REJECTED': return 'Rejected workflow stage';
       case 'WORKFLOW_COMPLETED': return 'Completed approval workflow';
+      case 'DOWNLOAD': return 'Downloaded asset';
       default: return event.action.toLowerCase().replace(/_/g, ' ');
     }
   };

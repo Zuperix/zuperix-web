@@ -41,6 +41,7 @@ import {
   PencilIcon,
   InboxArrowDownIcon,
   SwatchIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import DownloadModal from '@/components/DownloadModal';
 import { useCategories, Category } from '@/hooks/useCategories';
@@ -452,6 +453,7 @@ export default function AssetDetailPage() {
       fetchTranscript();
     }
   }, [activeTab, transcript, fetchTranscript]);
+
 
   // Fetch all workspace tags for autocomplete
   useEffect(() => {

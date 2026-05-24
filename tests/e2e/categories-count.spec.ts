@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { expectShowing } from './helpers';
+import { expectShowing, getShowingCounts } from './helpers';
 
 const categoriesHeadingPattern = /Cat(?:eogry|egory) Management/i;
 

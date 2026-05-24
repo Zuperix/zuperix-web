@@ -11,6 +11,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     name: '',
+    companyName: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -118,6 +119,18 @@ export default function RegisterPage() {
                   className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:bg-zinc-950 dark:text-white outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
                   placeholder="John Doe"
                   value={formData.name}
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Company Name</label>
+                <input
+                  name="companyName"
+                  type="text"
+                  required
+                  className="w-full px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:bg-zinc-950 dark:text-white outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                  placeholder="Acme Corp"
+                  value={formData.companyName}
                   onChange={handleChange}
                 />
               </div>
