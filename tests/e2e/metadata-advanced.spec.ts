@@ -192,7 +192,9 @@ test.describe('Advanced Metadata & Complex Types', () => {
     
     // Guard: Wait for React hydration of metadata section
     await page.waitForTimeout(1000);
-    await expect(page.getByText(/Custom Metadata/i)).toBeVisible({ timeout: 20000 });
+    const customMetadata = page.getByText(/Custom Metadata/i);
+    await customMetadata.scrollIntoViewIfNeeded();
+    await expect(customMetadata).toBeVisible({ timeout: 20000 });
 
     // Show empty fields — waitFor ensures the section is rendered before the click
     const showEmptyToggle = page.locator('div').filter({ hasText: /^Show empty$/ }).getByRole('button');
@@ -257,7 +259,9 @@ test.describe('Advanced Metadata & Complex Types', () => {
     await saveResponse;
 
     await page.reload();
-    await expect(page.getByText(/Custom Metadata/i)).toBeVisible({ timeout: 20000 });
+    const reloadedMetadata = page.getByText(/Custom Metadata/i);
+    await reloadedMetadata.scrollIntoViewIfNeeded();
+    await expect(reloadedMetadata).toBeVisible({ timeout: 20000 });
     try {
       await showEmptyToggle.waitFor({ state: 'visible', timeout: 5000 });
       await showEmptyToggle.click();
@@ -367,7 +371,9 @@ test.describe('Advanced Metadata & Complex Types', () => {
 
     // Guard: Wait for React hydration of metadata section
     await page.waitForTimeout(1000);
-    await expect(page.getByText(/Custom Metadata/i)).toBeVisible({ timeout: 30000 });
+    const semanticMetadata = page.getByText(/Custom Metadata/i);
+    await semanticMetadata.scrollIntoViewIfNeeded();
+    await expect(semanticMetadata).toBeVisible({ timeout: 30000 });
     const showEmptyToggle = page.locator('div').filter({ hasText: /^Show empty$/ }).getByRole('button');
 
     for (const field of FIELD_TYPES) {
@@ -418,7 +424,9 @@ test.describe('Advanced Metadata & Complex Types', () => {
 
     await expect(async () => {
       await page.goto(`/assets/${assetId}`);
-      await expect(page.getByText(/Custom Metadata/i)).toBeVisible({ timeout: 10000 });
+      const importedMetadata = page.getByText(/Custom Metadata/i);
+      await importedMetadata.scrollIntoViewIfNeeded();
+      await expect(importedMetadata).toBeVisible({ timeout: 10000 });
       const intInput = getMetadataInput(page, `${testPrefix}_Number (Integer)`);
       await expect(intInput).toHaveValue(/^999(?:\.0+)?$/, { timeout: 5000 });
     }).toPass({ intervals: [2000, 5000, 10000], timeout: 60000 });
@@ -557,5 +565,4 @@ test.describe('Advanced Metadata & Complex Types', () => {
     if (fs.existsSync(testFilePath)) fs.unlinkSync(testFilePath);
   });
 });
-
 

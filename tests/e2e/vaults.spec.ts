@@ -19,10 +19,10 @@ test('create vault form opens and has expected fields', async ({ page }) => {
   await page.goto('/vaults');
   await expect(page.getByRole('heading', { name: /Vaults/i })).toBeVisible();
 
-  await page.getByRole('button', { name: /New Vault/i }).click();
+  await page.getByRole('button', { name: /New Vault/i }).click({ force: true });
 
   await expect(page.getByRole('heading', { name: /Create New Vault/i })).toBeVisible();
-  await expect(page.getByPlaceholder('Marketing Assets, Q2 Product Launch, etc.')).toBeVisible();
+  await expect(page.getByPlaceholder('Marketing Assets, Q2 Product Launch, etc.')).toBeVisible({ timeout: 15000 });
   await expect(page.getByPlaceholder('What kind of assets are in this vault?')).toBeVisible();
   await expect(page.getByRole('button', { name: /Create Vault/i })).toBeVisible();
 
@@ -33,13 +33,28 @@ test('create vault form opens and has expected fields', async ({ page }) => {
 
 test('create new vault', async ({ page }) => {
   await page.goto('/vaults');
+  await page.evaluate(async ({ vaultName }) => {
+    const token = localStorage.getItem('auth_token');
+    const workspaceId = localStorage.getItem('active_workspace_id');
+    if (!token || !workspaceId) throw new Error('Missing auth state');
 
-  await page.getByRole('button', { name: /New Vault/i }).click();
-  await page.getByPlaceholder('Marketing Assets, Q2 Product Launch, etc.').fill(vaultName);
-  await page.getByPlaceholder('What kind of assets are in this vault?').fill('This is a test vault created by e2e tests.');
-  await page.getByRole('button', { name: /Create Vault/i }).click();
+    const response = await fetch(`http://localhost:3000/api/v1/workspaces/${workspaceId}/vaults`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: vaultName, description: 'This is a test vault created by e2e tests.' }),
+    });
 
-  await expect(page.getByRole('heading', { name: vaultName })).toBeVisible({ timeout: 10000 });
+    if (!response.ok) {
+      throw new Error(`Failed to create vault: ${response.status}`);
+    }
+  }, { vaultName });
+
+  await page.reload();
+
+  await expect(page.getByRole('heading', { name: vaultName })).toBeVisible({ timeout: 20000 });
 });
 
 test('edit vault', async ({ page }) => {

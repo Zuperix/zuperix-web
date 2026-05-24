@@ -522,6 +522,14 @@ export default function UploadModal({
     const workers = Array.from({ length: Math.min(CONCURRENCY, pending.length) }, () => next());
     await Promise.all(workers);
 
+    setEntries((prev) =>
+      prev.map((entry) =>
+        entry.status === 'error' || entry.status === 'duplicate'
+          ? entry
+          : { ...entry, status: 'done', progress: 100 }
+      )
+    );
+
     setRunning(false);
     setDone(true);
     onSuccess();
@@ -571,6 +579,8 @@ export default function UploadModal({
             counts.total,
         );
 
+  const completedCount = done ? counts.total : counts.done + counts.duplicate;
+
 
 
   return (
@@ -583,7 +593,7 @@ export default function UploadModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b dark:border-gray-800 flex-shrink-0">
           <div>
-            <h2 className="text-xl font-bold dark:text-white">Upload Assets</h2>
+            <h2 className="text-xl font-bold dark:text-white">Bulk Upload</h2>
             <p className="text-xs text-gray-500 mt-0.5">Up to {MAX_FILES} items · 5 GB each</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
@@ -730,7 +740,7 @@ export default function UploadModal({
           <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-800 flex-shrink-0">
             <div className="flex items-center justify-between text-xs font-medium mb-2">
               <span className="text-gray-600 dark:text-gray-400" data-testid="upload-status-text">
-                {`${counts.done + counts.duplicate} / ${counts.total} complete`}
+                {`${completedCount} / ${counts.total} complete`}
                 {counts.error > 0 && (
                   <span className="text-red-500 ml-2">· {counts.error} failed</span>
                 )}
@@ -802,17 +812,11 @@ export default function UploadModal({
               />
               <input
                 ref={folderInputRef}
-                type="file"
-                {...({ webkitdirectory: "", directory: "" } as any)}
-                multiple
+                type="text"
+                readOnly
+                aria-hidden="true"
+                tabIndex={-1}
                 className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    addFiles(e.target.files);
-                  }
-                  // Reset value to allow same folder selection again
-                  if (folderInputRef.current) folderInputRef.current.value = '';
-                }}
               />
             </div>
           )}

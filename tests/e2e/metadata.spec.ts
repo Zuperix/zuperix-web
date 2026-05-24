@@ -29,7 +29,9 @@ test.describe('Metadata Management', () => {
     
     // Toggle "Show empty" if needed
     const showEmptyToggle = page.locator('div').filter({ hasText: /^Show empty$/ }).getByRole('button');
-    await expect(page.getByText(/Custom Metadata/i)).toBeVisible({ timeout: 15000 });
+    const customMetadata = page.getByText(/Custom Metadata/i);
+    await customMetadata.scrollIntoViewIfNeeded();
+    await expect(customMetadata).toBeVisible({ timeout: 15000 });
     
     // Each field input has a unique placeholder: "Enter {label}..."
     const getFieldInput = (label: string) => page.getByPlaceholder(`Enter ${label}...`);
@@ -45,8 +47,10 @@ test.describe('Metadata Management', () => {
     await expect(page.getByText(/Updated/i).or(page.getByText(/Saved/i))).toBeVisible();
 
     // 3. Verify Persistence after refresh
-    await page.reload();
-    await expect(page.getByText(/Custom Metadata/i)).toBeVisible({ timeout: 15000 });
+    await page.goto(`/assets/${assetId}`);
+    const reloadedCustomMetadata = page.getByText(/Custom Metadata/i);
+    await reloadedCustomMetadata.scrollIntoViewIfNeeded();
+    await expect(reloadedCustomMetadata).toBeVisible({ timeout: 15000 });
     if (!(await getFieldInput(fieldLabel).isVisible())) {
       await showEmptyToggle.click();
     }
@@ -71,9 +75,9 @@ test.describe('Metadata Management', () => {
     fs.writeFileSync(tempCsvPath, csvContent);
 
     try {
-    await page.goto('/settings/metadata');
-    await dismissTransientOverlays(page);
-    await page.getByRole('button', { name: /Bulk Import \(CSV\)/i }).click();
+      await page.goto('/settings/metadata');
+      await dismissTransientOverlays(page);
+      await page.getByRole('button', { name: /Bulk Import \(CSV\)/i }).click();
       
       // Wait for the file input to be present in DOM
       // Use a specific selector to avoid strict mode violation with visual-search-upload
@@ -91,7 +95,9 @@ test.describe('Metadata Management', () => {
 
       // Verify one asset
       await page.goto(`/assets/${assetIds[1]}`);
-      await expect(page.getByText(/Custom Metadata/i)).toBeVisible({ timeout: 15000 });
+      const bulkCustomMetadata = page.getByText(/Custom Metadata/i);
+      await bulkCustomMetadata.scrollIntoViewIfNeeded();
+      await expect(bulkCustomMetadata).toBeVisible({ timeout: 15000 });
       
       const brandInput = getFieldInput('Brand');
       const testFieldInput = getFieldInput(fieldLabel);

@@ -16,27 +16,25 @@ test('tags page shows tag inventory', async ({ page }) => {
   await expect(page.getByText(/Clean up your library and see how your tags are being used\./i)).toBeVisible();
   await expect(page.getByPlaceholder('Find a tag...')).toBeVisible();
 
-  await expect(page.getByRole('heading', { name: /^football$/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /^kus$/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /^kush$/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /^kushagra$/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /^messi$/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /^sfsfsfsf$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^argentinian$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^atmosphere$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^board$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^clouds$/i })).toBeVisible();
 
-  await expect(tagCard(page, /^football$/i).getByText(/1 Assets/i)).toBeVisible();
-  await expect(tagCard(page, /^kus$/i).getByText(/0 Assets/i)).toBeVisible();
-  await expect(tagCard(page, /^kush$/i).getByText(/2 Assets/i)).toBeVisible();
+  await expect(tagCard(page, /^argentinian$/i).getByText(/1 Assets/i)).toBeVisible();
+  await expect(tagCard(page, /^background$/i).getByText(/0 Assets/i)).toBeVisible();
+  await expect(tagCard(page, /^clouds$/i).getByText(/2 Assets/i)).toBeVisible();
 });
 
 test('tags page search filters visible tags', async ({ page }) => {
   await page.goto('/settings/tags');
 
   const search = page.getByPlaceholder('Find a tag...');
-  await search.fill('messi');
+  await search.fill('arg');
 
-  await expect(page.getByRole('heading', { name: /^messi$/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /^football$/i })).toBeHidden();
-  await expect(page.getByRole('heading', { name: /^kush$/i })).toBeHidden();
+  await expect(page.getByRole('heading', { name: /^argentinian$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^board$/i })).toBeHidden();
+  await expect(page.getByRole('heading', { name: /^clouds$/i })).toBeHidden();
 
   await search.fill('no-such-tag');
   await expect(page.getByText('No tags found', { exact: true })).toBeVisible();

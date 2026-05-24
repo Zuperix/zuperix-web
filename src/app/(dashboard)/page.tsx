@@ -103,6 +103,9 @@ function FilterChips({
     if (Array.isArray(value)) {
       value.forEach(v => {
         let displayValue = String(v);
+        if (key === 'orientation') {
+          displayValue = displayValue.charAt(0).toUpperCase() + displayValue.slice(1);
+        }
         const facetBuckets = filters[key];
         if (Array.isArray(facetBuckets)) {
           const bucket = facetBuckets.find((b: any) => b.value === v);
@@ -118,6 +121,9 @@ function FilterChips({
       });
     } else {
       let displayValue = String(value);
+      if (key === 'orientation') {
+        displayValue = displayValue.charAt(0).toUpperCase() + displayValue.slice(1);
+      }
       const facetBuckets = filters[key];
       if (Array.isArray(facetBuckets)) {
         const bucket = facetBuckets.find((b: any) => b.value === value);
@@ -232,6 +238,7 @@ function DashboardContent() {
   const [exportLoading, setExportLoading] = useState(false);
 
   const [personMap, setPersonMap] = useState<Record<string, string>>({});
+  const fetchRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (!activeWorkspace) return;
@@ -298,6 +305,7 @@ function DashboardContent() {
 
   const fetchAssets = useCallback(async () => {
     if (!activeWorkspace) return;
+    const requestId = ++fetchRequestIdRef.current;
     try {
       setLoading(true);
 
@@ -305,6 +313,7 @@ function DashboardContent() {
 
       // We expect the new envelope with results, pagination, filters
       const data = await apiFetch<any>(endpoint);
+      if (fetchRequestIdRef.current !== requestId) return;
       setAssets(data.results || []);
       setTotalMatching(data.pagination?.total_results || data.results?.length || 0);
       setTotalInWorkspace(data.pagination?.workspace_total || 0);
@@ -315,8 +324,10 @@ function DashboardContent() {
       setFilters(data.filters || {});
       setFilterConfig(data.filter_config || {});
     } catch (error) {
+      if (fetchRequestIdRef.current !== requestId) return;
       console.error('Failed to fetch assets:', error);
     } finally {
+      if (fetchRequestIdRef.current !== requestId) return;
       setLoading(false);
     }
   }, [activeWorkspace, searchParams]);
@@ -560,8 +571,20 @@ function DashboardContent() {
       );
     }
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Please select or create a workspace to continue</p>
+      <div className="flex h-full overflow-hidden">
+        <div className="flex-1 p-4 sm:p-8">
+          <div className="space-y-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                Assets
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
+                Loading workspace...
+              </p>
+            </div>
+            <div className="h-10 w-full max-w-xl rounded-xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
+          </div>
+        </div>
       </div>
     );
   }

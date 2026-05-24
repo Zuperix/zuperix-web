@@ -211,7 +211,7 @@ export default function AssetDetailPage() {
   const { user } = useAuth();
   const permissions = usePermissions();
   const canUpdateAsset = permissions.can(Action.Update, 'Asset', activeWorkspace?.id);
-  
+
   const isFaceDetectionEnabled = useFeatureFlag(FEATURES.FACE_DETECTION.key, false);
   const isAiTaggingEnabled = useFeatureFlag(FEATURES.AI_TAGGING.key, false);
 
@@ -1223,7 +1223,14 @@ export default function AssetDetailPage() {
               >
                 <div
                   ref={mediaWrapperRef}
-                  className="relative inline-block max-w-full"
+                  className={`relative max-w-full ${
+                    is3D(asset?.mime_type, asset?.original_name) ||
+                    asset?.mime_type === 'text/markdown' ||
+                    asset?.mime_type === 'application/json' ||
+                    asset?.mime_type === 'application/pdf'
+                      ? 'w-full h-[60vh] md:h-[70vh] flex items-center justify-center'
+                      : 'inline-block'
+                  }`}
                 >
                   {/* Overlays - Now relative to the actual media content */}
 
@@ -1791,11 +1798,10 @@ export default function AssetDetailPage() {
                     {(asset?.tags || []).map((tag: any, i: number) => (
                       <span
                         key={i}
-                        className={`group/tag flex items-center gap-1.5 px-3 py-2 ${
-                          tag.is_ai_generated
+                        className={`group/tag flex items-center gap-1.5 px-3 py-2 ${tag.is_ai_generated
                             ? 'bg-indigo-500/5 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-200/50 dark:border-indigo-800/40 hover:border-indigo-400 dark:hover:border-indigo-600'
                             : 'bg-gray-100/50 dark:bg-gray-800/40 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700/60 hover:border-teal-500/50 hover:bg-teal-50 dark:hover:bg-teal-900/20'
-                        } rounded-xl text-[11px] font-bold border transition-all`}
+                          } rounded-xl text-[11px] font-bold border transition-all`}
                       >
                         {tag.is_ai_generated && (
                           <svg className="h-3 w-3 text-indigo-500 dark:text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

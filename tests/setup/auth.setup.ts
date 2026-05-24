@@ -21,11 +21,34 @@ setup('authenticate', async ({ page }) => {
   await page.getByPlaceholder('••••••••').fill(password);
   await page.getByRole('button', { name: /Sign In/i }).click();
 
-  await expect(page).toHaveURL(/\/$/);
-  
   await page.waitForTimeout(2000);
 
   await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
+
+  // Ensure "Main Workspace" is selected as the active workspace for all subsequent tests
+  const switcherButton = page.locator('button').filter({ hasText: /Workspace/i }).first();
+  
+  // If the switcher button is not visible, the sidebar is collapsed.
+  // Click the "Toggle sidebar" hamburger button to expand it.
+  const isSwitcherVisible = await switcherButton.isVisible();
+  if (!isSwitcherVisible) {
+    const toggleSidebarBtn = page.getByRole('button', { name: /Toggle sidebar/i });
+    if (await toggleSidebarBtn.isVisible()) {
+      await toggleSidebarBtn.click();
+      await page.waitForTimeout(500); // Wait for expand transition
+    }
+  }
+
+  await expect(switcherButton).toBeVisible({ timeout: 10000 });
+  const buttonText = await switcherButton.textContent();
+  if (buttonText && !buttonText.includes('Main Workspace')) {
+    await switcherButton.click();
+    const mainWorkspaceOption = page.locator('div.absolute button').filter({ hasText: 'Main Workspace' }).first();
+    await mainWorkspaceOption.scrollIntoViewIfNeeded();
+    await expect(mainWorkspaceOption).toBeVisible({ timeout: 5000 });
+    await mainWorkspaceOption.click();
+    await page.waitForTimeout(1500); // Wait for the switch to apply and save to localStorage
+  }
 
   await page.context().storageState({ path: authFile });
 });

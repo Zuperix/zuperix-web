@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 
 export default function CategoriesPage() {
   const { categories, updateCategory, deleteCategory, refresh } = useCategories();
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, loading: workspaceLoading } = useWorkspace();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isAddingTo, setIsAddingTo] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
@@ -307,15 +307,25 @@ export default function CategoriesPage() {
           </h1>
           <p className="text-gray-500 text-sm mt-1">Manage hierarchical labels to organize your global asset library.</p>
         </div>
-        <PermissionGate action={Action.Create} subject="Category" workspaceId={activeWorkspace?.id}>
+        {workspaceLoading || !activeWorkspace ? (
           <button
-            onClick={() => setIsAddingTo('root')}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2"
+            disabled
+            className="px-6 py-2.5 bg-blue-600/60 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 opacity-80 cursor-wait"
           >
             <PlusIcon className="h-4 w-4" />
             Add Root Category
           </button>
-        </PermissionGate>
+        ) : (
+          <PermissionGate action={Action.Create} subject="Category" workspaceId={activeWorkspace.id}>
+            <button
+              onClick={() => setIsAddingTo('root')}
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Add Root Category
+            </button>
+          </PermissionGate>
+        )}
       </header>
 
       {isAddingTo === 'root' && (
@@ -347,7 +357,12 @@ export default function CategoriesPage() {
       )}
 
       <div className="space-y-3">
-        {categories.length === 0 ? (
+        {workspaceLoading || !activeWorkspace ? (
+          <div className="text-center py-20 bg-gray-900/20 rounded-[40px] border-2 border-dashed border-gray-800 flex flex-col items-center justify-center gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+            <p className="text-gray-600 font-bold uppercase tracking-widest text-[10px]">Loading categories...</p>
+          </div>
+        ) : categories.length === 0 ? (
           <div className="text-center py-20 bg-gray-900/20 rounded-[40px] border-2 border-dashed border-gray-800 flex flex-col items-center justify-center gap-4">
             <FolderIcon className="h-12 w-12 text-gray-800" />
             <p className="text-gray-600 font-bold uppercase tracking-widest text-[10px]">No categories defined for this workspace</p>

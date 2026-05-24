@@ -48,23 +48,18 @@ test.describe('Asset Previews', () => {
     await page.goto(`/assets/${IMAGE_ASSET_ID}`);
 
     const similarSection = page.getByRole('heading', { name: /Discovery/i });
-    // Similarity might take time to compute/load, let's wait a bit
     await expect(similarSection).toBeVisible({ timeout: 20000 });
     await similarSection.scrollIntoViewIfNeeded();
 
-    // Check if we have at least one similar asset card
     const similarCard = page.locator('section:has-text("Discovery") a[href^="/assets/"]').first();
     await expect(similarCard).toBeVisible({ timeout: 15000 });
 
-    // If it's an image, verify it loads. Otherwise verify the icon shows.
     const similarImage = similarCard.locator('img').first();
     const isImage = await similarImage.isVisible();
 
     if (isImage) {
-      // Use a unique selector for the first image
       await expectImageToLoad(page, 'section:has-text("Discovery") img >> nth=0');
     } else {
-      // Should show a file-type icon
       await expect(similarCard.locator('svg')).toBeVisible();
     }
   });

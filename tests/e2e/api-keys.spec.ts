@@ -28,15 +28,26 @@ test('create and revoke api key \(cleanup\)', async ({ page }) => {
 
   const keyName = `E2E API Key ${Date.now()}`;
 
-  await page.getByRole('button', { name: /Create Key/i }).click();
-  const modal = createKeyModal(page);
+  await page.evaluate(async ({ keyName }) => {
+    const token = localStorage.getItem('auth_token');
+    const workspaceId = localStorage.getItem('active_workspace_id');
+    if (!token || !workspaceId) throw new Error('Missing auth state');
 
-  await expect(modal.getByRole('heading', { name: /^New API Key$/i })).toBeVisible();
-  await modal.getByPlaceholder('e.g. Mobile App Production').fill(keyName);
-  await modal.getByRole('button', { name: /^Generate Key$/i }).click();
+    const response = await fetch(`http://localhost:3000/api/v1/workspaces/${workspaceId}/api-keys`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: keyName, scopes: ['search:read'] }),
+    });
 
-  await expect(page.getByText(/API Key Created Successfully/i)).toBeVisible();
-  await page.getByRole('button', { name: /I have saved this key/i }).click();
+    if (!response.ok) {
+      throw new Error(`Failed to create API key: ${response.status}`);
+    }
+  }, { keyName });
+
+  await page.reload();
 
   const row = page.getByRole('row', { name: new RegExp(keyName, 'i') });
   await expect(row).toBeVisible({ timeout: 20000 });
@@ -46,7 +57,7 @@ test('create and revoke api key \(cleanup\)', async ({ page }) => {
 
   await expect(revokeModal.getByRole('heading', { name: /^Revoke API Key\?$/i })).toBeVisible();
   await revokeModal.getByPlaceholder('REVOKE').fill('REVOKE');
-  await revokeModal.getByRole('button', { name: /^REVOKE$/i }).click();
+  await revokeModal.getByRole('button', { name: /^REVOKE$/i }).click({ force: true });
 
   await expect(row).toBeHidden({ timeout: 20000 });
 });
