@@ -239,6 +239,14 @@ function DashboardContent() {
 
   const [personMap, setPersonMap] = useState<Record<string, string>>({});
   const fetchRequestIdRef = useRef(0);
+  const [workspaceSettings, setWorkspaceSettings] = useState<any>(null);
+
+  useEffect(() => {
+    if (!activeWorkspace) return;
+    apiFetch(`/workspaces/${activeWorkspace.id}/settings`)
+      .then(data => setWorkspaceSettings(data))
+      .catch(console.error);
+  }, [activeWorkspace]);
 
   useEffect(() => {
     if (!activeWorkspace) return;
@@ -250,6 +258,7 @@ function DashboardContent() {
       })
       .catch(console.error);
   }, [activeWorkspace]);
+
 
   // Delete Modal State
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -598,7 +607,9 @@ function DashboardContent() {
         onFilterChange={handleFilterChange}
         onClearAll={handleClearAll}
         disabled={isClearingAllFilters}
+        filtersConfig={workspaceSettings?.filters_config}
       />
+
 
       <div
         ref={contentRef}

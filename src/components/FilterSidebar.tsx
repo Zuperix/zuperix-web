@@ -152,7 +152,9 @@ interface FilterSidebarProps {
   onFilterChange: (keyOrUpdates: string | Record<string, any>, value?: any) => void;
   onClearAll: () => void;
   disabled?: boolean;
+  filtersConfig?: Array<{ key: string; visible: boolean }>;
 }
+
 
 function DateRangePicker({
   currentMin,
@@ -331,7 +333,8 @@ function RangeSlider({
   );
 }
 
-export default function FilterSidebar({ filters, activeFilters, externalFilterConfig, onFilterChange, onClearAll, disabled = false }: FilterSidebarProps) {
+export default function FilterSidebar({ filters, activeFilters, externalFilterConfig, onFilterChange, onClearAll, disabled = false, filtersConfig }: FilterSidebarProps) {
+
   const { isFilterOpen, setIsFilterOpen } = useLayout();
   const baseFilterConfig: Record<string, { label: string; icon: any }> = {
     mime_type: { label: 'File Type', icon: Square3Stack3DIcon },
@@ -505,312 +508,357 @@ export default function FilterSidebar({ filters, activeFilters, externalFilterCo
           </div>
 
           <div className="flex-1 space-y-6">
-            {filteredFilterEntries
-              .filter(([key]) => !key.startsWith('metadata.'))
-              .map(([key, data]) => {
-                const isSearchMatchValue = filterSearch && Array.isArray(data) && data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
-                const isExpanded = expanded[key] !== false || !!isSearchMatchValue;
-                const { label, icon: Icon } = getGroupConfig(key);
+            {(() => {
+              let currentFiltersConfig: Array<{ key: string; visible: boolean }> = [];
 
-                return (
-                  <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-4 text-gray-900 dark:text-gray-100">
-                    <button
-                      onClick={() => toggleExpand(key)}
-                      className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                        <span>{label}</span>
-                      </div>
-                      {isExpanded ? <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />}
-                    </button>
-                    {isExpanded && (
-                      <div className="pt-4 px-1">
-                        {key === 'average_rating' ? (
-                          <div className="space-y-3 px-1">
-                            {ratingTiers.map((tier) => {
-                              const isActive = Number(activeFilters[`${key}[gte]`]) === tier.min && Number(activeFilters[`${key}[lte]`]) === tier.max;
-                              const ratingData = data as any[];
-                              const bucketKey = tier.min === 5 ? '5_stars' : (tier.min === 1 ? '1_star_up' : `${tier.min}_stars_up`);
-                              const bucket = Array.isArray(ratingData)
-                                ? ratingData.find((b: any) => b.value === bucketKey)
-                                : null;
-                              const count = bucket?.count || 0;
+              if (Array.isArray(filtersConfig) && filtersConfig.length > 0) {
+                currentFiltersConfig = filtersConfig;
+              } else if (filtersConfig && typeof filtersConfig === 'object') {
+                const configArray = (filtersConfig as any).filters_config || Object.values(filtersConfig);
+                if (Array.isArray(configArray) && configArray.length > 0) {
+                  currentFiltersConfig = configArray;
+                }
+              } else if (typeof filtersConfig === 'string') {
+                try {
+                  const parsed = JSON.parse(filtersConfig);
+                  if (Array.isArray(parsed) && parsed.length > 0) {
+                    currentFiltersConfig = parsed;
+                  }
+                } catch (e) {}
+              }
 
-                              return (
-                                <label key={tier.label} className="flex items-center group cursor-pointer justify-between">
-                                  <div className="flex items-center overflow-hidden pr-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={isActive}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          onFilterChange({
-                                            [`${key}[gte]`]: tier.min,
-                                            [`${key}[lte]`]: tier.max
-                                          });
-                                        } else {
-                                          onFilterChange({
-                                            [`${key}[gte]`]: undefined,
-                                            [`${key}[lte]`]: undefined
-                                          });
-                                        }
-                                      }}
-                                      className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
-                                    />
-                                    <div className="ml-3 flex items-center gap-1.5">
-                                      <div className="flex items-center gap-0.5">
-                                        {[1, 2, 3, 4, 5].map((i) => (
-                                          <StarSolid key={i} className={`h-3 w-3 ${i <= tier.min ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
-                                        ))}
-                                      </div>
-                                      <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">
-                                        {tier.min} Stars{tier.min < 5 ? '+' : ''}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  {count > 0 && (
-                                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md min-w-[20px] text-center">
-                                      {count}
-                                    </span>
-                                  )}
-                                </label>
-                              );
-                            })}
-                          </div>
-                        ) : !Array.isArray(data) ? (
-                          <div className="px-2">
-                            {key.endsWith('_date') || key.endsWith('_at') || (data as any).min_as_string ? (
-                              <DateRangePicker
-                                min={data.min}
-                                max={data.max}
-                                currentMin={activeFilters[`${key}[gte]`]}
-                                currentMax={activeFilters[`${key}[lte]`]}
-                                onChange={(minVal, maxVal) => {
-                                  onFilterChange({
-                                    [`${key}[gte]`]: minVal,
-                                    [`${key}[lte]`]: maxVal
-                                  });
-                                }}
-                              />
-                            ) : (
-                              <RangeSlider
-                                min={data.min}
-                                max={data.max}
-                                currentMin={activeFilters[`${key}[gte]`]}
-                                currentMax={activeFilters[`${key}[lte]`]}
-                                onChange={(minVal, maxVal) => {
-                                  onFilterChange({
-                                    [`${key}[gte]`]: minVal,
-                                    [`${key}[lte]`]: maxVal
-                                  });
-                                }}
-                              />
-                            )}
-                          </div>
-                        ) : key === 'color_palette' ? (
-                          <div className="grid grid-cols-5 gap-3">
-                            {data.map((bucket) => {
-                              const hex = String(bucket.value);
-                              const clusterHexes = bucket.hexes || [hex];
-                              const rawActiveHexes = activeFilters[key];
-                              const activeHexes = Array.isArray(rawActiveHexes) ? rawActiveHexes : (rawActiveHexes ? [rawActiveHexes] : []);
-                              const isActive = clusterHexes.some(h => activeHexes.includes(h));
-                              return (
-                                <button
-                                  key={hex}
-                                  onClick={() => {
-                                    const nextActive = isActive
-                                      ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
-                                      : Array.from(new Set([...activeHexes, ...clusterHexes]));
-                                    onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
-                                  }}
-                                  className={`w-full aspect-square rounded-full border-2 transition-all relative group/swatch ${isActive ? 'border-blue-500 scale-110 shadow-md z-10' : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'}`}
-                                  style={{ backgroundColor: hex }}
-                                  title={hex}
-                                >
-                                  {isActive && (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
-                                    </div>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="space-y-2.5">
-                            {key === 'category_paths' ? (
-                              buildTree(data)
-                                .filter(node => !filterSearch || String(node.value).toLowerCase().includes(filterSearch.toLowerCase()) || node.children.some(c => String(c.value).toLowerCase().includes(filterSearch.toLowerCase())))
-                                .map(node => (
-                                  <RenderCategoryNode
-                                    key={String(node.value)}
-                                    bucket={node}
-                                    activeFilters={activeFilters}
-                                    handleCheckboxChange={handleCheckboxChange}
-                                    groupKey={key}
-                                  />
-                                ))
-                            ) : (
-                              data
-                                .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
-                                .sort((a, b) => (b.count || 0) - (a.count || 0))
-                                .map((bucket) => {
-                                  const rawActive = activeFilters[key];
-                                  const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
-                                  const isActive = activeList.includes(bucket.value);
-                                  return (
-                                    <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
-                                      <div className="flex items-center overflow-hidden pr-2">
-                                        <input
-                                          type="checkbox"
-                                          checked={isActive}
-                                          onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
-                                          className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+              if (currentFiltersConfig.length === 0) {
+                filteredFilterEntries
+                  .filter(([key]) => !key.startsWith('metadata.'))
+                  .forEach(([key]) => {
+                    currentFiltersConfig.push({ key, visible: true });
+                  });
+                if (filteredFilterEntries.some(([key]) => key.startsWith('metadata.'))) {
+                  currentFiltersConfig.push({ key: 'metadata', visible: true });
+                }
+              }
+
+
+              const filteredFilterEntriesMap = new Map(filteredFilterEntries);
+
+              return currentFiltersConfig
+                .filter(cfg => cfg.visible)
+                .map(cfg => {
+                  if (cfg.key === 'metadata') {
+                    const metadataEntries = filteredFilterEntries.filter(([k]) => k.startsWith('metadata.'));
+                    if (metadataEntries.length === 0) return null;
+
+                    return (
+                      <div key="metadata-group-wrapper" className="space-y-6">
+                        <div className="py-2 flex items-center gap-3">
+                          <div className="h-px bg-gray-200 dark:bg-gray-800/60 grow" />
+                          <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] whitespace-nowrap">---- Metadata Filters ----</span>
+                          <div className="h-px bg-gray-200 dark:bg-gray-800/60 grow" />
+                        </div>
+                        {metadataEntries.map(([key, data]) => {
+                          const isSearchMatchValue = filterSearch && Array.isArray(data) && data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
+                          const isExpanded = expanded[key] !== false || !!isSearchMatchValue;
+                          const { label, icon: Icon } = getGroupConfig(key);
+
+                          return (
+                            <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-4 text-gray-900 dark:text-gray-100">
+                              <button
+                                onClick={() => toggleExpand(key)}
+                                className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                  <span>{label}</span>
+                                </div>
+                                {isExpanded ? <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />}
+                              </button>
+                              {isExpanded && (
+                                <div className="pt-4 px-1">
+                                  {!Array.isArray(data) ? (
+                                    <div className="px-2">
+                                      {key.endsWith('_date') || key.endsWith('_at') || (data as any).min_as_string ? (
+                                        <DateRangePicker
+                                          min={data.min}
+                                          max={data.max}
+                                          currentMin={activeFilters[`${key}[gte]`]}
+                                          currentMax={activeFilters[`${key}[lte]`]}
+                                          onChange={(minVal, maxVal) => {
+                                            onFilterChange({
+                                              [`${key}[gte]`]: minVal,
+                                              [`${key}[lte]`]: maxVal
+                                            });
+                                          }}
                                         />
-                                        <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
-                                          {bucket.label || bucket.value}
-                                        </span>
-                                      </div>
-                                      <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
-                                        {bucket.count}
-                                      </span>
-                                    </label>
-                                  );
-                                })
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-            {filteredFilterEntries.some(([key]) => key.startsWith('metadata.')) && (
-              <div className="py-2 flex items-center gap-3">
-                <div className="h-px bg-gray-200 dark:bg-gray-800/60 grow" />
-                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] whitespace-nowrap">---- Metadata Filters ----</span>
-                <div className="h-px bg-gray-200 dark:bg-gray-800/60 grow" />
-              </div>
-            )}
-
-            {filteredFilterEntries
-              .filter(([key]) => key.startsWith('metadata.'))
-              .map(([key, data]) => {
-                const isSearchMatchValue = filterSearch && Array.isArray(data) && data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
-                const isExpanded = expanded[key] !== false || !!isSearchMatchValue;
-                const { label, icon: Icon } = getGroupConfig(key);
-
-                return (
-                  <div key={key} className="border-b border-gray-200 dark:border-gray-800/60 pb-4 text-gray-900 dark:text-gray-100">
-                    <button
-                      onClick={() => toggleExpand(key)}
-                      className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                        <span>{label}</span>
-                      </div>
-                      {isExpanded ? <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />}
-                    </button>
-                    {isExpanded && (
-                      <div className="pt-4 px-1">
-                        {!Array.isArray(data) ? (
-                          <div className="px-2">
-                            {key.endsWith('_date') || key.endsWith('_at') || (data as any).min_as_string ? (
-                              <DateRangePicker
-                                min={data.min}
-                                max={data.max}
-                                currentMin={activeFilters[`${key}[gte]`]}
-                                currentMax={activeFilters[`${key}[lte]`]}
-                                onChange={(minVal, maxVal) => {
-                                  onFilterChange({
-                                    [`${key}[gte]`]: minVal,
-                                    [`${key}[lte]`]: maxVal
-                                  });
-                                }}
-                              />
-                            ) : (
-                              <RangeSlider
-                                min={data.min}
-                                max={data.max}
-                                currentMin={activeFilters[`${key}[gte]`]}
-                                currentMax={activeFilters[`${key}[lte]`]}
-                                onChange={(minVal, maxVal) => {
-                                  onFilterChange({
-                                    [`${key}[gte]`]: minVal,
-                                    [`${key}[lte]`]: maxVal
-                                  });
-                                }}
-                              />
-                            )}
-                          </div>
-                        ) : key === 'color_palette' ? (
-                          <div className="grid grid-cols-5 gap-3">
-                            {data.map((bucket) => {
-                              const hex = String(bucket.value);
-                              const clusterHexes = bucket.hexes || [hex];
-                              const rawActiveHexes = activeFilters[key];
-                              const activeHexes = Array.isArray(rawActiveHexes) ? rawActiveHexes : (rawActiveHexes ? [rawActiveHexes] : []);
-                              const isActive = clusterHexes.some(h => activeHexes.includes(h));
-                              return (
-                                <button
-                                  key={hex}
-                                  onClick={() => {
-                                    const nextActive = isActive
-                                      ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
-                                      : Array.from(new Set([...activeHexes, ...clusterHexes]));
-                                    onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
-                                  }}
-                                  className={`w-full aspect-square rounded-full border-2 transition-all relative group/swatch ${isActive ? 'border-blue-500 scale-110 shadow-md z-10' : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'}`}
-                                  style={{ backgroundColor: hex }}
-                                  title={hex}
-                                >
-                                  {isActive && (
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
+                                      ) : (
+                                        <RangeSlider
+                                          min={data.min}
+                                          max={data.max}
+                                          currentMin={activeFilters[`${key}[gte]`]}
+                                          currentMax={activeFilters[`${key}[lte]`]}
+                                          onChange={(minVal, maxVal) => {
+                                            onFilterChange({
+                                              [`${key}[gte]`]: minVal,
+                                              [`${key}[lte]`]: maxVal
+                                            });
+                                          }}
+                                        />
+                                      )}
+                                    </div>
+                                  ) : key === 'color_palette' ? (
+                                    <div className="grid grid-cols-5 gap-3">
+                                      {data.map((bucket) => {
+                                        const hex = String(bucket.value);
+                                        const clusterHexes = bucket.hexes || [hex];
+                                        const rawActiveHexes = activeFilters[key];
+                                        const activeHexes = Array.isArray(rawActiveHexes) ? rawActiveHexes : (rawActiveHexes ? [rawActiveHexes] : []);
+                                        const isActive = clusterHexes.some(h => activeHexes.includes(h));
+                                        return (
+                                          <button
+                                            key={hex}
+                                            onClick={() => {
+                                              const nextActive = isActive
+                                                ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
+                                                : Array.from(new Set([...activeHexes, ...clusterHexes]));
+                                              onFilterChange(key, nextActive.length > 0 ? nextActive : undefined);
+                                            }}
+                                            className={`w-full aspect-square rounded-full border-2 transition-all relative group/swatch ${isActive ? 'border-blue-500 scale-110 shadow-md z-10' : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'}`}
+                                            style={{ backgroundColor: hex }}
+                                            title={hex}
+                                          >
+                                            {isActive && (
+                                              <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
+                                              </div>
+                                            )}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-2.5">
+                                      {data
+                                        .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
+                                        .map((bucket) => {
+                                          const rawActive = activeFilters[key];
+                                          const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
+                                          const isActive = activeList.includes(bucket.value);
+                                          return (
+                                            <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                                              <div className="flex items-center overflow-hidden pr-2">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={isActive}
+                                                  onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
+                                                  className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                                                />
+                                                <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
+                                                  {bucket.label || bucket.value}
+                                                </span>
+                                              </div>
+                                              <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+                                                {bucket.count}
+                                              </span>
+                                            </label>
+                                          );
+                                        })}
                                     </div>
                                   )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="space-y-2.5">
-                            {data
-                              .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
-                              .map((bucket) => {
-                                const rawActive = activeFilters[key];
-                                const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
-                                const isActive = activeList.includes(bucket.value);
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+
+                  const entryKey = (cfg.key === 'vault_uuids')
+                    ? (filteredFilterEntriesMap.has('vault_uuids') ? 'vault_uuids' : (filteredFilterEntriesMap.has('asset_vaults') ? 'asset_vaults' : 'vault_ids'))
+                    : cfg.key;
+
+                  const data = filteredFilterEntriesMap.get(entryKey);
+                  if (!data) return null;
+
+                  const isSearchMatchValue = filterSearch && Array.isArray(data) && data.some(b => String(b.value).toLowerCase().includes(filterSearch.toLowerCase()));
+                  const isExpanded = expanded[cfg.key] !== false || !!isSearchMatchValue;
+                  const { label, icon: Icon } = getGroupConfig(entryKey);
+
+                  return (
+                    <div key={cfg.key} className="border-b border-gray-200 dark:border-gray-800/60 pb-4 text-gray-900 dark:text-gray-100">
+                      <button
+                        onClick={() => toggleExpand(cfg.key)}
+                        className="flex w-full items-center justify-between text-sm py-2 font-semibold text-gray-800 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors group"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                          <span>{label}</span>
+                        </div>
+                        {isExpanded ? <ChevronUpIcon className="h-3.5 w-3.5 text-gray-400" /> : <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />}
+                      </button>
+                      {isExpanded && (
+                        <div className="pt-4 px-1">
+                          {cfg.key === 'average_rating' ? (
+                            <div className="space-y-3 px-1">
+                              {ratingTiers.map((tier) => {
+                                const isActive = Number(activeFilters[`${entryKey}[gte]`]) === tier.min && Number(activeFilters[`${entryKey}[lte]`]) === tier.max;
+                                const ratingData = data as any[];
+                                const bucketKey = tier.min === 5 ? '5_stars' : (tier.min === 1 ? '1_star_up' : `${tier.min}_stars_up`);
+                                const bucket = Array.isArray(ratingData)
+                                  ? ratingData.find((b: any) => b.value === bucketKey)
+                                  : null;
+                                const count = bucket?.count || 0;
+
                                 return (
-                                  <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                                  <label key={tier.label} className="flex items-center group cursor-pointer justify-between">
                                     <div className="flex items-center overflow-hidden pr-2">
                                       <input
                                         type="checkbox"
                                         checked={isActive}
-                                        onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            onFilterChange({
+                                              [`${entryKey}[gte]`]: tier.min,
+                                              [`${entryKey}[lte]`]: tier.max
+                                            });
+                                          } else {
+                                            onFilterChange({
+                                              [`${entryKey}[gte]`]: undefined,
+                                              [`${entryKey}[lte]`]: undefined
+                                            });
+                                          }
+                                        }}
                                         className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
                                       />
-                                      <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
-                                        {bucket.label || bucket.value}
-                                      </span>
+                                      <div className="ml-3 flex items-center gap-1.5">
+                                        <div className="flex items-center gap-0.5">
+                                          {[1, 2, 3, 4, 5].map((i) => (
+                                            <StarSolid key={i} className={`h-3 w-3 ${i <= tier.min ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
+                                          ))}
+                                        </div>
+                                        <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">
+                                          {tier.min} Stars{tier.min < 5 ? '+' : ''}
+                                        </span>
+                                      </div>
                                     </div>
-                                    <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
-                                      {bucket.count}
-                                    </span>
+                                    {count > 0 && (
+                                      <span className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md min-w-[20px] text-center">
+                                        {count}
+                                      </span>
+                                    )}
                                   </label>
                                 );
                               })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                            </div>
+                          ) : !Array.isArray(data) ? (
+                            <div className="px-2">
+                              {entryKey.endsWith('_date') || entryKey.endsWith('_at') || (data as any).min_as_string ? (
+                                <DateRangePicker
+                                  min={data.min}
+                                  max={data.max}
+                                  currentMin={activeFilters[`${entryKey}[gte]`]}
+                                  currentMax={activeFilters[`${entryKey}[lte]`]}
+                                  onChange={(minVal, maxVal) => {
+                                    onFilterChange({
+                                      [`${entryKey}[gte]`]: minVal,
+                                      [`${entryKey}[lte]`]: maxVal
+                                    });
+                                  }}
+                                />
+                              ) : (
+                                <RangeSlider
+                                  min={data.min}
+                                  max={data.max}
+                                  currentMin={activeFilters[`${entryKey}[gte]`]}
+                                  currentMax={activeFilters[`${entryKey}[lte]`]}
+                                  onChange={(minVal, maxVal) => {
+                                    onFilterChange({
+                                      [`${entryKey}[gte]`]: minVal,
+                                      [`${entryKey}[lte]`]: maxVal
+                                    });
+                                  }}
+                                />
+                              )}
+                            </div>
+                          ) : entryKey === 'color_palette' ? (
+                            <div className="grid grid-cols-5 gap-3">
+                              {data.map((bucket) => {
+                                const hex = String(bucket.value);
+                                const clusterHexes = bucket.hexes || [hex];
+                                const rawActiveHexes = activeFilters[entryKey];
+                                const activeHexes = Array.isArray(rawActiveHexes) ? rawActiveHexes : (rawActiveHexes ? [rawActiveHexes] : []);
+                                const isActive = clusterHexes.some(h => activeHexes.includes(h));
+                                return (
+                                  <button
+                                    key={hex}
+                                    onClick={() => {
+                                      const nextActive = isActive
+                                        ? activeHexes.filter((h: any) => !clusterHexes.includes(h))
+                                        : Array.from(new Set([...activeHexes, ...clusterHexes]));
+                                      onFilterChange(entryKey, nextActive.length > 0 ? nextActive : undefined);
+                                    }}
+                                    className={`w-full aspect-square rounded-full border-2 transition-all relative group/swatch ${isActive ? 'border-blue-500 scale-110 shadow-md z-10' : 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600'}`}
+                                    style={{ backgroundColor: hex }}
+                                    title={hex}
+                                  >
+                                    {isActive && (
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm ring-1 ring-black/20" />
+                                      </div>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="space-y-2.5">
+                              {entryKey === 'category_paths' ? (
+                                buildTree(data)
+                                  .filter(node => !filterSearch || String(node.value).toLowerCase().includes(filterSearch.toLowerCase()) || node.children.some(c => String(c.value).toLowerCase().includes(filterSearch.toLowerCase())))
+                                  .map(node => (
+                                    <RenderCategoryNode
+                                      key={String(node.value)}
+                                      bucket={node}
+                                      activeFilters={activeFilters}
+                                      handleCheckboxChange={handleCheckboxChange}
+                                      groupKey={entryKey}
+                                    />
+                                  ))
+                              ) : (
+                                data
+                                  .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
+                                  .sort((a, b) => (b.count || 0) - (a.count || 0))
+                                  .map((bucket) => {
+                                    const rawActive = activeFilters[entryKey];
+                                    const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
+                                    const isActive = activeList.includes(bucket.value);
+                                    return (
+                                      <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                                        <div className="flex items-center overflow-hidden pr-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={isActive}
+                                            onChange={(e) => handleCheckboxChange(entryKey, bucket.value, e.target.checked)}
+                                            className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                                          />
+                                          <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
+                                            {bucket.label || bucket.value}
+                                          </span>
+                                        </div>
+                                        <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+                                          {bucket.count}
+                                        </span>
+                                      </label>
+                                    );
+                                  })
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+            })()}
           </div>
         </div>
       </div>
