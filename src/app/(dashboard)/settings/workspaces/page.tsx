@@ -31,7 +31,6 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-
 function SortableFilterItem({ id, item, onToggleVisibility }: any) {
   const {
     attributes,
@@ -124,6 +123,7 @@ export default function WorkspacesManagementPage() {
   const [requireDownloadPurpose, setRequireDownloadPurpose] = useState<boolean>(false);
   const [allowedPurposes, setAllowedPurposes] = useState<string[]>([]);
   const [filtersConfig, setFiltersConfig] = useState<Array<{ key: string; visible: boolean }>>([]);
+  const [defaultFiltersConfig, setDefaultFiltersConfig] = useState<Array<{ key: string; visible: boolean }>>([]);
   const [fetchingSettings, setFetchingSettings] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState(false);
@@ -144,6 +144,7 @@ export default function WorkspacesManagementPage() {
       setRequireDownloadPurpose(data.require_download_purpose || false);
       setAllowedPurposes(Array.isArray(data.allowed_purposes) ? data.allowed_purposes : []);
       setFiltersConfig(Array.isArray(data.filters_config) ? data.filters_config : []);
+      setDefaultFiltersConfig(Array.isArray(data.default_filters_config) ? data.default_filters_config : []);
     } catch (err) {
       setSettingsError(true);
     } finally {
@@ -704,11 +705,20 @@ export default function WorkspacesManagementPage() {
                   </>
                 ) : (
                   <div className="space-y-4">
-                    <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3.5 flex items-start gap-3">
-                      <InformationCircleIcon className="h-4.5 w-4.5 text-blue-400 mt-0.5 shrink-0" />
-                      <p className="text-[11px] text-blue-300 leading-relaxed">
-                        <strong>Sidebar Filter Configuration:</strong> Drag and drop filter blocks below to customize their display order in the assets search sidebar. Toggle visibility to show/hide specific filter options. Metadata Custom Fields are kept grouped together.
-                      </p>
+                    <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3.5 flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <InformationCircleIcon className="h-4.5 w-4.5 text-blue-400 mt-0.5 shrink-0" />
+                        <p className="text-[11px] text-blue-300 leading-relaxed">
+                          <strong>Sidebar Filter Configuration:</strong> Drag and drop filter blocks below to customize their display order in the assets search sidebar. Toggle visibility to show/hide specific filter options. Metadata Custom Fields are kept grouped together.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFiltersConfig(defaultFiltersConfig)}
+                        className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 rounded-lg text-xs font-bold transition-all shrink-0"
+                      >
+                        Reset to Default
+                      </button>
                     </div>
 
                     <div className="max-h-[50vh] overflow-y-auto pr-1 space-y-3">
