@@ -2175,7 +2175,7 @@ export default function AssetDetailPage() {
                         { label: 'Size', value: asset?.size ? `${(asset.size / 1024 / 1024).toFixed(2)} MB` : '0 MB', icon: Square3Stack3DIcon, color: 'text-indigo-500' },
                         { label: 'Dimensions', value: asset?.width && asset?.height ? `${asset.width} × ${asset.height} px` : 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                         { label: 'Format', value: asset?.mime_type, icon: InformationCircleIcon, color: 'text-purple-500' },
-                        { label: 'Uploaded', value: asset?.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A', icon: ClockIcon, color: 'text-amber-500' },
+                        { label: 'Uploaded', value: asset?.created_at ? `${new Date(asset.created_at).toLocaleDateString()} ${new Date(asset.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'N/A', icon: ClockIcon, color: 'text-amber-500' },
                         { label: 'Ratio', value: asset?.aspect_ratio?.toFixed(2) || 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                       ].map((item, i) => (
                         <div key={i} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center justify-between transition-all group/card border-b-2 hover:border-b-blue-500">
@@ -2536,7 +2536,7 @@ export default function AssetDetailPage() {
                     { label: 'Size', value: asset?.size ? `${(asset.size / 1024 / 1024).toFixed(2)} MB` : '0 MB', icon: Square3Stack3DIcon, color: 'text-indigo-500' },
                     { label: 'Dimensions', value: asset?.width && asset?.height ? `${asset.width} × ${asset.height} px` : 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                     { label: 'Format', value: asset?.mime_type, icon: InformationCircleIcon, color: 'text-purple-500' },
-                    { label: 'Uploaded', value: asset?.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A', icon: ClockIcon, color: 'text-amber-500' },
+                    { label: 'Uploaded', value: asset?.created_at ? `${new Date(asset.created_at).toLocaleDateString()} ${new Date(asset.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'N/A', icon: ClockIcon, color: 'text-amber-500' },
                     { label: 'Ratio', value: asset?.aspect_ratio?.toFixed(2) || 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                   ].map((item, i) => (
                     <div key={i} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl flex flex-col gap-2 transition-all hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-none group/card border-b-2 hover:border-b-blue-500">
