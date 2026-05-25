@@ -11,7 +11,8 @@ import {
   CheckIcon,
   XMarkIcon,
   ArrowPathIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { useWorkflows } from '@/hooks/useWorkflows';
 import { useCategories, Category } from '@/hooks/useCategories';
@@ -20,6 +21,7 @@ import { useWorkspace } from '@/context/WorkspaceContext';
 import { Workflow, WorkflowStage } from '@/types/workflow';
 import { apiFetch } from '@/lib/api';
 import { toast } from 'sonner';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 interface Role {
   id: string;
@@ -49,8 +51,15 @@ export default function WorkflowTemplateManager() {
   const [editingWf, setEditingWf] = useState<Workflow | null>(null);
   const [expandedWfId, setExpandedWfId] = useState<string | null>(null);
   const [newWf, setNewWf] = useState({ name: '', description: '' });
+  const [deleteTarget, setDeleteTarget] = useState<{ 
+    type: 'workflow' | 'stage'; 
+    id: string; 
+    name?: string; 
+    workflowId?: string;
+  } | null>(null);
+  const [deletedStageIds, setDeletedStageIds] = useState<string[]>([]);
 
-  const loadData = async () => {
+  const loadData = async (keepLocalChanges = true) => {
     try {
       setIsFetching(true);
       if (!activeWorkspace?.id) return [];
@@ -58,8 +67,42 @@ export default function WorkflowTemplateManager() {
         fetchWorkflows(activeWorkspace.id),
         apiFetch<Role[]>('/roles')
       ]);
-      setWorkflows(wfData);
+      
       setRoles(roleData || []);
+      
+      if (!keepLocalChanges) {
+        setDeletedStageIds([]);
+      }
+
+      if (keepLocalChanges) {
+        setWorkflows(prev => {
+          if (!prev || prev.length === 0) return wfData;
+          return wfData.map(newWf => {
+            const localWf = prev.find(w => w.id === newWf.id);
+            if (!localWf) return newWf;
+
+            const mergedStages = (newWf.stages || []).map(newStage => {
+              const localStage = localWf.stages?.find(s => s.id === newStage.id);
+              if (!localStage) return newStage;
+              return {
+                ...newStage,
+                name: localStage.name,
+                approver_role_id: localStage.approver_role_id,
+                required_approvals: localStage.required_approvals,
+                conditions: localStage.conditions
+              };
+            });
+
+            return {
+              ...newWf,
+              conditions: localWf.conditions,
+              stages: mergedStages
+            };
+          });
+        });
+      } else {
+        setWorkflows(wfData);
+      }
     } catch (err) {
       toast.error('Failed to load data');
     } finally {
@@ -69,7 +112,7 @@ export default function WorkflowTemplateManager() {
 
   useEffect(() => {
     if (activeWorkspace?.id) {
-      loadData();
+      loadData(false);
     }
   }, [activeWorkspace?.id]);
 
@@ -90,29 +133,27 @@ export default function WorkflowTemplateManager() {
     }
   };
 
-  const handleDeleteWorkflow = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this workflow template?')) return;
-    try {
-      await deleteWorkflow(id);
-      toast.success('Workflow deleted');
-      loadData();
-    } catch (err) {
-      toast.error('Failed to delete workflow');
-    }
+  const handleDeleteWorkflow = (id: string, name: string) => {
+    setDeleteTarget({ type: 'workflow', id, name });
   };
 
-  const handleAddStage = async (workflowId: string) => {
-    try {
-      const order = (workflows.find(w => w.id === workflowId)?.stages?.length || 0) + 1;
-      await addStage(workflowId, {
+  const handleAddStage = (workflowId: string) => {
+    setWorkflows(prev => prev.map(w => {
+      if (w.id !== workflowId) return w;
+      const order = (w.stages?.length || 0) + 1;
+      const newStage = {
+        id: `temp-${Date.now()}`,
         name: `Stage ${order}`,
         order: order,
-        required_approvals: 1
-      });
-      loadData();
-    } catch (err) {
-      toast.error('Failed to add stage');
-    }
+        required_approvals: 1,
+        workflow_id: workflowId,
+        conditions: { all: [], any: [] }
+      };
+      return {
+        ...w,
+        stages: [...(w.stages || []), newStage]
+      };
+    }));
   };
 
   const handleUpdateWorkflowConditions = (workflowId: string, conditions: any) => {
@@ -123,42 +164,87 @@ export default function WorkflowTemplateManager() {
     const wf = workflows.find(w => w.id === workflowId);
     if (!wf) return;
 
+    const missingRoleStage = (wf.stages || []).find(s => !s.approver_role_id);
+    if (missingRoleStage) {
+      toast.error(`Please select an Approver Role for all pipeline stages (missing in "${missingRoleStage.name}")`);
+      return;
+    }
+
     try {
-      // Update workflow-level stuff first
+      // 1. Update workflow-level stuff first
       await updateWorkflow(workflowId, {
         name: wf.name,
         description: wf.description,
         conditions: wf.conditions
       });
 
-      // Update all stages
-      const updatePromises = (wf.stages || []).map(stage => 
-        updateStage(stage.id, {
+      // 2. Perform deletes for stages removed from this workflow
+      const deletes = deletedStageIds.map(stageId => deleteStage(stageId));
+      await Promise.all(deletes);
+
+      // 3. Add or Update stages
+      const savePromises = (wf.stages || []).map(stage => {
+        const stageData = {
           name: stage.name,
-          approver_role_id: stage.approver_role_id,
+          approver_role_id: stage.approver_role_id || null,
           required_approvals: stage.required_approvals,
+          order: stage.order,
           conditions: stage.conditions
-        })
-      );
+        };
+        if (stage.id.startsWith('temp-')) {
+          return addStage(workflowId, stageData);
+        } else {
+          return updateStage(stage.id, stageData);
+        }
+      });
       
-      await Promise.all(updatePromises);
+      await Promise.all(savePromises);
       toast.success('All changes saved successfully');
-      loadData();
+      loadData(false);
     } catch (err) {
       toast.error('Failed to save some changes');
     }
   };
 
-  const handleDeleteStage = async (stageId: string) => {
-    try {
-      await deleteStage(stageId);
-      loadData();
-    } catch (err) {
-      toast.error('Failed to delete stage');
+  const handleDeleteStage = (workflowId: string, stageId: string, name: string) => {
+    setDeleteTarget({ type: 'stage', id: stageId, name, workflowId });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    
+    if (deleteTarget.type === 'workflow') {
+      try {
+        await deleteWorkflow(deleteTarget.id);
+        toast.success('Workflow template deleted successfully');
+        loadData(true);
+      } catch (err) {
+        toast.error('Failed to delete workflow');
+      } finally {
+        setDeleteTarget(null);
+      }
+    } else {
+      const { id: stageId, workflowId } = deleteTarget;
+      if (stageId && workflowId) {
+        if (!stageId.startsWith('temp-')) {
+          setDeletedStageIds(prev => [...prev, stageId]);
+        }
+        setWorkflows(prev => prev.map(w => {
+          if (w.id !== workflowId) return w;
+          const filtered = (w.stages || []).filter(s => s.id !== stageId);
+          const reordered = filtered.map((s, idx) => ({ ...s, order: idx + 1 }));
+          return {
+            ...w,
+            stages: reordered
+          };
+        }));
+        toast.success('Stage removed locally. Click Save All Changes to commit.');
+      }
+      setDeleteTarget(null);
     }
   };
 
-  if (isFetching || loading) {
+  if (isFetching && workflows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <ArrowPathIcon className="h-10 w-10 text-blue-500 animate-spin" />
@@ -253,7 +339,7 @@ export default function WorkflowTemplateManager() {
                     <span className="text-lg font-mono font-bold text-white leading-none mt-1">{wf.stages?.length || 0}</span>
                 </div>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); handleDeleteWorkflow(wf.id); }}
+                  onClick={(e) => { e.stopPropagation(); handleDeleteWorkflow(wf.id, wf.name); }}
                   className="p-3 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
                 >
                   <TrashIcon className="h-5 w-5" />
@@ -395,7 +481,7 @@ export default function WorkflowTemplateManager() {
 
                             <div className="flex items-center gap-2 ml-auto">
                                 <button 
-                                    onClick={() => handleDeleteStage(stage.id)}
+                                    onClick={() => handleDeleteStage(wf.id, stage.id, stage.name || `Stage ${idx + 1}`)}
                                     className="p-3 text-gray-600 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
                                 >
                                     <TrashIcon className="h-4 w-4" />
@@ -432,6 +518,15 @@ export default function WorkflowTemplateManager() {
             </div>
         )}
       </div>
+      <DeleteConfirmationModal 
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        title={`Delete ${deleteTarget?.type === 'workflow' ? 'Template' : 'Stage'}?`}
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        confirmText="Delete permanently"
+        isDeleting={loading}
+      />
     </div>
   );
 }

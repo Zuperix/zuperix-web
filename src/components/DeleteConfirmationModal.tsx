@@ -1,5 +1,5 @@
-'use client';
-
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ExclamationTriangleIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface DeleteConfirmationModalProps {
@@ -23,12 +23,19 @@ export default function DeleteConfirmationModal({
   cancelText = 'Cancel',
   isDeleting = false,
 }: DeleteConfirmationModalProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const titleId = 'delete-confirmation-modal-title';
   const descriptionId = 'delete-confirmation-modal-description';
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div 
         role="dialog"
@@ -87,6 +94,7 @@ export default function DeleteConfirmationModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
