@@ -51,7 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (searchParams.get('canva_token') || searchParams.get('figma_device_code')) {
+      if (
+        searchParams.get('canva_token') ||
+        searchParams.get('figma_device_code') ||
+        searchParams.get('adobe_device_code')
+      ) {
         return;
       }
     }

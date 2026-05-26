@@ -15,15 +15,23 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [isLinked, setIsLinked] = useState(false);
   const [figmaLinkedWorkspace, setFigmaLinkedWorkspace] = useState('');
+  const [adobeLinkedWorkspace, setAdobeLinkedWorkspace] = useState('');
   const [figmaWorkspaces, setFigmaWorkspaces] = useState<Array<{ id: string; name: string }>>([]);
   const [figmaWorkspaceId, setFigmaWorkspaceId] = useState('');
   const [figmaLoading, setFigmaLoading] = useState(false);
+  const [adobeLoading, setAdobeLoading] = useState(false);
   const [figmaLoadingWorkspaces, setFigmaLoadingWorkspaces] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { user, loading: authLoading, login, signInWithGoogle, logout } = useAuth();
   const searchParams = useSearchParams();
   const canvaToken = searchParams.get('canva_token');
   const figmaDeviceCode = searchParams.get('figma_device_code');
+  const adobeDeviceCode = searchParams.get('adobe_device_code');
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const linkCanva = async () => {
@@ -47,8 +55,8 @@ function LoginForm() {
   }, [user, canvaToken]);
 
   useEffect(() => {
-    const loadFigmaWorkspaces = async () => {
-      if (!user || !figmaDeviceCode) return;
+    const loadWorkspaces = async () => {
+      if (!user || (!figmaDeviceCode && !adobeDeviceCode)) return;
       try {
         setFigmaLoadingWorkspaces(true);
         const workspaces = await apiFetch<Array<{ id: string; name: string }>>('/workspaces');
@@ -66,8 +74,8 @@ function LoginForm() {
       }
     };
 
-    loadFigmaWorkspaces();
-  }, [user, figmaDeviceCode]);
+    loadWorkspaces();
+  }, [user, figmaDeviceCode, adobeDeviceCode]);
 
   const handleFigmaConnect = async () => {
     if (!figmaDeviceCode) return;
@@ -90,6 +98,30 @@ function LoginForm() {
       setError(err.message || 'Failed to connect Figma');
     } finally {
       setFigmaLoading(false);
+    }
+  };
+
+  const handleAdobeConnect = async () => {
+    if (!adobeDeviceCode) return;
+    setError('');
+    setAdobeLoading(true);
+
+    try {
+      const result = await apiFetch<{ success: boolean; workspace?: { id: string; name: string } }>(
+        '/adobe-express-plugin/auth/approve',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            adobe_device_code: adobeDeviceCode,
+            workspace_id: figmaWorkspaceId || undefined,
+          }),
+        },
+      );
+      setAdobeLinkedWorkspace(result.workspace?.name || 'your workspace');
+    } catch (err: any) {
+      setError(err.message || 'Failed to connect Adobe Express');
+    } finally {
+      setAdobeLoading(false);
     }
   };
 
@@ -117,11 +149,12 @@ function LoginForm() {
     }
   };
 
-  const isRedirectingOrSyncing = typeof window !== 'undefined' && (
+  const isRedirectingOrSyncing = isMounted && (
     localStorage.getItem('auth_token') ||
     window.location.hash.includes('access_token=') ||
     window.location.search.includes('canva_token') ||
-    window.location.search.includes('figma_device_code')
+    window.location.search.includes('figma_device_code') ||
+    window.location.search.includes('adobe_device_code')
   );
 
   const showLoadingOverlay = googleLoading || (authLoading && isRedirectingOrSyncing);
@@ -223,6 +256,12 @@ function LoginForm() {
               </div>
             )}
 
+            {adobeLinkedWorkspace && (
+              <div className="mb-6 p-4 text-sm font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/20 animate-in fade-in slide-in-from-top-1">
+                Successfully connected Adobe Express to {adobeLinkedWorkspace}. You can close this tab and return to Adobe Express.
+              </div>
+            )}
+
             {user && figmaDeviceCode && !figmaLinkedWorkspace && (
               <div className="mb-6 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 animate-in fade-in slide-in-from-top-1">
                 <div className="mb-3">
@@ -264,6 +303,53 @@ function LoginForm() {
                       className="w-full py-3.5 font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:opacity-50 transition-all active:scale-[0.98] shadow-lg shadow-indigo-600/20"
                     >
                       {figmaLoading ? 'Connecting...' : 'Connect Figma'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {user && adobeDeviceCode && !adobeLinkedWorkspace && (
+              <div className="mb-6 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 animate-in fade-in slide-in-from-top-1">
+                <div className="mb-3">
+                  <div className="text-sm font-semibold text-zinc-900 dark:text-white">Connect Adobe Express</div>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    Choose which workspace should be connected to this Adobe Express session.
+                  </p>
+                </div>
+
+                {figmaLoadingWorkspaces ? (
+                  <div className="text-sm text-zinc-500 dark:text-zinc-400">Loading workspaces...</div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
+                        Workspace
+                      </label>
+                      <select
+                        className="w-full px-4 py-3 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:bg-zinc-950 dark:text-white outline-none transition-all"
+                        value={figmaWorkspaceId}
+                        onChange={(e) => setFigmaWorkspaceId(e.target.value)}
+                      >
+                        {figmaWorkspaces.length === 0 ? (
+                          <option value="">No workspaces found</option>
+                        ) : (
+                          figmaWorkspaces.map((workspace) => (
+                            <option key={workspace.id} value={workspace.id}>
+                              {workspace.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAdobeConnect}
+                      disabled={adobeLoading || figmaWorkspaces.length === 0}
+                      className="w-full py-3.5 font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl focus:outline-none focus:ring-4 focus:ring-indigo-500/10 disabled:opacity-50 transition-all active:scale-[0.98] shadow-lg shadow-indigo-600/20"
+                    >
+                      {adobeLoading ? 'Connecting...' : 'Connect Adobe Express'}
                     </button>
                   </div>
                 )}
