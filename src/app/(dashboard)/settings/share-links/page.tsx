@@ -21,6 +21,7 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 
 interface ShareLinkItem {
   id: string;
@@ -61,6 +62,8 @@ export default function ShareLinksManagementPage() {
   const [editClearPassword, setEditClearPassword] = useState(false);
   const [editExpiryOption, setEditExpiryOption] = useState<string>('keep'); // 'keep', 'never', '3600', '86400', '604800', '2592000'
   const [savingEdit, setSavingEdit] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [linkToDelete, setLinkToDelete] = useState<string | null>(null);
 
   const fetchShareLinks = useCallback(async () => {
     if (!activeWorkspace) return;
@@ -89,15 +92,18 @@ export default function ShareLinksManagementPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleRevoke = async (id: string) => {
-    if (!confirm('Are you absolutely sure you want to revoke this public share link? Anyone with this URL will immediately lose access.')) {
-      return;
-    }
-    setRevokingId(id);
+  const handleRevoke = (id: string) => {
+    setLinkToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmRevoke = async () => {
+    if (!linkToDelete) return;
+    setRevokingId(linkToDelete);
     setError('');
     setSuccess('');
     try {
-      await apiFetch(`/share-links/${id}`, {
+      await apiFetch(`/share-links/${linkToDelete}`, {
         method: 'DELETE',
       });
       setSuccess('Share link has been successfully revoked and deactivated.');
@@ -106,6 +112,8 @@ export default function ShareLinksManagementPage() {
       setError(err.message || 'Failed to revoke share link');
     } finally {
       setRevokingId(null);
+      setLinkToDelete(null);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -509,6 +517,20 @@ export default function ShareLinksManagementPage() {
             </div>
           </div>
         </div>
+      )}
+      {isDeleteModalOpen && (
+        <DeleteConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setLinkToDelete(null);
+          }}
+          onConfirm={confirmRevoke}
+          isDeleting={!!revokingId}
+          title="Revoke Public Share Link"
+          message="Are you absolutely sure you want to revoke this public share link? Anyone with this URL will immediately lose access."
+          confirmText="Revoke Link"
+        />
       )}
     </div>
   );
