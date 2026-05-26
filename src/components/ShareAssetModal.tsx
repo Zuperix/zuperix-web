@@ -84,7 +84,8 @@ export default function ShareAssetModal({
         setActiveTab('embed');
       }
     }
-  }, [isOpen, assetId, assetIds, originalName, isMultiAsset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleGenerateEmbed = async () => {
     if (!assetId) return;
@@ -285,7 +286,12 @@ export default function ShareAssetModal({
 
                     {expiresIn === 0 && (
                       <div className="flex flex-col gap-2 mt-2 animate-in slide-in-from-top-2 duration-200">
+                        <label htmlFor="embed-expiry-date" className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                          Custom Expiration Timestamp
+                        </label>
                         <input
+                          id="embed-expiry-date"
+                          name="embed_expiry_date"
                           type="datetime-local"
                           value={selectedDate}
                           onChange={(e) => setSelectedDate(e.target.value)}
@@ -316,10 +322,12 @@ export default function ShareAssetModal({
                   <div className="space-y-4">
                     {/* Title input */}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      <label htmlFor="share-title" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                         Share Title
                       </label>
                       <input
+                        id="share-title"
+                        name="share_title"
                         type="text"
                         placeholder="e.g. Summer Campaign Assets"
                         value={title}
@@ -330,10 +338,12 @@ export default function ShareAssetModal({
 
                     {/* Description input */}
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      <label htmlFor="share-description" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                         Description / Notes
                       </label>
                       <textarea
+                        id="share-description"
+                        name="share_description"
                         placeholder="Add some notes about these assets for your clients..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -345,11 +355,13 @@ export default function ShareAssetModal({
                     <div className="grid grid-cols-2 gap-4">
                       {/* Password Protection */}
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                        <label htmlFor="share-password" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
                           <LockClosedIcon className="h-3 w-3 text-indigo-500" />
                           Password Lock
                         </label>
                         <input
+                          id="share-password"
+                          name="share_password"
                           type="password"
                           placeholder="Optional password"
                           value={password}
@@ -360,10 +372,12 @@ export default function ShareAssetModal({
 
                       {/* Expiration Options */}
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        <label htmlFor="share-expires-in" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                           Expires In
                         </label>
                         <select
+                          id="share-expires-in"
+                          name="share_expires_in"
                           value={expiresIn === null ? 'infinite' : expiresIn}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -384,10 +398,12 @@ export default function ShareAssetModal({
 
                     {expiresIn === 0 && (
                       <div className="flex flex-col gap-2 mt-2 animate-in slide-in-from-top-2 duration-200">
-                        <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                        <label htmlFor="share-custom-expiry-date" className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
                           Custom Expiration Timestamp
                         </label>
                         <input
+                          id="share-custom-expiry-date"
+                          name="share_custom_expiry_date"
                           type="datetime-local"
                           value={selectedDate}
                           onChange={(e) => setSelectedDate(e.target.value)}
