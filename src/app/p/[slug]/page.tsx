@@ -1,6 +1,8 @@
 import PublicPortal from '@/components/PublicPortal';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -11,7 +13,7 @@ export async function generateMetadata(
   const { slug } = await params;
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-    const res = await fetch(`${baseUrl}/p/${slug}`, { next: { revalidate: 10 } });
+    const res = await fetch(`${baseUrl}/p/${slug}`, { cache: 'no-store' });
     if (res.ok) {
       const { data } = await res.json();
       return {
@@ -38,13 +40,13 @@ export default async function Page({ params }: Props) {
   let initialError = null;
 
   try {
-    const portalRes = await fetch(`${baseUrl}/p/${slug}`, { next: { revalidate: 10 } });
+    const portalRes = await fetch(`${baseUrl}/p/${slug}`, { cache: 'no-store' });
     if (!portalRes.ok) throw new Error('Portal not found');
     const portalResponse = await portalRes.json();
     initialData = portalResponse.data;
 
     if (initialData) {
-      const searchRes = await fetch(`${baseUrl}/p/${slug}/search?page=1&limit=20`, { next: { revalidate: 10 } });
+      const searchRes = await fetch(`${baseUrl}/p/${slug}/search?page=1&limit=20`, { cache: 'no-store' });
       if (searchRes.ok) {
          const searchResponse = await searchRes.json();
          initialAssets = searchResponse.data;

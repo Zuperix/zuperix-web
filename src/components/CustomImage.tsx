@@ -21,6 +21,9 @@ export interface CustomImageProps extends Omit<ImageProps, 'placeholder' | 'blur
  */
 const CustomImage = forwardRef<HTMLImageElement, CustomImageProps>(
   ({ shimmerWidth = 400, shimmerHeight = 300, unoptimized = true, alt = "", ...props }, ref) => {
+    if (!props.src) {
+      return null;
+    }
     return (
       <Image
         ref={ref}

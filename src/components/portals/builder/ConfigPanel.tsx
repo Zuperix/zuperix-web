@@ -227,6 +227,30 @@ export default function ConfigPanel() {
               />
             </div>
             <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Heading Color</label>
+              <div className="flex items-center gap-3">
+                <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-800 shadow-md">
+                  <input
+                    type="color"
+                    className="absolute inset-0 w-[200%] h-[200%] -top-2 -left-2 cursor-pointer opacity-0 z-10"
+                    value={widget.config.heading_color || '#ffffff'}
+                    onChange={(e) => handleChange('heading_color', e.target.value)}
+                  />
+                  <div
+                    className="w-full h-full pointer-events-none absolute inset-0 transition-colors"
+                    style={{ backgroundColor: widget.config.heading_color || '#ffffff' }}
+                  />
+                </div>
+                <input
+                  type="text"
+                  className="flex-1 bg-transparent border-none p-0 text-gray-300 text-xs font-mono uppercase focus:ring-0 focus:outline-none placeholder:text-gray-700 w-full"
+                  value={widget.config.heading_color || '#ffffff'}
+                  onChange={(e) => handleChange('heading_color', e.target.value)}
+                  spellCheck={false}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Body Text</label>
               <textarea
                 value={widget.config.body || ''}
@@ -235,6 +259,54 @@ export default function ConfigPanel() {
                 rows={5}
                 className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none transition-all resize-none"
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Body Text Color</label>
+              <div className="flex items-center gap-3">
+                <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-800 shadow-md">
+                  <input
+                    type="color"
+                    className="absolute inset-0 w-[200%] h-[200%] -top-2 -left-2 cursor-pointer opacity-0 z-10"
+                    value={widget.config.body_color || '#9ca3af'}
+                    onChange={(e) => handleChange('body_color', e.target.value)}
+                  />
+                  <div
+                    className="w-full h-full pointer-events-none absolute inset-0 transition-colors"
+                    style={{ backgroundColor: widget.config.body_color || '#9ca3af' }}
+                  />
+                </div>
+                <input
+                  type="text"
+                  className="flex-1 bg-transparent border-none p-0 text-gray-300 text-xs font-mono uppercase focus:ring-0 focus:outline-none placeholder:text-gray-700 w-full"
+                  value={widget.config.body_color || '#9ca3af'}
+                  onChange={(e) => handleChange('body_color', e.target.value)}
+                  spellCheck={false}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Widget Background</label>
+              <div className="flex items-center gap-3">
+                <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-800 shadow-md">
+                  <input
+                    type="color"
+                    className="absolute inset-0 w-[200%] h-[200%] -top-2 -left-2 cursor-pointer opacity-0 z-10"
+                    value={widget.config.background_color || '#111827'}
+                    onChange={(e) => handleChange('background_color', e.target.value)}
+                  />
+                  <div
+                    className="w-full h-full pointer-events-none absolute inset-0 transition-colors"
+                    style={{ backgroundColor: widget.config.background_color || '#111827' }}
+                  />
+                </div>
+                <input
+                  type="text"
+                  className="flex-1 bg-transparent border-none p-0 text-gray-300 text-xs font-mono uppercase focus:ring-0 focus:outline-none placeholder:text-gray-700 w-full"
+                  value={widget.config.background_color || '#111827'}
+                  onChange={(e) => handleChange('background_color', e.target.value)}
+                  spellCheck={false}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Alignment</label>
@@ -317,7 +389,7 @@ export default function ConfigPanel() {
           </div>
         )}
 
-        {(widget.type === 'assets_grid' || widget.type === 'collection') && (
+        {(widget.type === 'assets_grid' || widget.type === 'collection' || widget.type === 'category') && (
           <>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Columns</label>
@@ -380,6 +452,36 @@ export default function ConfigPanel() {
               </p>
             )}
           </div>
+        )}
+
+        {(widget.type === 'collection' || widget.type === 'category') && (
+          <>
+            <div className="space-y-2 pt-2 border-t border-gray-800/40">
+              <label className="flex items-center gap-3 p-4 bg-gray-900 border border-gray-800 rounded-xl cursor-pointer hover:border-blue-500/50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={widget.config.show_header !== false}
+                  onChange={(e) => handleChange('show_header', e.target.checked)}
+                  className="rounded text-blue-500 focus:ring-blue-500/20 bg-gray-800 border-gray-700 w-4 h-4"
+                />
+                <span className="text-sm font-bold text-white">Show Widget Title</span>
+              </label>
+            </div>
+            {widget.config.show_header !== false && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Custom Title</label>
+                <input
+                  value={widget.config.title || ''}
+                  onChange={(e) => handleChange('title', e.target.value)}
+                  placeholder="Enter custom title..."
+                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none transition-all"
+                />
+                <p className="text-[9px] text-gray-600 px-1 leading-tight">
+                  Leave blank to automatically use the collection/category name.
+                </p>
+              </div>
+            )}
+          </>
         )}
 
       </div>

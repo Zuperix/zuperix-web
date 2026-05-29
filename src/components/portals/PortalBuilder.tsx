@@ -263,6 +263,7 @@ export default function PortalBuilder({
                 <DroppablePortalAssets 
                   assets={portalAssets}
                   onDrop={onAddAsset}
+                  onRemove={onRemoveAsset}
                   onOpenSearch={() => setIsSidebarOpen(true)}
                 />
              </div>

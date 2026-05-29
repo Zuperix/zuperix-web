@@ -267,7 +267,14 @@ export default function PublicShareLink({ uuid, initialMeta, initialError }: Pub
                   const isImage = activeAsset.type.startsWith('image/');
                   const isVideo = activeAsset.type.startsWith('video/');
                   const isPsd = activeAsset.type === 'image/vnd.adobe.photoshop' || activeAsset.type === 'image/x-photoshop';
-                  const imageUrl = isPsd ? activeAsset.thumbnail_url : (activeAsset.asset_live_url || activeAsset.thumbnail_url);
+                  let imageUrl = isPsd 
+                    ? (activeAsset.thumbnail_lg_url || activeAsset.asset_live_url || activeAsset.thumbnail_url)
+                    : (activeAsset.asset_live_url || activeAsset.thumbnail_lg_url || activeAsset.thumbnail_url);
+
+                  if (imageUrl && !imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+                    const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3000';
+                    imageUrl = `${backendUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+                  }
 
                   if (isImage) {
                     return (
