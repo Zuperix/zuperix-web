@@ -58,6 +58,7 @@ import { Action } from '@/types/auth';
 import { splitFileName, joinFileName } from '@/lib/naming';
 import { toast } from 'sonner';
 import { MetadataFieldInput } from './metadata/MetadataFieldInput';
+import { useAuth } from '@/context/AuthContext';
 
 export default function MetadataPanel({ 
   assetId, 
@@ -68,6 +69,7 @@ export default function MetadataPanel({
   workspaceId: string; 
   onClose: () => void;
 }) {
+  const { user } = useAuth();
   const [fields, setFields] = useState<Field[]>([]);
   const [values, setValues] = useState<Record<string, any>>({});
   const [asset, setAsset] = useState<AssetDetails | null>(null);
@@ -180,7 +182,7 @@ export default function MetadataPanel({
   const completionPercent = calculateCompletion();
 
   const handleStartNameEdit = () => {
-    if (activeWorkflow) {
+    if (activeWorkflow && user?.system_role !== 'SUPER_ADMIN') {
       toast.error('Asset is locked during active workflow');
       return;
     }
@@ -281,7 +283,7 @@ export default function MetadataPanel({
               <div className="flex flex-col gap-2">
                 <button 
                   onClick={() => setIsOrganizeOpen(true)}
-                  disabled={!!activeWorkflow}
+                  disabled={!!activeWorkflow && user?.system_role !== 'SUPER_ADMIN'}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 hover:bg-gray-750 border border-gray-700/60 rounded-2xl text-xs font-bold text-white uppercase tracking-widest transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FolderIcon className="h-4 w-4 text-gray-500 group-hover:text-blue-400" />

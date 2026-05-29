@@ -1,6 +1,8 @@
 'use client';
 
 import { usePermissions, SystemRole } from '@/hooks/usePermissions';
+import { useWorkspace } from '@/context/WorkspaceContext';
+import { Action } from '@/types/auth';
 import {
   IdentificationIcon,
   TagIcon,
@@ -110,10 +112,21 @@ const ADMIN_ONLY_SECTION_IDS = [
 ];
 
 export default function SettingsPage() {
-  const { user } = usePermissions();
+  const { can, user } = usePermissions();
+  const { activeWorkspace } = useWorkspace();
   const isSuperAdmin = user?.system_role === SystemRole.SUPER_ADMIN;
+  const isAdmin = isSuperAdmin || can(Action.Manage, 'Workspace', activeWorkspace?.id);
 
   const sections = BASE_SETTINGS_SECTIONS.filter(section => {
+    if (
+      section.id === 'workflows' ||
+      section.id === 'workspaces' ||
+      section.id === 'features' ||
+      section.id === 'integrations' ||
+      section.id === 'announcement'
+    ) {
+      return isAdmin;
+    }
     if (ADMIN_ONLY_SECTION_IDS.includes(section.id)) {
       return isSuperAdmin || user?.customer_id;
     }

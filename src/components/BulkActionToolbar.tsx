@@ -96,7 +96,7 @@ export default function BulkActionToolbar({
     if (!activeWorkspace) return;
     try {
       setIsProcessing(true);
-      await apiFetch(`/assets/bulk`, {
+      await apiFetch(`/assets/bulk?workspace_id=${activeWorkspace.id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           asset_ids: selectedIds,
@@ -116,7 +116,7 @@ export default function BulkActionToolbar({
     if (!activeWorkspace) return;
     try {
       setIsProcessing(true);
-      await apiFetch(`/assets/bulk/delete`, {
+      await apiFetch(`/assets/bulk/delete?workspace_id=${activeWorkspace.id}`, {
         method: 'POST',
         body: JSON.stringify({
           asset_ids: selectedIds
