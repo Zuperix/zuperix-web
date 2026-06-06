@@ -543,6 +543,74 @@ function ConditionBuilder({ conditions, onChange, metadataFields, categories, ti
   const rules = conditions?.all || conditions?.any || [];
   const logicKey = conditions?.any ? 'any' : 'all';
 
+  const getFieldType = (field: string) => {
+    if (field === 'size') return 'number';
+    if (field === 'mime_type') return 'string';
+    if (field === 'extension') return 'string';
+    if (field === 'category_ids') return 'category';
+    
+    if (field.startsWith('metadata.')) {
+      const key = field.split('.')[1];
+      const meta = metadataFields.find(f => f.key === key);
+      if (meta) {
+        const type = meta.field_type;
+        if (type === 'integer' || type === 'float') return 'number';
+        if (type === 'boolean') return 'boolean';
+        if (type === 'date') return 'date';
+        if (type === 'datetime') return 'datetime';
+        if (type === 'enum' || type === 'multi_select') return 'select';
+      }
+    }
+    return 'string';
+  };
+
+  const getCompatibleOperators = (field: string) => {
+    const type = getFieldType(field);
+    switch (type) {
+      case 'number':
+        return [
+          { value: 'eq', label: 'Equals' },
+          { value: 'neq', label: 'Does Not Equal' },
+          { value: 'gt', label: 'Greater Than' },
+          { value: 'lt', label: 'Less Than' },
+          { value: 'gte', label: 'Greater Than or Equal' },
+          { value: 'lte', label: 'Less Than or Equal' }
+        ];
+      case 'date':
+        return [
+          { value: 'eq', label: 'On Date' },
+          { value: 'neq', label: 'Not On Date' },
+          { value: 'gt', label: 'After' },
+          { value: 'lt', label: 'Before' },
+          { value: 'gte', label: 'On or After' },
+          { value: 'lte', label: 'On or Before' }
+        ];
+      case 'boolean':
+        return [
+          { value: 'eq', label: 'Is' },
+          { value: 'neq', label: 'Is Not' }
+        ];
+      case 'category':
+        return [
+          { value: 'contains', label: 'Has Category' },
+          { value: 'neq', label: 'Does Not Have Category' }
+        ];
+      case 'select':
+        return [
+          { value: 'eq', label: 'Matches' },
+          { value: 'neq', label: 'Does Not Match' }
+        ];
+      case 'string':
+      default:
+        return [
+          { value: 'eq', label: 'Matches' },
+          { value: 'neq', label: 'Does Not Match' },
+          { value: 'contains', label: 'Contains' },
+          { value: 'startsWith', label: 'Starts With' }
+        ];
+    }
+  };
+
   const addRule = () => {
     const newCond = { field: 'size', operator: 'eq', value: '' };
     onChange({ [logicKey]: [...rules, newCond] });
@@ -621,7 +689,14 @@ function ConditionBuilder({ conditions, onChange, metadataFields, categories, ti
                       <select 
                         className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-gray-300 focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
                         value={cond.field}
-                        onChange={(e) => updateRule(cidx, { field: e.target.value, value: '' })}
+                        onChange={(e) => {
+                          const newField = e.target.value;
+                          const ops = getCompatibleOperators(newField);
+                          const currentOp = cond.operator;
+                          const isCompatible = ops.some(op => op.value === currentOp);
+                          const newOp = isCompatible ? currentOp : ops[0].value;
+                          updateRule(cidx, { field: newField, operator: newOp, value: '' });
+                        }}
                       >
                         <optgroup label="System Factors" className="text-gray-500 bg-gray-950">
                           <option value="size">File Size</option>
@@ -642,60 +717,122 @@ function ConditionBuilder({ conditions, onChange, metadataFields, categories, ti
                     <div className="col-span-3 space-y-1.5">
                       <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest ml-1">Logic</label>
                       <select 
-                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-blue-400 focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer text-center appearance-none"
-                        value="eq"
-                        disabled
+                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-blue-400 focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer text-center"
+                        value={cond.operator || 'eq'}
+                        onChange={(e) => updateRule(cidx, { operator: e.target.value })}
                       >
-                        <option value="eq">Matches</option>
+                        {getCompatibleOperators(cond.field).map((op) => (
+                          <option key={op.value} value={op.value}>{op.label}</option>
+                        ))}
                       </select>
                     </div>
 
                     <div className="col-span-5 space-y-1.5">
                       <label className="text-[8px] font-black text-gray-600 uppercase tracking-widest ml-1">Expected Value</label>
-                      {cond.field === 'category_ids' ? (
-                        <select 
-                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
-                          value={cond.value}
-                          onChange={(e) => updateRule(cidx, { value: e.target.value })}
-                        >
-                          <option value="">Select Category...</option>
-                          {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.path}</option>
-                          ))}
-                        </select>
-                      ) : cond.field === 'mime_type' ? (
-                        <select 
-                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
-                          value={cond.value}
-                          onChange={(e) => updateRule(cidx, { value: e.target.value })}
-                        >
-                          <option value="">Select Media Type...</option>
-                          <option value="image/jpeg">JPEG Image</option>
-                          <option value="image/png">PNG Image</option>
-                          <option value="image/gif">GIF Image</option>
-                          <option value="video/mp4">MP4 Video</option>
-                          <option value="application/pdf">PDF Document</option>
-                        </select>
-                      ) : cond.field.startsWith('metadata.') && metadataFields.find(f => `metadata.${f.key}` === cond.field)?.options?.values ? (
-                        <select 
-                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
-                          value={cond.value}
-                          onChange={(e) => updateRule(cidx, { value: e.target.value })}
-                        >
-                          <option value="">Select Option...</option>
-                          {metadataFields.find(f => `metadata.${f.key}` === cond.field)?.options.values.map((opt: string) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input 
-                          type="text"
-                          className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none placeholder:text-gray-800"
-                          value={cond.value}
-                          placeholder="e.g. .jpg, image/png, or 1048576"
-                          onChange={(e) => updateRule(cidx, { value: e.target.value })}
-                        />
-                      )}
+                      {(() => {
+                        const inputType = getFieldType(cond.field);
+                        if (inputType === 'category') {
+                          return (
+                            <select 
+                              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
+                              value={cond.value || ''}
+                              onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                            >
+                              <option value="">Select Category...</option>
+                              {categories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.path}</option>
+                              ))}
+                            </select>
+                          );
+                        }
+                        if (cond.field === 'mime_type') {
+                          return (
+                            <select 
+                              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
+                              value={cond.value || ''}
+                              onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                            >
+                              <option value="">Select Media Type...</option>
+                              <option value="image/jpeg">JPEG Image</option>
+                              <option value="image/png">PNG Image</option>
+                              <option value="image/gif">GIF Image</option>
+                              <option value="video/mp4">MP4 Video</option>
+                              <option value="application/pdf">PDF Document</option>
+                            </select>
+                          );
+                        }
+                        if (inputType === 'boolean') {
+                          return (
+                            <select 
+                              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
+                              value={cond.value === true || cond.value === 'true' ? 'true' : 'false'}
+                              onChange={(e) => updateRule(cidx, { value: e.target.value === 'true' })}
+                            >
+                              <option value="true">True</option>
+                              <option value="false">False</option>
+                            </select>
+                          );
+                        }
+                        if (inputType === 'select') {
+                          const meta = metadataFields.find(f => `metadata.${f.key}` === cond.field);
+                          const choices = meta?.options?.choices || meta?.options?.values || [];
+                          return (
+                            <select 
+                              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none hover:bg-gray-900 transition-colors cursor-pointer"
+                              value={cond.value || ''}
+                              onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                            >
+                              <option value="">Select Option...</option>
+                              {choices.map((opt: string) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          );
+                        }
+                        if (inputType === 'number') {
+                          return (
+                            <input 
+                              type="number"
+                              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none placeholder:text-gray-800"
+                              value={cond.value !== undefined && cond.value !== null ? cond.value : ''}
+                              placeholder="e.g. 1048576"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                updateRule(cidx, { value: val !== '' ? Number(val) : '' });
+                              }}
+                            />
+                          );
+                        }
+                        if (inputType === 'date') {
+                          return (
+                            <input 
+                              type="date"
+                              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none cursor-pointer"
+                              value={cond.value || ''}
+                              onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                            />
+                          );
+                        }
+                        if (inputType === 'datetime') {
+                          return (
+                            <input 
+                              type="datetime-local"
+                              className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none cursor-pointer"
+                              value={cond.value || ''}
+                              onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                            />
+                          );
+                        }
+                        return (
+                          <input 
+                            type="text"
+                            className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-[11px] font-bold text-white focus:ring-1 focus:ring-blue-500/50 outline-none placeholder:text-gray-800"
+                            value={cond.value || ''}
+                            placeholder={cond.field === 'extension' ? 'e.g. .jpg' : 'Enter expected value'}
+                            onChange={(e) => updateRule(cidx, { value: e.target.value })}
+                          />
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

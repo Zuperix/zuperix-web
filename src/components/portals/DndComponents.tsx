@@ -15,6 +15,20 @@ export const ItemTypes = {
   ASSET: 'asset',
 };
 
+const getImageUrl = (asset: any) => {
+  const isPsd = asset.type === 'image/vnd.adobe.photoshop' || asset.mime_type === 'image/vnd.adobe.photoshop' || asset.type === 'image/x-photoshop' || asset.mime_type === 'image/x-photoshop';
+  
+  let url = isPsd
+    ? (asset.thumbnail_lg_url || asset.asset_live_url || asset.thumbnail_url)
+    : (asset.asset_live_url || asset.thumbnail_lg_url || asset.thumbnail_url);
+
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  
+  const backendHost = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || BASE_URL.replace('/api/v1', '');
+  return `${backendHost}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 export function DraggableAsset({ asset, onAdd, isAlreadyInPortal }: any) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.ASSET,
@@ -33,7 +47,7 @@ export function DraggableAsset({ asset, onAdd, isAlreadyInPortal }: any) {
       <div className="aspect-video bg-gray-950 rounded-xl overflow-hidden relative">
           {asset.mime_type?.startsWith('image/') || asset.type?.startsWith('image/') ? (
             <img 
-              src={asset.thumbnail_url || asset.asset_live_url || asset.cdn_url || asset.storage_url} 
+              src={getImageUrl(asset)} 
               alt={asset.original_name || asset.name || asset.original_filename || asset.filename}
               className="w-full h-full object-cover"
             />
@@ -70,7 +84,7 @@ export function DraggableAsset({ asset, onAdd, isAlreadyInPortal }: any) {
   );
 }
 
-export function DroppablePortalAssets({ assets, onDrop, onOpenSearch }: any) {
+export function DroppablePortalAssets({ assets, onDrop, onRemove, onOpenSearch }: any) {
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.ASSET,
     drop: (item: any) => onDrop(item.id),
@@ -119,7 +133,7 @@ export function DroppablePortalAssets({ assets, onDrop, onOpenSearch }: any) {
                 <div className="aspect-square bg-gray-900 flex items-center justify-center relative">
                   {(asset.type?.startsWith('image/') || asset.mime_type?.startsWith('image/')) ? (
                     <img 
-                      src={asset.thumbnail_url || asset.asset_live_url || asset.cdn_url || asset.storage_url} 
+                      src={getImageUrl(asset)} 
                       alt={asset.name || asset.original_name || asset.original_filename || asset.filename}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                     />
@@ -127,7 +141,10 @@ export function DroppablePortalAssets({ assets, onDrop, onOpenSearch }: any) {
                     <DocumentIcon className="h-12 w-12 text-gray-800" />
                   )}
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 bg-black/60 hover:bg-red-500/80 text-white rounded-xl backdrop-blur-md transition-all">
+                    <button 
+                      onClick={() => onRemove && onRemove(asset.id)}
+                      className="p-2 bg-black/60 hover:bg-red-500/80 text-white rounded-xl backdrop-blur-md transition-all"
+                    >
                       <TrashIcon className="h-4 w-4" />
                     </button>
                   </div>

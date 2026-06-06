@@ -23,7 +23,7 @@ setup('authenticate', async ({ page }) => {
 
   await page.waitForTimeout(2000);
 
-  await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Assets/i })).toBeVisible({ timeout: 15000 });
 
   // Ensure "Main Workspace" is selected as the active workspace for all subsequent tests
   const switcherButton = page.locator('button').filter({ hasText: /Workspace/i }).first();

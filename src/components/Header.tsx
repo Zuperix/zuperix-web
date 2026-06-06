@@ -12,6 +12,7 @@ import {
   ArrowRightOnRectangleIcon,
   LockClosedIcon,
   UserIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { useLayout } from "@/context/LayoutContext";
@@ -21,6 +22,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import posthog from "posthog-js";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { apiFetch } from "@/lib/api";
+import { billingApi } from "@/services/billing.api";
 import NotificationCenter from "./NotificationCenter";
 import CustomImage from "./CustomImage";
 import { FEATURES } from "@/constants/features";
@@ -65,7 +67,17 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
+  const [billingInfo, setBillingInfo] = useState<any>(null);
   const isLocked = user?.customer?.plan?.toLowerCase() !== "gold";
+
+  useEffect(() => {
+    if (user?.system_role === "SUPER_ADMIN") {
+      billingApi
+        .getBillingInfo()
+        .then((info) => setBillingInfo(info))
+        .catch((err) => console.error("Failed to load billing info in Header:", err));
+    }
+  }, [user]);
 
   const reverseSearchEnabled = useFeatureFlag(
     FEATURES.REVERSE_IMAGE_SEARCH.key,
@@ -588,6 +600,22 @@ export default function Header() {
             )}
           </div>
         </div>
+
+        {/* Free Trial Countdown Pill */}
+        {user?.system_role === "SUPER_ADMIN" && billingInfo?.is_trial && (
+          <Link
+            href="/settings/billing"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 dark:border-blue-500/20 text-xs rounded-xl transition-all duration-200 shadow-sm shrink-0 active:scale-[0.98] select-none"
+          >
+            <ClockIcon className="h-3.5 w-3.5 text-blue-500 animate-pulse mr-0.5" />
+            <span className="font-extrabold text-blue-600 dark:text-blue-400 hover:underline">
+              Free Trial
+            </span>
+            <span className="text-gray-400 dark:text-gray-500 font-medium">
+              ({billingInfo.trial_days_left} days left)
+            </span>
+          </Link>
+        )}
 
         {/* Right actions - Clean & Grouped */}
         <div className="flex items-center gap-2 shrink-0">

@@ -171,9 +171,10 @@ export default function PublicPortal({ slug, initialData, initialAssets, initial
                     widget={widget} 
                     isEditMode={false} 
                     context={{ 
-                      assets: searchResults, // ALWAYS use OS search results!
+                      assets: searchQuery.trim() ? searchResults : data.assets, 
                       categories: data.categories,
                       collections: data.collections,
+                      portalConfig: data,
                       searchQuery,
                       onSearchChange: setSearchQuery,
                       onDownload: setDownloadAsset

@@ -2858,16 +2858,6 @@ export default function AssetDetailPage() {
                     </button>
                   </div>
                 )}
-
-                <WorkflowStartDialog
-                  assetId={assetId}
-                  isOpen={isWorkflowDialogOpen}
-                  onClose={() => setIsWorkflowDialogOpen(false)}
-                  onSuccess={() => {
-                    fetchData();
-                    toast.success('Workflow initiated successfully!');
-                  }}
-                />
               </div>
             )}
 
@@ -2945,6 +2935,15 @@ export default function AssetDetailPage() {
         message={confirmModal.message}
         confirmText={confirmModal.confirmText}
         isDeleting={confirmModal.isProcessing}
+      />
+      <WorkflowStartDialog
+        assetId={assetId}
+        isOpen={isWorkflowDialogOpen}
+        onClose={() => setIsWorkflowDialogOpen(false)}
+        onSuccess={() => {
+          fetchData();
+          toast.success('Workflow initiated successfully!');
+        }}
       />
     </div>
   );

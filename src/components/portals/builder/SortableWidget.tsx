@@ -6,10 +6,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { useBuilderStore, PortalWidget } from '@/stores/builderStore';
 import { TrashIcon, DocumentDuplicateIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import WidgetRenderer from './WidgetRenderer';
+import { isColorDark } from '@/lib/image';
 
 export default function SortableWidget({ widget }: { widget: PortalWidget }) {
-  const { selectedWidgetId, setSelectedWidgetId, removeWidget, duplicateWidget, portalAssets, portalCategories, portalCollections } = useBuilderStore();
+  const { selectedWidgetId, setSelectedWidgetId, removeWidget, duplicateWidget, portalAssets, portalCategories, portalCollections, portalConfig } = useBuilderStore();
   const isSelected = selectedWidgetId === widget.id;
+  const isDark = isColorDark(portalConfig?.background_color);
 
   const {
     attributes,
@@ -34,10 +36,10 @@ export default function SortableWidget({ widget }: { widget: PortalWidget }) {
         e.stopPropagation();
         setSelectedWidgetId(widget.id);
       }}
-      className={`relative group rounded-[32px] border-2 
-        ${isDragging ? 'opacity-40 z-50 scale-[1.02] shadow-2xl cursor-grabbing ring-4 ring-blue-500/20' : 'cursor-pointer'} 
+      className={`relative group rounded-[32px] border-2 border-transparent
+        ${isDragging ? 'opacity-40 z-50 scale-[1.02] shadow-2xl cursor-grabbing' : 'cursor-pointer'} 
         ${!isDragging ? 'transition-all duration-500 ease-out' : ''}
-        ${isSelected ? 'border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.15)] z-20' : 'border-transparent hover:border-gray-800/50'}
+        ${isSelected ? 'z-20' : ''}
         ${widget.type === 'search' && widget.config.sticky ? 'sticky top-0 z-40' : ''}`
       }
     >
@@ -74,8 +76,8 @@ export default function SortableWidget({ widget }: { widget: PortalWidget }) {
       </div>
 
       {/* Widget Content */}
-      <div className={`rounded-3xl overflow-hidden bg-gray-900/60 backdrop-blur-md transition-all ${isSelected ? '' : 'grayscale-[20%]'}`}>
-         <WidgetRenderer widget={widget} isEditMode={true} context={{ assets: portalAssets, categories: portalCategories, collections: portalCollections }} />
+      <div className={`rounded-3xl overflow-hidden transition-all duration-300 ${isSelected ? '' : 'opacity-95'}`}>
+         <WidgetRenderer widget={widget} isEditMode={true} context={{ assets: portalAssets, categories: portalCategories, collections: portalCollections, portalConfig }} />
       </div>
     </div>
   );

@@ -48,6 +48,9 @@ export interface User {
     announcement_start_at?: string | null;
     announcement_end_at?: string | null;
     announcement_style?: string;
+    is_disabled?: boolean;
+    created_at?: string;
+    business_email?: string | null;
   };
   roles?: Role[];
   workspace_members?: WorkspaceMember[];
