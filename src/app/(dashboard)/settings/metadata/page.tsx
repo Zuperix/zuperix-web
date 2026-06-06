@@ -30,10 +30,13 @@ type Field = {
   id: string;
   key: string;
   label: string;
-  fieldType: string;
+  fieldType?: string;
+  field_type?: string;
   is_required: boolean;
   is_searchable: boolean;
-  is_filterable: boolean
+  is_filterable: boolean;
+  options?: any;
+  validation_rules?: any;
 };
 
 const FIELD_TYPES = [
@@ -46,6 +49,8 @@ const FIELD_TYPES = [
   { value: 'datetime', label: 'Date & Time' },
   { value: 'url', label: 'URL' },
   { value: 'email', label: 'Email' },
+  { value: 'enum', label: 'Dropdown / Select' },
+  { value: 'multi_select', label: 'Multi-select Dropdown' },
 ];
 
 export default function MetadataManagementPage() {
@@ -62,6 +67,7 @@ export default function MetadataManagementPage() {
     key: '',
     label: '',
     fieldType: 'string' as any,
+    choices: '',
     is_required: false,
     is_searchable: true,
     is_filterable: true,
@@ -98,28 +104,39 @@ export default function MetadataManagementPage() {
     setSuccess('');
 
     try {
+      const type = newField.fieldType;
+      const parsedChoices = ['enum', 'multi_select'].includes(type)
+        ? newField.choices.split(/[|,]/).map(s => s.trim()).filter(Boolean)
+        : null;
+
+      const payload: any = {
+        key: newField.key,
+        label: newField.label,
+        is_required: newField.is_required,
+        is_searchable: newField.is_searchable,
+        is_filterable: newField.is_filterable,
+      };
+
+      if (parsedChoices) {
+        payload.options = { choices: parsedChoices };
+        payload.validation_rules = { choices: parsedChoices };
+      } else {
+        payload.options = null;
+        payload.validation_rules = null;
+      }
+
       if (editingFieldId) {
         await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields/${editingFieldId}`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            key: newField.key,
-            label: newField.label,
-            is_required: newField.is_required,
-            is_searchable: newField.is_searchable,
-            is_filterable: newField.is_filterable,
-          }),
+          body: JSON.stringify(payload),
         });
         setSuccess('Field updated successfully');
       } else {
         await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields`, {
           method: 'POST',
           body: JSON.stringify({
-            key: newField.key,
-            label: newField.label,
-            field_type: newField.fieldType,
-            is_required: newField.is_required,
-            is_searchable: newField.is_searchable,
-            is_filterable: newField.is_filterable,
+            ...payload,
+            field_type: type,
           }),
         });
         setSuccess('Field created successfully');
@@ -130,6 +147,7 @@ export default function MetadataManagementPage() {
         key: '',
         label: '',
         fieldType: 'string',
+        choices: '',
         is_required: false,
         is_searchable: true,
         is_filterable: true,
@@ -145,10 +163,13 @@ export default function MetadataManagementPage() {
 
   const startEdit = (field: Field) => {
     setEditingFieldId(field.id);
+    const type = field.field_type || field.fieldType || 'string';
+    const choicesList = field.options?.choices || field.validation_rules?.choices || [];
     setNewField({
       key: field.key,
       label: field.label,
-      fieldType: field.fieldType,
+      fieldType: type,
+      choices: Array.isArray(choicesList) ? choicesList.join(', ') : '',
       is_required: field.is_required,
       is_searchable: field.is_searchable,
       is_filterable: field.is_filterable,
@@ -163,6 +184,7 @@ export default function MetadataManagementPage() {
       key: '',
       label: '',
       fieldType: 'string',
+      choices: '',
       is_required: false,
       is_searchable: true,
       is_filterable: true,
@@ -343,6 +365,23 @@ export default function MetadataManagementPage() {
                     </select>
                   </div>
 
+                  {['enum', 'multi_select'].includes(newField.fieldType) && (
+                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Predefined Choices</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Option A, Option B, Option C"
+                        className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all"
+                        value={newField.choices}
+                        onChange={(e) => setNewField(prev => ({ ...prev, choices: e.target.value }))}
+                      />
+                      <p className="text-[10px] text-gray-500 ml-1">
+                        Enter choices separated by commas or pipes (e.g., Option A, Option B or Option 1 | Option 2).
+                      </p>
+                    </div>
+                  )}
+
                   <div className="pt-2 flex flex-col gap-3">
                     <label className="flex items-center gap-3 cursor-pointer group">
                       <input
@@ -454,9 +493,19 @@ export default function MetadataManagementPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-bold text-gray-200 group-hover:text-white transition-colors">{field.label}</h4>
                           <span className="text-[10px] font-mono bg-gray-800 text-gray-400 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                            {field.fieldType}
+                            {field.field_type || field.fieldType}
                           </span>
                         </div>
+                        {['enum', 'multi_select'].includes(field.field_type || field.fieldType || '') && (
+                          <div className="text-[10px] text-gray-400 mt-0.5 mb-1.5 font-medium leading-normal">
+                            <span className="text-gray-500 font-bold uppercase tracking-wider text-[8px] mr-1">Choices:</span>
+                            {Array.isArray(field.options?.choices)
+                              ? field.options.choices.join(', ')
+                              : Array.isArray(field.validation_rules?.choices)
+                              ? field.validation_rules.choices.join(', ')
+                              : 'None'}
+                          </div>
+                        )}
                         <div className="flex items-center flex-wrap gap-y-2 gap-x-3 text-xs">
                           <span className="text-gray-500 font-mono truncate max-w-[120px] sm:max-w-none">{field.key}</span>
                           <div className="h-1 w-1 rounded-full bg-gray-700 hidden sm:block" />
