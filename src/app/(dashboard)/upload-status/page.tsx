@@ -76,6 +76,7 @@ function UploadStatusContent() {
   const status = searchParams.get('status') || '';
   const startDate = searchParams.get('start_date') || '';
   const endDate = searchParams.get('end_date') || '';
+  const uploadedByMe = searchParams.get('uploaded_by_me') === 'true';
   
   const [data, setData] = useState<UploadStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +91,7 @@ function UploadStatusContent() {
       if (status) url += `&status=${status}`;
       if (startDate) url += `&start_date=${startDate}`;
       if (endDate) url += `&end_date=${endDate}`;
+      if (uploadedByMe) url += `&uploaded_by_me=true`;
       
       const response = await apiFetch<UploadStatusResponse>(url);
       setData(response);
@@ -99,7 +101,7 @@ function UploadStatusContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, activeWorkspace, search, status, startDate, endDate]);
+  }, [page, activeWorkspace, search, status, startDate, endDate, uploadedByMe]);
 
   useEffect(() => {
     fetchStatus();
@@ -159,7 +161,7 @@ function UploadStatusContent() {
       </div>
 
       {/* Filters Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <div className="relative group md:col-span-1">
           <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
           <input
@@ -216,6 +218,22 @@ function UploadStatusContent() {
               <XCircleIcon className="h-4 w-4" />
             </button>
           )}
+        </div>
+
+        <div>
+          <button
+            onClick={() => updateFilters({ uploaded_by_me: uploadedByMe ? '' : 'true' })}
+            className={`px-4 py-3 rounded-2xl text-sm font-semibold border transition-all duration-200 flex items-center justify-center gap-2 shadow-sm w-full h-full ${
+              uploadedByMe
+                ? 'bg-blue-500 hover:bg-blue-600 border-blue-500 text-white dark:bg-blue-600 dark:hover:bg-blue-700 dark:border-blue-600'
+                : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-700 dark:bg-[#0f111a]/60 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/50'
+            }`}
+          >
+            <span>Uploaded by you</span>
+            {uploadedByMe && (
+              <span className="flex h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            )}
+          </button>
         </div>
       </div>
 
