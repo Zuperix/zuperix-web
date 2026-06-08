@@ -13,7 +13,8 @@ import {
   ChartBarIcon,
   XMarkIcon,
   ShieldCheckIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import DocumentationLink from '@/components/DocumentationLink';
 
@@ -72,6 +73,8 @@ export default function ApiKeysPage() {
 
   const [showRevokeModal, setShowRevokeModal] = useState<{ id: string, name: string } | null>(null);
   const [revokeConfirmation, setRevokeConfirmation] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [lastCreatedKeyName, setLastCreatedKeyName] = useState('');
 
   useEffect(() => {
     if (activeWorkspace) {
@@ -85,6 +88,7 @@ export default function ApiKeysPage() {
       const data = await apiFetch<Customer[]>('/customers');
       if (data && data.length > 0) {
         setCustomerPlan(data[0].plan);
+        setCustomerName(data[0].name);
       }
     } catch (e) {
       console.error('Failed to fetch plan:', e);
@@ -114,6 +118,7 @@ export default function ApiKeysPage() {
         }),
       });
       setCreatedKey(api_key);
+      setLastCreatedKeyName(newKeyName);
       setNewKeyName('');
       setSelectedScopes(['search:read']);
       setShowCreateModal(false);
@@ -121,6 +126,30 @@ export default function ApiKeysPage() {
     } catch (error) {
       console.error('Failed to create API key:', error);
     }
+  };
+
+  const downloadKeyFile = () => {
+    if (!createdKey) return;
+    const fileContent = `# Zuperix DAM API Key\n` +
+      `# Customer: ${customerName}\n` +
+      `# Key Name: ${lastCreatedKeyName}\n` +
+      `# Generated: ${new Date().toLocaleString()}\n` +
+      `# WARNING: Keep this key secure. Do not share it or commit it to source control.\n\n` +
+      `${createdKey}\n`;
+
+    const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    const safeCustomer = customerName.replace(/[^a-zA-Z0-9_\-+]/g, '_');
+    const safeKeyName = lastCreatedKeyName.replace(/[^a-zA-Z0-9_\-+]/g, '_');
+    link.download = `${safeCustomer}+${safeKeyName}.txt`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleRevokeKey = async () => {
@@ -167,8 +196,8 @@ export default function ApiKeysPage() {
   if (customerPlan?.toLowerCase() === 'bronze') {
     return (
       <div className="max-w-5xl mx-auto py-10 px-6">
-        <FeatureLocked 
-          featureName="API Access" 
+        <FeatureLocked
+          featureName="API Access"
           description="Elevate your workflow with programmatic access. Unlock dedicated API keys to automate asset management and build custom integrations."
         />
       </div>
@@ -231,6 +260,13 @@ export default function ApiKeysPage() {
                     <ClipboardDocumentIcon className="h-6 w-6" />
                   )}
                 </button>
+                <button
+                  onClick={downloadKeyFile}
+                  className="p-3 bg-gray-900 rounded-lg transition-all text-gray-400 hover:text-white hover:scale-105 active:scale-95 border border-gray-800"
+                  title="Download Key File"
+                >
+                  <ArrowDownTrayIcon className="h-6 w-6" />
+                </button>
               </div>
 
               <button
@@ -260,62 +296,62 @@ export default function ApiKeysPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left min-w-[600px]">
-            <thead className="bg-gray-800/50 text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-800">
-              <tr>
-                <th className="px-6 py-4 text-center w-5"></th>
-                <th className="px-6 py-4">Name & Scopes</th>
-                <th className="px-6 py-4 text-center">Last Used</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {keys.map((key) => (
-                <tr key={key.id} className="group hover:bg-gray-800/20 transition-colors">
-                  <td className="px-6 py-4 text-center">
-                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] mx-auto" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-1">
-                      <div className="text-gray-200 font-bold">{key.name}</div>
-                      <div className="flex gap-2">
-                        <code className="bg-gray-800 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono tracking-tighter">
-                          {key.key_prefix}...
-                        </code>
-                        <div className="flex gap-1">
-                          {key.scopes?.map(scope => (
-                            <span key={scope} className="px-1.5 py-0.5 bg-blue-500/5 text-blue-400/70 text-[9px] font-black uppercase tracking-widest rounded-md border border-blue-500/10">
-                              {scope}
-                            </span>
-                          ))}
+              <thead className="bg-gray-800/50 text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-800">
+                <tr>
+                  <th className="px-6 py-4 text-center w-5"></th>
+                  <th className="px-6 py-4">Name & Scopes</th>
+                  <th className="px-6 py-4 text-center">Last Used</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {keys.map((key) => (
+                  <tr key={key.id} className="group hover:bg-gray-800/20 transition-colors">
+                    <td className="px-6 py-4 text-center">
+                      <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] mx-auto" />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="text-gray-200 font-bold">{key.name}</div>
+                        <div className="flex gap-2">
+                          <code className="bg-gray-800 px-2 py-0.5 rounded text-[10px] text-gray-400 font-mono tracking-tighter">
+                            {key.key_prefix}...
+                          </code>
+                          <div className="flex gap-1">
+                            {key.scopes?.map(scope => (
+                              <span key={scope} className="px-1.5 py-0.5 bg-blue-500/5 text-blue-400/70 text-[9px] font-black uppercase tracking-widest rounded-md border border-blue-500/10">
+                                {scope}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center text-gray-400 text-sm font-medium">
-                    {key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : 'Never'}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => fetchUsage(key)}
-                        className="p-2 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
-                        title="View Usage"
-                      >
-                        <ChartBarIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => setShowRevokeModal({ id: key.id, name: key.name })}
-                        className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
-                        title="Revoke Key"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td className="px-6 py-4 text-center text-gray-400 text-sm font-medium">
+                      {key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : 'Never'}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => fetchUsage(key)}
+                          className="p-2 text-gray-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all"
+                          title="View Usage"
+                        >
+                          <ChartBarIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => setShowRevokeModal({ id: key.id, name: key.name })}
+                          className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                          title="Revoke Key"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -368,29 +404,29 @@ export default function ApiKeysPage() {
 
                 <div className="bg-gray-950 rounded-2xl border border-gray-800 overflow-hidden">
                   <div className="overflow-x-auto">
-                  <table className="w-full text-left min-w-[500px]">
-                    <thead className="bg-gray-900/50 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">
-                      <tr>
-                        <th className="px-6 py-3">Date</th>
-                        <th className="px-6 py-3">Requests</th>
-                        <th className="px-6 py-3">Success</th>
-                        <th className="px-6 py-3 text-right">Avg Latency</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-900">
-                      {usageStats.map(stat => (
-                        <tr key={stat.date}>
-                          <td className="px-6 py-3 text-sm text-gray-300">{stat.date}</td>
-                          <td className="px-6 py-3 text-sm text-white font-medium">{stat.total_requests}</td>
-                          <td className="px-6 py-3 text-sm">
-                            <span className="text-green-500 font-bold">{stat.success_count}</span>
-                            <span className="text-gray-600 ml-1">({((stat.success_count / stat.total_requests) * 100).toFixed(0)}%)</span>
-                          </td>
-                          <td className="px-6 py-3 text-sm text-right text-gray-400">{stat.avg_latency.toFixed(0)}ms</td>
+                    <table className="w-full text-left min-w-[500px]">
+                      <thead className="bg-gray-900/50 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800">
+                        <tr>
+                          <th className="px-6 py-3">Date</th>
+                          <th className="px-6 py-3">Requests</th>
+                          <th className="px-6 py-3">Success</th>
+                          <th className="px-6 py-3 text-right">Avg Latency</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-900">
+                        {usageStats.map(stat => (
+                          <tr key={stat.date}>
+                            <td className="px-6 py-3 text-sm text-gray-300">{stat.date}</td>
+                            <td className="px-6 py-3 text-sm text-white font-medium">{stat.total_requests}</td>
+                            <td className="px-6 py-3 text-sm">
+                              <span className="text-green-500 font-bold">{stat.success_count}</span>
+                              <span className="text-gray-600 ml-1">({((stat.success_count / stat.total_requests) * 100).toFixed(0)}%)</span>
+                            </td>
+                            <td className="px-6 py-3 text-sm text-right text-gray-400">{stat.avg_latency.toFixed(0)}ms</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -433,8 +469,8 @@ export default function ApiKeysPage() {
                       key={scope.id}
                       onClick={() => toggleScope(scope.id)}
                       className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group w-full ${selectedScopes.includes(scope.id)
-                          ? 'bg-blue-500/10 border-blue-500/40 text-blue-100'
-                          : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-gray-900/40'
+                        ? 'bg-blue-500/10 border-blue-500/40 text-blue-100'
+                        : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-gray-900/40'
                         }`}
                     >
                       <div className={`p-2 rounded-lg transition-colors ${selectedScopes.includes(scope.id) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500'
@@ -466,8 +502,8 @@ export default function ApiKeysPage() {
                               key={scope.id}
                               onClick={() => toggleScope(scope.id)}
                               className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left group ${selectedScopes.includes(scope.id)
-                                  ? 'bg-blue-500/10 border-blue-500/40 text-blue-100'
-                                  : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-gray-900/40'
+                                ? 'bg-blue-500/10 border-blue-500/40 text-blue-100'
+                                : 'bg-gray-950 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-gray-900/40'
                                 }`}
                             >
                               <div className={`p-1.5 rounded-md transition-colors ${selectedScopes.includes(scope.id) ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-500'
