@@ -26,7 +26,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function CategoriesPage() {
-  const { categories, updateCategory, deleteCategory, refresh } = useCategories();
+  const { categories, loading: categoriesLoading, updateCategory, deleteCategory, refresh } = useCategories();
   const { activeWorkspace, loading: workspaceLoading } = useWorkspace();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [isAddingTo, setIsAddingTo] = useState<string | null>(null);
@@ -357,7 +357,7 @@ export default function CategoriesPage() {
       )}
 
       <div className="space-y-3">
-        {workspaceLoading || !activeWorkspace ? (
+        {workspaceLoading || categoriesLoading || !activeWorkspace ? (
           <div className="text-center py-20 bg-gray-900/20 rounded-[40px] border-2 border-dashed border-gray-800 flex flex-col items-center justify-center gap-4">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
             <p className="text-gray-600 font-bold uppercase tracking-widest text-[10px]">Loading categories...</p>

@@ -2138,7 +2138,7 @@ export default function AssetDetailPage() {
                     </div>
 
                     <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
-                      <div className="bg-gray-50/30 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl mb-6 transition-all hover:bg-white dark:hover:bg-gray-800/60 group/rating border-b-2 hover:border-b-yellow-500/50">
+                      <div className="bg-gray-50/30 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl mb-6 transition-all hover:bg-white dark:hover:bg-gray-800/60 group/rating">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
                             <StarIconOutline className="h-3.5 w-3.5 text-yellow-500" />
@@ -2178,7 +2178,7 @@ export default function AssetDetailPage() {
                         { label: 'Uploaded', value: asset?.created_at ? `${new Date(asset.created_at).toLocaleDateString()} ${new Date(asset.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'N/A', icon: ClockIcon, color: 'text-amber-500' },
                         { label: 'Ratio', value: asset?.aspect_ratio?.toFixed(2) || 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                       ].map((item, i) => (
-                        <div key={i} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center justify-between transition-all group/card border-b-2 hover:border-b-blue-500">
+                        <div key={i} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center justify-between transition-all group/card">
                           <div className="flex items-center gap-4">
                             <div className={`p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700/50`}>
                               <item.icon className={`h-5 w-5 ${item.color}`} />
@@ -2193,7 +2193,7 @@ export default function AssetDetailPage() {
 
 
                       {asset?.color_palette && asset.color_palette.length > 0 && (
-                        <div className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex flex-col gap-3 transition-all border-b-2 hover:border-b-indigo-500/50">
+                        <div className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex flex-col gap-3 transition-all">
                           <div className="flex items-center gap-4">
                             <div className={`p-2.5 rounded-xl bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700/50`}>
                               <SwatchIcon className={`h-5 w-5 text-indigo-500`} />
@@ -2499,7 +2499,7 @@ export default function AssetDetailPage() {
                 </div>
 
                 <PermissionGate action={Action.Update} subject="Asset" workspaceId={activeWorkspace?.id}>
-                  <div className="bg-gray-50/30 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl mb-6 transition-all hover:bg-white dark:hover:bg-gray-800/60 group/rating border-b-2 hover:border-b-yellow-500/50">
+                  <div className="bg-gray-50/30 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl mb-6 transition-all hover:bg-white dark:hover:bg-gray-800/60 group/rating">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <StarIconOutline className="h-3.5 w-3.5 text-yellow-500" />
@@ -2539,7 +2539,7 @@ export default function AssetDetailPage() {
                     { label: 'Uploaded', value: asset?.created_at ? `${new Date(asset.created_at).toLocaleDateString()} ${new Date(asset.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'N/A', icon: ClockIcon, color: 'text-amber-500' },
                     { label: 'Ratio', value: asset?.aspect_ratio?.toFixed(2) || 'N/A', icon: PhotoIcon, color: 'text-emerald-500' },
                   ].map((item, i) => (
-                    <div key={i} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl flex flex-col gap-2 transition-all hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-none group/card border-b-2 hover:border-b-blue-500">
+                    <div key={i} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl flex flex-col gap-2 transition-all hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-none group/card">
                       <div className="flex items-center gap-2">
                         <item.icon className={`h-3.5 w-3.5 ${item.color}`} />
                         <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none">{item.label}</span>
@@ -2549,7 +2549,7 @@ export default function AssetDetailPage() {
                   ))}
 
                   {asset?.color_palette && asset.color_palette.length > 0 && (
-                    <div className="col-span-2 bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl flex flex-col gap-3 transition-all hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-none group/card border-b-2 hover:border-b-indigo-500/50">
+                    <div className="col-span-2 bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-4 rounded-2xl flex flex-col gap-3 transition-all hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-none group/card">
                       <div className="flex items-center gap-2">
                         <SwatchIcon className="h-3.5 w-3.5 text-indigo-500" />
                         <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none">Color Palette</span>
