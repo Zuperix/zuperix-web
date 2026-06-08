@@ -261,8 +261,9 @@ export default function BulkActionToolbar({
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleBulkDelete}
         isDeleting={isProcessing}
-        title="Delete Multiple Assets"
-        message={`Are you sure you want to delete ${selectedIds.length} assets? This action cannot be undone.`}
+        title="Move Multiple Assets to Trash"
+        message={`Are you sure you want to move ${selectedIds.length} assets to trash?`}
+        confirmText="Move to trash"
       />
     </>
   );

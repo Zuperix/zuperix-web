@@ -620,17 +620,17 @@ export default function AssetDetailPage() {
   const handleDelete = () => {
     setConfirmModal({
       isOpen: true,
-      title: 'Delete Asset',
-      message: 'Are you sure you want to delete this asset? This action cannot be undone.',
-      confirmText: 'Delete permanently',
+      title: 'Move Asset to Trash',
+      message: 'Are you sure you want to move this asset to trash?',
+      confirmText: 'Move to trash',
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isProcessing: true }));
         try {
           await apiFetch(`/assets/${assetId}`, { method: 'DELETE' });
-          toast.success('Asset deleted successfully');
+          toast.success('Asset moved to trash');
           router.push('/');
         } catch (err) {
-          toast.error('Failed to delete asset');
+          toast.error('Failed to move asset to trash');
           setConfirmModal(prev => ({ ...prev, isOpen: false, isProcessing: false }));
         }
       },

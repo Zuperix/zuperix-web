@@ -17,9 +17,9 @@ export default function DeleteConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
-  title = 'Delete Asset',
-  message = 'Are you sure you want to delete this asset? This action cannot be undone.',
-  confirmText = 'Delete permanently',
+  title = 'Move Asset to Trash',
+  message = 'Are you sure you want to move this asset to trash?',
+  confirmText = 'Move to trash',
   cancelText = 'Cancel',
   isDeleting = false,
 }: DeleteConfirmationModalProps) {
