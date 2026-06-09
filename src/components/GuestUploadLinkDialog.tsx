@@ -83,8 +83,19 @@ export default function GuestUploadLinkDialog({
   }, [categoryId, workspaceId]);
 
   const handleGenerate = async () => {
+    const newErrors: Record<string, string> = {};
     if (!linkName.trim()) {
-      setErrors({ name: 'Link name is required' });
+      newErrors.name = 'Link name is required';
+    }
+    if (maxFileSizeMB !== '') {
+      if (maxFileSizeMB < 1) {
+        newErrors.maxFileSize = 'Max file size must be at least 1 MB';
+      } else if (maxFileSizeMB > 5120) {
+        newErrors.maxFileSize = 'Max file size cannot exceed 5GB (5120 MB)';
+      }
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     setErrors({});
@@ -210,10 +221,13 @@ export default function GuestUploadLinkDialog({
                   <input 
                     type="number" 
                     placeholder="System Default (500MB)" 
+                    min="1"
+                    max="5120"
                     value={maxFileSizeMB} 
                     onChange={e => setMaxFileSizeMB(Number(e.target.value) || '')}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className={`w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border ${errors.maxFileSize ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'} rounded-xl text-sm outline-none focus:ring-2 ${errors.maxFileSize ? 'focus:ring-red-500/20' : 'focus:ring-blue-500/20'} focus:border-blue-500`}
                   />
+                  {errors.maxFileSize && <p className="text-[10px] text-red-500 mt-1 ml-1">{errors.maxFileSize}</p>}
                 </div>
 
                 <div>
