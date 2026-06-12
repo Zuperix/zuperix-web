@@ -25,6 +25,7 @@ import { BulkImport } from './BulkImport';
 import { ImportHistory } from './ImportHistory';
 import { TemplateManager } from './TemplateManager';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import MetadataSettingsTour from '@/components/MetadataSettingsTour';
 
 type Field = {
   id: string;
@@ -203,6 +204,8 @@ export default function MetadataManagementPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-6 animate-in fade-in duration-500">
+      <MetadataSettingsTour activeTab={activeTab} setActiveTab={setActiveTab} />
+      
       <div className="mb-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
         <div>
           <Link
@@ -221,7 +224,7 @@ export default function MetadataManagementPage() {
           <p className="text-gray-400 mt-2 text-sm">Define custom properties to store alongside your digital assets.</p>
         </div>
 
-        <div className="flex bg-gray-900/40 p-1.5 rounded-2xl border border-gray-800 self-start xl:self-center overflow-x-auto w-full xl:w-auto custom-scrollbar">
+        <div data-tour="metadata-tabs" className="flex bg-gray-900/40 p-1.5 rounded-2xl border border-gray-800 self-start xl:self-center overflow-x-auto w-full xl:w-auto custom-scrollbar">
           <button
             onClick={() => setActiveTab('fields')}
             className={`whitespace-nowrap flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'fields'
@@ -253,6 +256,7 @@ export default function MetadataManagementPage() {
             Bulk Import
           </button>
           <button
+            data-tour="metadata-history-tab"
             onClick={() => setActiveTab('history')}
             className={`whitespace-nowrap flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'history'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
@@ -286,7 +290,7 @@ export default function MetadataManagementPage() {
                 </div>
               }
             >
-              <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 sticky top-8">
+              <div data-tour="metadata-fields-form" className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 sticky top-8">
                 <h3 className="text-lg font-bold text-gray-200 mb-6 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {editingFieldId ? <PencilIcon className="h-5 w-5 text-amber-400" /> : <PlusIcon className="h-5 w-5 text-blue-400" />}
