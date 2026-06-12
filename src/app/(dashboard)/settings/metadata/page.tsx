@@ -6,6 +6,7 @@ import { components } from '@/types/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import {
   IdentificationIcon,
+  AdjustmentsHorizontalIcon,
   PlusIcon,
   TrashIcon,
   ArrowPathIcon,
@@ -16,7 +17,8 @@ import {
   PencilIcon,
   XMarkIcon,
   TableCellsIcon,
-  ListBulletIcon
+  ListBulletIcon,
+  CircleStackIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { PermissionGate } from '@/components/PermissionGate';
@@ -25,15 +27,19 @@ import { BulkImport } from './BulkImport';
 import { ImportHistory } from './ImportHistory';
 import { TemplateManager } from './TemplateManager';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
+import MetadataSettingsTour from '@/components/MetadataSettingsTour';
 
 type Field = {
   id: string;
   key: string;
   label: string;
-  fieldType: string;
+  field_type?: string;
+  fieldType?: string;
   is_required: boolean;
   is_searchable: boolean;
-  is_filterable: boolean
+  is_filterable: boolean;
+  options?: any;
+  validation_rules?: any;
 };
 
 const FIELD_TYPES = [
@@ -46,6 +52,8 @@ const FIELD_TYPES = [
   { value: 'datetime', label: 'Date & Time' },
   { value: 'url', label: 'URL' },
   { value: 'email', label: 'Email' },
+  { value: 'enum', label: 'Dropdown / Select' },
+  { value: 'multi_select', label: 'Multi-select Dropdown' },
 ];
 
 export default function MetadataManagementPage() {
@@ -62,6 +70,7 @@ export default function MetadataManagementPage() {
     key: '',
     label: '',
     fieldType: 'string' as any,
+    choices: '',
     is_required: false,
     is_searchable: true,
     is_filterable: true,
@@ -98,28 +107,39 @@ export default function MetadataManagementPage() {
     setSuccess('');
 
     try {
+      const type = newField.fieldType;
+      const parsedChoices = ['enum', 'multi_select'].includes(type)
+        ? newField.choices.split(/[|,]/).map(s => s.trim()).filter(Boolean)
+        : null;
+
+      const payload: any = {
+        key: newField.key,
+        label: newField.label,
+        is_required: newField.is_required,
+        is_searchable: newField.is_searchable,
+        is_filterable: newField.is_filterable,
+      };
+
+      if (parsedChoices) {
+        payload.options = { choices: parsedChoices };
+        payload.validation_rules = { choices: parsedChoices };
+      } else {
+        payload.options = null;
+        payload.validation_rules = null;
+      }
+
       if (editingFieldId) {
         await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields/${editingFieldId}`, {
           method: 'PATCH',
-          body: JSON.stringify({
-            key: newField.key,
-            label: newField.label,
-            is_required: newField.is_required,
-            is_searchable: newField.is_searchable,
-            is_filterable: newField.is_filterable,
-          }),
+          body: JSON.stringify(payload),
         });
         setSuccess('Field updated successfully');
       } else {
         await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields`, {
           method: 'POST',
           body: JSON.stringify({
-            key: newField.key,
-            label: newField.label,
-            field_type: newField.fieldType,
-            is_required: newField.is_required,
-            is_searchable: newField.is_searchable,
-            is_filterable: newField.is_filterable,
+            ...payload,
+            field_type: type,
           }),
         });
         setSuccess('Field created successfully');
@@ -130,6 +150,7 @@ export default function MetadataManagementPage() {
         key: '',
         label: '',
         fieldType: 'string',
+        choices: '',
         is_required: false,
         is_searchable: true,
         is_filterable: true,
@@ -145,10 +166,13 @@ export default function MetadataManagementPage() {
 
   const startEdit = (field: Field) => {
     setEditingFieldId(field.id);
+    const type = field.field_type || field.fieldType || 'string';
+    const choicesList = field.options?.choices || field.validation_rules?.choices || [];
     setNewField({
       key: field.key,
       label: field.label,
-      fieldType: field.fieldType,
+      fieldType: type,
+      choices: Array.isArray(choicesList) ? choicesList.join(', ') : '',
       is_required: field.is_required,
       is_searchable: field.is_searchable,
       is_filterable: field.is_filterable,
@@ -163,6 +187,7 @@ export default function MetadataManagementPage() {
       key: '',
       label: '',
       fieldType: 'string',
+      choices: '',
       is_required: false,
       is_searchable: true,
       is_filterable: true,
@@ -203,6 +228,8 @@ export default function MetadataManagementPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-6 animate-in fade-in duration-500">
+      <MetadataSettingsTour activeTab={activeTab} setActiveTab={setActiveTab} />
+      
       <div className="mb-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
         <div>
           <Link
@@ -214,14 +241,14 @@ export default function MetadataManagementPage() {
           </Link>
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-500/10 rounded-xl">
-              <IdentificationIcon className="h-6 w-6 text-blue-400" />
+              <CircleStackIcon className="h-6 w-6 text-blue-400" />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Metadata Management</h1>
           </div>
           <p className="text-gray-400 mt-2 text-sm">Define custom properties to store alongside your digital assets.</p>
         </div>
 
-        <div className="flex bg-gray-900/40 p-1.5 rounded-2xl border border-gray-800 self-start xl:self-center overflow-x-auto w-full xl:w-auto custom-scrollbar">
+        <div data-tour="metadata-tabs" className="flex bg-gray-900/40 p-1.5 rounded-2xl border border-gray-800 self-start xl:self-center overflow-x-auto w-full xl:w-auto custom-scrollbar">
           <button
             onClick={() => setActiveTab('fields')}
             className={`whitespace-nowrap flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'fields'
@@ -253,6 +280,7 @@ export default function MetadataManagementPage() {
             Bulk Import
           </button>
           <button
+            data-tour="metadata-history-tab"
             onClick={() => setActiveTab('history')}
             className={`whitespace-nowrap flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'history'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
@@ -286,7 +314,7 @@ export default function MetadataManagementPage() {
                 </div>
               }
             >
-              <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 sticky top-8">
+              <div data-tour="metadata-fields-form" className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6 sticky top-8">
                 <h3 className="text-lg font-bold text-gray-200 mb-6 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {editingFieldId ? <PencilIcon className="h-5 w-5 text-amber-400" /> : <PlusIcon className="h-5 w-5 text-blue-400" />}
@@ -308,12 +336,13 @@ export default function MetadataManagementPage() {
                     <input
                       type="text"
                       required
+                      maxLength={64}
                       placeholder="e.g. Photographer Name"
                       className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all"
                       value={newField.label}
                       onChange={(e) => {
-                        const label = e.target.value;
-                        const key = label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+                        const label = e.target.value.slice(0, 64);
+                        const key = label.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 64);
                         setNewField(prev => ({ ...prev, label, key }));
                       }}
                     />
@@ -324,10 +353,11 @@ export default function MetadataManagementPage() {
                     <input
                       type="text"
                       required
+                      maxLength={64}
                       placeholder="e.g. photographer_name"
                       className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-400 font-mono text-xs outline-none transition-all"
                       value={newField.key}
-                      onChange={(e) => setNewField(prev => ({ ...prev, key: e.target.value }))}
+                      onChange={(e) => setNewField(prev => ({ ...prev, key: e.target.value.slice(0, 64) }))}
                     />
                   </div>
 
@@ -337,11 +367,28 @@ export default function MetadataManagementPage() {
                       disabled={!!editingFieldId}
                       className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       value={newField.fieldType}
-                      onChange={(e) => setNewField(prev => ({ ...prev, fieldType: e.target.value }))}
+                      onChange={(e) => setNewField(prev => ({ ...prev, fieldType: e.target.value as any }))}
                     >
                       {FIELD_TYPES.map(t => <option key={t.value} value={t.value} className="bg-gray-950">{t.label}</option>)}
                     </select>
                   </div>
+
+                  {['enum', 'multi_select'].includes(newField.fieldType) && (
+                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">Predefined Choices</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Option A, Option B, Option C"
+                        className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all"
+                        value={newField.choices}
+                        onChange={(e) => setNewField(prev => ({ ...prev, choices: e.target.value }))}
+                      />
+                      <p className="text-[10px] text-gray-500 ml-1">
+                        Enter choices separated by commas or pipes (e.g., Option A, Option B or Option 1 | Option 2).
+                      </p>
+                    </div>
+                  )}
 
                   <div className="pt-2 flex flex-col gap-3">
                     <label className="flex items-center gap-3 cursor-pointer group">
@@ -434,7 +481,7 @@ export default function MetadataManagementPage() {
             ) : fields.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-20 bg-gray-900/20 border border-gray-800 rounded-2xl border-dashed">
                 <div className="p-4 bg-gray-800/40 rounded-full mb-4">
-                  <IdentificationIcon className="h-10 w-10 text-gray-600" />
+                  <CircleStackIcon className="h-10 w-10 text-gray-600" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-400 mb-1">No custom fields yet</h3>
                 <p className="text-gray-500 text-sm max-w-xs text-center">Create your first metadata field using the form on the left to start organizing your assets.</p>
@@ -448,18 +495,26 @@ export default function MetadataManagementPage() {
                   >
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-gray-950 border border-gray-800 rounded-xl">
-                        <IdentificationIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                        <CircleStackIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-bold text-gray-200 group-hover:text-white transition-colors">{field.label}</h4>
                           <span className="text-[10px] font-mono bg-gray-800 text-gray-400 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                            {field.fieldType}
+                            {FIELD_TYPES.find(t => t.value === (field.field_type || field.fieldType))?.label || (field.field_type || field.fieldType)}
                           </span>
                         </div>
+                        {['enum', 'multi_select'].includes(field.field_type || field.fieldType || '') && (
+                          <div className="text-[10px] text-gray-400 mt-0.5 mb-1.5 font-medium leading-normal">
+                            <span className="text-gray-500 font-bold uppercase tracking-wider text-[8px] mr-1">Choices:</span>
+                            {Array.isArray(field.options?.choices)
+                              ? field.options.choices.join(', ')
+                              : Array.isArray(field.validation_rules?.choices)
+                              ? field.validation_rules.choices.join(', ')
+                              : 'None'}
+                          </div>
+                        )}
                         <div className="flex items-center flex-wrap gap-y-2 gap-x-3 text-xs">
-                          <span className="text-gray-500 font-mono truncate max-w-[120px] sm:max-w-none">{field.key}</span>
-                          <div className="h-1 w-1 rounded-full bg-gray-700 hidden sm:block" />
                           <span className={field.is_required ? 'text-amber-500/80 font-medium' : 'text-gray-600'}>
                             {field.is_required ? 'Required' : 'Optional'}
                           </span>

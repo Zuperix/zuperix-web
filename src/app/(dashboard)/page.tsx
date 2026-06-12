@@ -35,6 +35,7 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { Action } from '@/types/auth';
 import { toast } from 'sonner';
 import DocumentationLink from '@/components/DocumentationLink';
+import DashboardTour from '@/components/DashboardTour';
 
 function FilterChips({
   activeFilters,
@@ -630,7 +631,7 @@ function DashboardContent() {
         <div className="space-y-6">
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-              <div>
+              <div data-tour="page-title">
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
                   {q ? 'Search Results' : 'Assets'}
                 </h1>
@@ -660,6 +661,7 @@ function DashboardContent() {
                 <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
                   <button
                     onClick={() => setIsFilterOpen(true)}
+                    data-tour="filter-sidebar"
                     className="lg:hidden flex-1 flex items-center justify-center px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shrink-0"
                   >
                     <FunnelIcon className="h-3.5 w-3.5 mr-1.5" />
@@ -672,7 +674,7 @@ function DashboardContent() {
                     <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                   </button>
                 </div>
-                <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                <div data-tour="sort-dropdown" className="flex items-center gap-2 flex-1 sm:flex-none">
                   <SortDropdown
                     currentSortBy={currentSort.by}
                     currentSortOrder={currentSort.order}
@@ -686,6 +688,7 @@ function DashboardContent() {
                   >
                     <ArrowDownTrayIcon className={`h-4 w-4 ${exportLoading ? 'animate-pulse' : 'group-hover:scale-110'} transition-all`} />
                   </button>
+                  <div data-tour="upload-button">
                   <UploadDropdown
                     workspaceId={activeWorkspace.id}
                     onUploadClick={() => setIsUploadOpen(true)}
@@ -693,6 +696,7 @@ function DashboardContent() {
                     onManageLinksClick={() => setIsManageLinksOpen(true)}
                     onUploadStatusClick={() => router.push('/upload-status')}
                   />
+                  </div>
                 </div>
               </div>
             </div>
@@ -716,6 +720,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between mb-4">
                 <button
                   onClick={handleSelectAll}
+                  data-tour="select-all"
                   className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors uppercase tracking-widest"
                 >
                   <SquaresPlusIcon className="h-4 w-4" />
@@ -723,6 +728,7 @@ function DashboardContent() {
                 </button>
               </div>
 
+              <div data-tour="asset-grid">
               <AssetGrid
                 assets={assets}
                 onDelete={handleDeleteTrigger}
@@ -733,6 +739,7 @@ function DashboardContent() {
                 loading={loading}
                 limit={limit}
               />
+              </div>
 
               <Pagination
                 currentPage={pagination.page}
@@ -743,6 +750,8 @@ function DashboardContent() {
           )}
         </div>
       </div>
+
+      <DashboardTour />
 
       {isUploadOpen && (
         <UploadModal

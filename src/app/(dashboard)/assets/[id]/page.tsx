@@ -73,6 +73,7 @@ import { MetadataFieldInput } from '@/components/metadata/MetadataFieldInput';
 import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
 import { FEATURES } from '@/constants/features';
 import gdrive from '@/services/google-drive.api';
+import AssetDetailsTour from '@/components/AssetDetailsTour';
 
 interface Field {
   id: string;
@@ -1006,7 +1007,7 @@ export default function AssetDetailPage() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2 md:gap-3 group/title flex-1 min-w-0">
+              <div data-tour="asset-title" className="flex items-center gap-2 md:gap-3 group/title flex-1 min-w-0">
                 <h1
                   onClick={canUpdateAsset ? handleStartNameEdit : undefined}
                   className={`text-lg md:text-xl font-extrabold truncate leading-tight text-blue-900 dark:text-gray-100 transition-colors ${canUpdateAsset ? 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400' : ''}`}
@@ -1069,6 +1070,7 @@ export default function AssetDetailPage() {
             <button
               onClick={handleSaveMetadata}
               disabled={saving || isLocked}
+              data-tour="save-metadata-button"
               className={`px-3 md:px-6 py-2 md:py-2.5 rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm ${success
                 ? 'bg-green-500 text-white shadow-green-500/20'
                 : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20'
@@ -1136,9 +1138,9 @@ export default function AssetDetailPage() {
 
       <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Column: Preview and Summary */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#f8f9fb] dark:bg-[#090a0f] overflow-y-auto custom-scrollbar pt-0 pb-12">
+        <div id="asset-detail-scroll-container" className="flex-1 flex flex-col min-w-0 bg-[#f8f9fb] dark:bg-[#090a0f] overflow-y-auto custom-scrollbar pt-0 pb-12">
           <div className="p-4 md:p-8 flex flex-col items-center">
-            <div className="relative group w-full max-w-4xl bg-white dark:bg-[#151720] rounded-3xl md:rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 flex items-center justify-center min-h-[300px] md:min-h-[500px] border-2 md:border-4 border-white dark:border-gray-800/30">
+            <div data-tour="asset-preview" className="relative group w-full max-w-4xl bg-white dark:bg-[#151720] rounded-3xl md:rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 flex items-center justify-center min-h-[300px] md:min-h-[500px] border-2 md:border-4 border-white dark:border-gray-800/30">
               {/* Interactive Action Overlay */}
               <div className="absolute top-8 right-8 flex flex-col gap-3 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
                 <button
@@ -1571,7 +1573,7 @@ export default function AssetDetailPage() {
 
             <div className="w-full max-w-4xl mt-8 mb-20 space-y-8 md:space-y-12">
               {/* Categories & Collections Group */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+              <div data-tour="asset-organization" className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                 <section className="space-y-4 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-6 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1925,7 +1927,7 @@ export default function AssetDetailPage() {
               </div>
 
               {/* Metadata Section */}
-              <section className="space-y-4 md:space-y-6 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-8 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
+              <section data-tour="asset-metadata-section" className="space-y-4 md:space-y-6 bg-white/80 dark:bg-[#151720]/80 backdrop-blur-xl p-5 md:p-8 rounded-2xl md:rounded-[32px] border border-white dark:border-gray-800 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.4)] transition-all duration-300 hover:shadow-[0_12px_48px_-12px_rgba(0,0,0,0.12)] group">
                 <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-100 dark:border-gray-800/60 pb-4 gap-4">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
@@ -2460,7 +2462,7 @@ export default function AssetDetailPage() {
         <div className="hidden md:flex w-4/11 flex-col bg-white dark:bg-[#0a0b10] border-l border-gray-200 dark:border-gray-800 shadow-2xl relative z-10 h-full overflow-hidden">
           {/* Premium Segmented Tab Control */}
           <div className="px-6 py-8 border-b border-gray-200 dark:border-gray-800/60 bg-gray-50/30 dark:bg-[#0a0b10] shrink-0">
-            <div className="flex bg-gray-100/80 dark:bg-gray-800/40 p-1 rounded-2xl relative overflow-hidden">
+            <div data-tour="asset-tabs" className="flex bg-gray-100/80 dark:bg-gray-800/40 p-1 rounded-2xl relative overflow-hidden">
               {[
                 { id: 'file-info', label: 'Specs', icon: InboxIcon },
                 { id: 'workflow', label: 'Workflow', icon: QueueListIcon },
@@ -2908,6 +2910,8 @@ export default function AssetDetailPage() {
           display: none;
         }
       `}</style>
+
+      <AssetDetailsTour />
 
       <DownloadModal
         isOpen={isDownloadModalOpen}

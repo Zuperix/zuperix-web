@@ -167,9 +167,9 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
   const isProcessing = success?.status === 'active' || success?.status === 'queued';
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div data-tour="metadata-bulk-import" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* ... Info Box ... */}
-      <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-6 flex gap-4">
+      <div data-tour="bulk-mapping" className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-6 flex gap-4">
         <InformationCircleIcon className="h-6 w-6 text-blue-400 shrink-0" />
         <div>
           <h4 className="text-sm font-bold text-blue-100 mb-1">How it works</h4>
@@ -182,7 +182,7 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Step 1: Download Template */}
-        <div className="bg-gray-900/40 border border-gray-800 rounded-3xl p-8 hover:bg-gray-900/60 transition-all group">
+        <div data-tour="bulk-template-selection" className="bg-gray-900/40 border border-gray-800 rounded-3xl p-8 hover:bg-gray-900/60 transition-all group">
           <div className="h-12 w-12 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <DocumentArrowDownIcon className="h-6 w-6 text-blue-400" />
           </div>
@@ -228,7 +228,7 @@ export function BulkImport({ workspaceId }: BulkImportProps) {
         </div>
 
         {/* Step 2: Upload CSV */}
-        <div className="bg-gray-900/40 border border-gray-800 rounded-3xl p-8 hover:bg-gray-900/60 transition-all group relative overflow-hidden">
+        <div data-tour="bulk-upload-zone" className="bg-gray-900/40 border border-gray-800 rounded-3xl p-8 hover:bg-gray-900/60 transition-all group relative overflow-hidden">
           <div className="h-12 w-12 bg-green-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
             <CloudArrowUpIcon className="h-6 w-6 text-green-400" />
           </div>

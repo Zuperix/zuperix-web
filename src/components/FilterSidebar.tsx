@@ -457,7 +457,9 @@ export default function FilterSidebar({ filters, activeFilters, externalFilterCo
         />
       )}
 
-      <div className={`
+      <div
+        data-tour="filter-sidebar-desktop"
+        className={`
         fixed inset-y-0 right-0 z-50 w-72 max-w-[90%] bg-white dark:bg-[#0f111a] border-l border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out
         lg:relative lg:translate-x-0 lg:w-68 lg:border-r lg:border-l-0 lg:z-0 lg:flex
         ${isFilterOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}

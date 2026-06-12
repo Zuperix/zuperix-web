@@ -177,7 +177,7 @@ export default function Sidebar() {
               </p>
           )}
 
-          <nav className={`flex flex-col gap-0.5 ${collapsed ? 'items-center px-2' : 'px-3'}`}>
+          <nav data-tour="sidebar-nav" className={`flex flex-col gap-0.5 ${collapsed ? 'items-center px-2' : 'px-3'}`}>
             {filteredNav.map((item) => {
               const active = pathname === item.href;
               return (
