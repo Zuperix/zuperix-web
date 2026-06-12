@@ -91,7 +91,7 @@ function TourTooltip({
 }
 
 export default function AssetDetailsTour() {
-  const isTourEnabled = useFeatureFlag(FEATURES.ASSET_DETAILS_ONBOARDING_TOUR.key, true);
+  const isTourEnabled = useFeatureFlag(FEATURES.ONBOARDING_TOURS.key, false);
   const { user, updateUser } = useAuth();
   const { activeWorkspace } = useWorkspace();
   const permissions = usePermissions();

@@ -5,6 +5,8 @@ import { Joyride, STATUS, EVENTS, Step, TooltipRenderProps, EventData, Controls 
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
 import { User } from '@/types/auth';
+import { useFeatureFlag } from '@/providers/LaunchDarklyProvider';
+import { FEATURES } from '@/constants/features';
 
 const TOUR_COMPLETED_KEY = 'metadata_tour_completed';
 
@@ -97,6 +99,7 @@ export default function MetadataSettingsTour({
   const [run, setRun] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
+  const isTourEnabled = useFeatureFlag(FEATURES.ONBOARDING_TOURS.key, false);
   const forceShow = process.env.NEXT_PUBLIC_FORCE_DASHBOARD_TOUR === 'true';
 
   const steps = useMemo(() => {
@@ -150,6 +153,8 @@ export default function MetadataSettingsTour({
   useEffect(() => {
     if (!user) return;
     
+    if (!isTourEnabled && !forceShow) return;
+
     const completed = user.onboarding?.metadata_settings === true || localStorage.getItem(TOUR_COMPLETED_KEY) === 'true';
     if (completed && !forceShow) return;
 

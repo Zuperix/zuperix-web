@@ -22,13 +22,9 @@ export const FEATURES = {
     key: "ai-tagging",
     name: "AI Tagging",
   },
-  DASHBOARD_ONBOARDING_TOUR: {
-    key: "dashboard-onboarding-tour",
-    name: "Dashboard Onboarding Tour",
-  },
-  ASSET_DETAILS_ONBOARDING_TOUR: {
-    key: "asset-details-onboarding-tour",
-    name: "Asset Details Onboarding Tour",
+  ONBOARDING_TOURS: {
+    key: "onboarding-tours",
+    name: "Onboarding Tours",
   },
 } as const;
 

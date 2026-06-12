@@ -92,7 +92,7 @@ function TourTooltip({
 }
 
 export default function DashboardTour() {
-  const isTourEnabled = useFeatureFlag(FEATURES.DASHBOARD_ONBOARDING_TOUR.key, true);
+  const isTourEnabled = useFeatureFlag(FEATURES.ONBOARDING_TOURS.key, false);
   const { user, updateUser } = useAuth();
   const isGoldPlan = user?.customer?.plan?.toLowerCase() === 'gold';
 
