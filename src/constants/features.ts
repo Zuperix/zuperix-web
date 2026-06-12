@@ -22,6 +22,10 @@ export const FEATURES = {
     key: "ai-tagging",
     name: "AI Tagging",
   },
+  DASHBOARD_ONBOARDING_TOUR: {
+    key: "dashboard-onboarding-tour",
+    name: "Dashboard Onboarding Tour",
+  },
 } as const;
 
 export type FeatureKey = (typeof FEATURES)[keyof typeof FEATURES]["key"];

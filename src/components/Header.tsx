@@ -294,6 +294,7 @@ export default function Header() {
             <form
               onSubmit={handleSearch}
               className="relative flex items-center group"
+              data-tour="search-bar"
             >
               <div className="absolute left-3.5 flex items-center pointer-events-none">
                 <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
@@ -323,6 +324,7 @@ export default function Header() {
                   <button
                     type="button"
                     onClick={toggleSemantic}
+                    data-tour="ai-toggle"
                     className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all duration-300 ${isSemantic
                         ? "bg-blue-500/10 border-blue-500/50 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]"
                         : isLocked
