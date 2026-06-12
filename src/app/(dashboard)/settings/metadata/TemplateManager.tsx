@@ -19,7 +19,8 @@ type Field = {
   id: string; 
   key: string; 
   label: string; 
-  field_type: string; 
+  field_type?: string; 
+  fieldType?: string; 
 };
 
 type Template = {
@@ -280,7 +281,7 @@ export function TemplateManager({ workspaceId, fields }: TemplateManagerProps) {
                     />
                     <span className="text-xs text-gray-300 font-semibold flex-1">{f.label}</span>
                     <span className="px-1.5 py-0.5 bg-gray-800/60 border border-gray-700/40 text-gray-400 text-[8px] font-bold rounded uppercase tracking-wider">
-                      {f.field_type}
+                      {f.field_type || f.fieldType}
                     </span>
                   </label>
                 ))}
