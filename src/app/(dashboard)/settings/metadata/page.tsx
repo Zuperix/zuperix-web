@@ -6,7 +6,7 @@ import { components } from '@/types/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import {
   IdentificationIcon,
-  HashtagIcon,
+  AdjustmentsHorizontalIcon,
   PlusIcon,
   TrashIcon,
   ArrowPathIcon,
@@ -17,7 +17,8 @@ import {
   PencilIcon,
   XMarkIcon,
   TableCellsIcon,
-  ListBulletIcon
+  ListBulletIcon,
+  CircleStackIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { PermissionGate } from '@/components/PermissionGate';
@@ -218,7 +219,7 @@ export default function MetadataManagementPage() {
           </Link>
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-500/10 rounded-xl">
-              <HashtagIcon className="h-6 w-6 text-blue-400" />
+              <CircleStackIcon className="h-6 w-6 text-blue-400" />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Metadata Management</h1>
           </div>
@@ -439,7 +440,7 @@ export default function MetadataManagementPage() {
             ) : fields.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-20 bg-gray-900/20 border border-gray-800 rounded-2xl border-dashed">
                 <div className="p-4 bg-gray-800/40 rounded-full mb-4">
-                  <HashtagIcon className="h-10 w-10 text-gray-600" />
+                  <CircleStackIcon className="h-10 w-10 text-gray-600" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-400 mb-1">No custom fields yet</h3>
                 <p className="text-gray-500 text-sm max-w-xs text-center">Create your first metadata field using the form on the left to start organizing your assets.</p>
@@ -452,9 +453,6 @@ export default function MetadataManagementPage() {
                     className="bg-gray-900/40 border border-gray-800 rounded-2xl p-5 hover:bg-gray-800/50 hover:border-gray-700 transition-all duration-300 group flex items-center justify-between"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-gray-950 border border-gray-800 rounded-xl">
-                        <HashtagIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
-                      </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-bold text-gray-200 group-hover:text-white transition-colors">{field.label}</h4>

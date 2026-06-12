@@ -15,7 +15,8 @@ import {
   MegaphoneIcon,
   CloudArrowUpIcon,
   BuildingOfficeIcon,
-  LinkIcon
+  LinkIcon,
+  CircleStackIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import DocumentationLink from '@/components/DocumentationLink';
@@ -33,7 +34,7 @@ const BASE_SETTINGS_SECTIONS = [
     id: 'metadata',
     name: 'Metadata Management',
     description: 'Configure custom fields, groups, and templates for your assets.',
-    icon: IdentificationIcon,
+    icon: CircleStackIcon,
     href: '/settings/metadata',
     color: 'bg-blue-500/10 text-blue-400',
   },
