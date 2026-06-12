@@ -54,4 +54,8 @@ export interface User {
   };
   roles?: Role[];
   workspace_members?: WorkspaceMember[];
+  onboarding?: {
+    dashboard?: boolean;
+    asset_details?: boolean;
+  } | null;
 }

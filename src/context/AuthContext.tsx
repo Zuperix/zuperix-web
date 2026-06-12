@@ -16,6 +16,7 @@ interface AuthContextType {
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (password: string) => Promise<void>;
+  updateUser: (updatedUser: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -222,6 +223,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const updateUser = useCallback((updatedUser: User) => {
+    setUser(updatedUser);
+  }, []);
+
   const value = useMemo(() => ({
     user,
     loading,
@@ -230,8 +235,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     logout,
     forgotPassword,
-    resetPassword
-  }), [user, loading, logout]);
+    resetPassword,
+    updateUser,
+  }), [user, loading, logout, updateUser]);
 
   return (
     <AuthContext.Provider value={value}>
