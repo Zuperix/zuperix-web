@@ -57,5 +57,6 @@ export interface User {
   onboarding?: {
     dashboard?: boolean;
     asset_details?: boolean;
+    metadata_settings?: boolean;
   } | null;
 }

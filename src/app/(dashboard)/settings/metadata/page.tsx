@@ -6,6 +6,7 @@ import { components } from '@/types/api';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import {
   IdentificationIcon,
+  HashtagIcon,
   PlusIcon,
   TrashIcon,
   ArrowPathIcon,
@@ -31,7 +32,7 @@ type Field = {
   id: string;
   key: string;
   label: string;
-  fieldType: string;
+  field_type: string;
   is_required: boolean;
   is_searchable: boolean;
   is_filterable: boolean
@@ -62,7 +63,7 @@ export default function MetadataManagementPage() {
   const [newField, setNewField] = useState({
     key: '',
     label: '',
-    fieldType: 'string' as any,
+    field_type: 'string' as any,
     is_required: false,
     is_searchable: true,
     is_filterable: true,
@@ -115,9 +116,9 @@ export default function MetadataManagementPage() {
         await apiFetch(`/workspaces/${activeWorkspace.id}/metadata/fields`, {
           method: 'POST',
           body: JSON.stringify({
-            key: newField.key,
+             key: newField.key,
             label: newField.label,
-            field_type: newField.fieldType,
+            field_type: newField.field_type,
             is_required: newField.is_required,
             is_searchable: newField.is_searchable,
             is_filterable: newField.is_filterable,
@@ -130,7 +131,7 @@ export default function MetadataManagementPage() {
       setNewField({
         key: '',
         label: '',
-        fieldType: 'string',
+        field_type: 'string',
         is_required: false,
         is_searchable: true,
         is_filterable: true,
@@ -149,7 +150,7 @@ export default function MetadataManagementPage() {
     setNewField({
       key: field.key,
       label: field.label,
-      fieldType: field.fieldType,
+      field_type: field.field_type,
       is_required: field.is_required,
       is_searchable: field.is_searchable,
       is_filterable: field.is_filterable,
@@ -163,7 +164,7 @@ export default function MetadataManagementPage() {
     setNewField({
       key: '',
       label: '',
-      fieldType: 'string',
+      field_type: 'string',
       is_required: false,
       is_searchable: true,
       is_filterable: true,
@@ -217,7 +218,7 @@ export default function MetadataManagementPage() {
           </Link>
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-500/10 rounded-xl">
-              <IdentificationIcon className="h-6 w-6 text-blue-400" />
+              <HashtagIcon className="h-6 w-6 text-blue-400" />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Metadata Management</h1>
           </div>
@@ -340,8 +341,8 @@ export default function MetadataManagementPage() {
                     <select
                       disabled={!!editingFieldId}
                       className="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 text-gray-200 outline-none transition-all appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      value={newField.fieldType}
-                      onChange={(e) => setNewField(prev => ({ ...prev, fieldType: e.target.value }))}
+                      value={newField.field_type}
+                      onChange={(e) => setNewField(prev => ({ ...prev, field_type: e.target.value as any }))}
                     >
                       {FIELD_TYPES.map(t => <option key={t.value} value={t.value} className="bg-gray-950">{t.label}</option>)}
                     </select>
@@ -438,7 +439,7 @@ export default function MetadataManagementPage() {
             ) : fields.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-20 bg-gray-900/20 border border-gray-800 rounded-2xl border-dashed">
                 <div className="p-4 bg-gray-800/40 rounded-full mb-4">
-                  <IdentificationIcon className="h-10 w-10 text-gray-600" />
+                  <HashtagIcon className="h-10 w-10 text-gray-600" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-400 mb-1">No custom fields yet</h3>
                 <p className="text-gray-500 text-sm max-w-xs text-center">Create your first metadata field using the form on the left to start organizing your assets.</p>
@@ -452,16 +453,17 @@ export default function MetadataManagementPage() {
                   >
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-gray-950 border border-gray-800 rounded-xl">
-                        <IdentificationIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                        <HashtagIcon className="h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-bold text-gray-200 group-hover:text-white transition-colors">{field.label}</h4>
-                          <span className="text-[10px] font-mono bg-gray-800 text-gray-400 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                            {field.fieldType}
-                          </span>
                         </div>
                         <div className="flex items-center flex-wrap gap-y-2 gap-x-3 text-xs">
+                          <span className="text-blue-400 font-semibold bg-blue-500/10 px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider">
+                            {FIELD_TYPES.find(t => t.value === field.field_type)?.label || field.field_type}
+                          </span>
+                          <div className="h-1 w-1 rounded-full bg-gray-700" />
                           <span className="text-gray-500 font-mono truncate max-w-[120px] sm:max-w-none">{field.key}</span>
                           <div className="h-1 w-1 rounded-full bg-gray-700 hidden sm:block" />
                           <span className={field.is_required ? 'text-amber-500/80 font-medium' : 'text-gray-600'}>
