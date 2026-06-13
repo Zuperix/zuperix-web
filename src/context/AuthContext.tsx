@@ -55,7 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (
         searchParams.get('canva_token') ||
         searchParams.get('figma_device_code') ||
-        searchParams.get('adobe_device_code')
+        searchParams.get('adobe_device_code') ||
+        searchParams.get('chrome_device_code')
       ) {
         return;
       }
