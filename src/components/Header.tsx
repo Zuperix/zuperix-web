@@ -647,7 +647,7 @@ export default function Header() {
               aria-haspopup="menu"
               aria-expanded={showUserMenu}
             >
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-500 to-teal-400 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/20 ring-2 ring-white dark:ring-gray-900 group-hover:scale-105 transition-transform duration-300">
+              <div className="h-8 w-8 rounded-xl bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/20 ring-2 ring-white dark:ring-gray-900 group-hover:scale-105 transition-transform duration-300">
                 {user?.name?.charAt(0)?.toUpperCase() || "U"}
               </div>
               <div className="hidden md:flex flex-col items-start">
