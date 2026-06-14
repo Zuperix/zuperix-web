@@ -25,7 +25,8 @@ import {
   FunnelIcon,
   SquaresPlusIcon,
   LinkIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  FolderIcon
 } from '@heroicons/react/24/outline';
 import BulkActionToolbar from '@/components/BulkActionToolbar';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
@@ -36,6 +37,7 @@ import { Action } from '@/types/auth';
 import { toast } from 'sonner';
 import DocumentationLink from '@/components/DocumentationLink';
 import DashboardTour from '@/components/DashboardTour';
+import { useCategories } from '@/hooks/useCategories';
 
 function FilterChips({
   activeFilters,
@@ -207,8 +209,23 @@ function FilterChips({
 }
 
 
+function flattenCategories(cats: any[]): any[] {
+  const flat: any[] = [];
+  const recurse = (list: any[]) => {
+    list.forEach(c => {
+      flat.push(c);
+      if (c.children && c.children.length > 0) {
+        recurse(c.children);
+      }
+    });
+  };
+  recurse(cats);
+  return flat;
+}
+
 function DashboardContent() {
   const { activeWorkspace, loading: workspaceLoading } = useWorkspace();
+  const { categories } = useCategories();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -502,6 +519,49 @@ function DashboardContent() {
     setDeleteModalOpen(true);
   };
 
+  const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
+
+  const resolveCategoryUuid = useCallback((path: string) => {
+    let cleanPath = path;
+    if (activeWorkspace) {
+      const prefix = `${activeWorkspace.id}/`;
+      if (path.startsWith(prefix)) {
+        cleanPath = path.substring(prefix.length);
+      }
+    }
+    const found = flatCategories.find(c => c.path === cleanPath);
+    return found ? found.id : null;
+  }, [flatCategories, activeWorkspace]);
+
+  const handleBulkRemoveFromCategory = async () => {
+    if (!activeWorkspace || selectedIds.length === 0) return;
+
+    const activePaths = activeFilters.category_paths;
+    if (!activePaths || activePaths.length === 0) {
+      toast.error('No active category selected');
+      return;
+    }
+
+    const path = activePaths[0];
+    const catUuid = resolveCategoryUuid(path);
+    if (!catUuid) {
+      toast.error('Could not resolve category ID');
+      return;
+    }
+
+    try {
+      await apiFetch(`/categories/${catUuid}/assets/delete`, {
+        method: 'POST',
+        body: JSON.stringify({ asset_ids: selectedIds })
+      });
+      toast.success('Successfully removed assets from category');
+      setSelectedIds([]);
+      fetchAssets();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to remove assets from category');
+    }
+  };
+
   const handleToggleSelect = (id: string, isShift: boolean) => {
     setSelectedIds(prev => {
       if (isShift && lastSelectedId) {
@@ -726,6 +786,16 @@ function DashboardContent() {
                   <SquaresPlusIcon className="h-4 w-4" />
                   {selectedIds.length === assets.length ? 'Deselect All' : 'Select All on Page'}
                 </button>
+
+                {activeFilters.category_paths?.length === 1 && selectedIds.length > 0 && (
+                  <button
+                    onClick={handleBulkRemoveFromCategory}
+                    className="flex items-center gap-2 text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors uppercase tracking-widest"
+                  >
+                    <FolderIcon className="h-4 w-4" />
+                    REMOVE FROM CATEGORY ({selectedIds.length})
+                  </button>
+                )}
               </div>
 
               <div data-tour="asset-grid">
