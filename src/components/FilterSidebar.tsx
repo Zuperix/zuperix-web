@@ -336,6 +336,7 @@ function RangeSlider({
 export default function FilterSidebar({ filters, activeFilters, externalFilterConfig, onFilterChange, onClearAll, disabled = false, filtersConfig }: FilterSidebarProps) {
 
   const { isFilterOpen, setIsFilterOpen } = useLayout();
+  const [showAllOptions, setShowAllOptions] = useState<Record<string, boolean>>({});
   const baseFilterConfig: Record<string, { label: string; icon: any }> = {
     mime_type: { label: 'File Type', icon: Square3Stack3DIcon },
     status: { label: 'Status', icon: ClockIcon },
@@ -638,31 +639,58 @@ export default function FilterSidebar({ filters, activeFilters, externalFilterCo
                                     </div>
                                   ) : (
                                     <div className="space-y-2.5">
-                                      {data
-                                        .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
-                                        .map((bucket) => {
-                                          const rawActive = activeFilters[key];
-                                          const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
-                                          const isActive = activeList.includes(bucket.value);
-                                          return (
-                                            <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
-                                              <div className="flex items-center overflow-hidden pr-2">
-                                                <input
-                                                  type="checkbox"
-                                                  checked={isActive}
-                                                  onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
-                                                  className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
-                                                />
-                                                <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
-                                                  {bucket.label || bucket.value}
-                                                </span>
-                                              </div>
-                                              <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
-                                                {bucket.count}
-                                              </span>
-                                            </label>
-                                          );
-                                        })}
+                                      {(() => {
+                                        const items = data.filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()));
+                                        const showAll = showAllOptions[key];
+                                        const displayedItems = showAll ? items : items.slice(0, 10);
+                                        
+                                        return (
+                                          <>
+                                            {displayedItems.map((bucket) => {
+                                              const rawActive = activeFilters[key];
+                                              const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
+                                              const isActive = activeList.includes(bucket.value);
+                                              return (
+                                                <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                                                  <div className="flex items-center overflow-hidden pr-2">
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={isActive}
+                                                      onChange={(e) => handleCheckboxChange(key, bucket.value, e.target.checked)}
+                                                      className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                                                    />
+                                                    <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
+                                                      {bucket.label || bucket.value}
+                                                    </span>
+                                                  </div>
+                                                  <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+                                                    {bucket.count}
+                                                  </span>
+                                                </label>
+                                              );
+                                            })}
+                                            {items.length > 10 && (
+                                              <button
+                                                type="button"
+                                                onClick={() => setShowAllOptions(prev => ({ ...prev, [key]: !showAll }))}
+                                                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors pt-1.5 flex items-center gap-1 focus:outline-none"
+                                              >
+                                                {showAll ? (
+                                                  <>
+                                                    <span>Show less</span>
+                                                    <ChevronUpIcon className="h-3 w-3" />
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <span>Show more ({items.length - 10})</span>
+                                                    <ChevronDownIcon className="h-3 w-3" />
+                                                  </>
+                                                )}
+                                              </button>
+                                            )}
+                                          </>
+                                        );
+                                      })()}
                                     </div>
                                   )}
                                 </div>
@@ -826,32 +854,60 @@ export default function FilterSidebar({ filters, activeFilters, externalFilterCo
                                     />
                                   ))
                               ) : (
-                                data
-                                  .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
-                                  .sort((a, b) => (b.count || 0) - (a.count || 0))
-                                  .map((bucket) => {
-                                    const rawActive = activeFilters[entryKey];
-                                    const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
-                                    const isActive = activeList.includes(bucket.value);
-                                    return (
-                                      <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
-                                        <div className="flex items-center overflow-hidden pr-2">
-                                          <input
-                                            type="checkbox"
-                                            checked={isActive}
-                                            onChange={(e) => handleCheckboxChange(entryKey, bucket.value, e.target.checked)}
-                                            className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
-                                          />
-                                          <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
-                                            {bucket.label || bucket.value}
-                                          </span>
-                                        </div>
-                                        <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
-                                          {bucket.count}
-                                        </span>
-                                      </label>
-                                    );
-                                  })
+                                (() => {
+                                  const items = data
+                                    .filter(bucket => !filterSearch || String(bucket.value).toLowerCase().includes(filterSearch.toLowerCase()))
+                                    .sort((a, b) => (b.count || 0) - (a.count || 0));
+                                  const showAll = showAllOptions[entryKey];
+                                  const displayedItems = showAll ? items : items.slice(0, 10);
+
+                                  return (
+                                    <>
+                                      {displayedItems.map((bucket) => {
+                                        const rawActive = activeFilters[entryKey];
+                                        const activeList = Array.isArray(rawActive) ? rawActive : (rawActive ? [rawActive] : []);
+                                        const isActive = activeList.includes(bucket.value);
+                                        return (
+                                          <label key={`${bucket.value}`} className="flex items-center group cursor-pointer justify-between">
+                                            <div className="flex items-center overflow-hidden pr-2">
+                                              <input
+                                                type="checkbox"
+                                                checked={isActive}
+                                                onChange={(e) => handleCheckboxChange(entryKey, bucket.value, e.target.checked)}
+                                                className="h-4 w-4 bg-white dark:bg-[#1a1c23] border-gray-300 dark:border-gray-600 rounded text-blue-600 focus:ring-blue-500 cursor-pointer transition-colors outline-none"
+                                              />
+                                              <span className="ml-3 text-sm text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 truncate transition-colors">
+                                                {bucket.label || bucket.value}
+                                              </span>
+                                            </div>
+                                            <span className="px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800/80 rounded-full shrink-0">
+                                              {bucket.count}
+                                            </span>
+                                          </label>
+                                        );
+                                      })}
+                                      {items.length > 10 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setShowAllOptions(prev => ({ ...prev, [entryKey]: !showAll }))}
+                                          className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors pt-1.5 flex items-center gap-1 focus:outline-none"
+                                        >
+                                          {showAll ? (
+                                            <>
+                                              <span>Show less</span>
+                                              <ChevronUpIcon className="h-3 w-3" />
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span>Show more ({items.length - 10})</span>
+                                              <ChevronDownIcon className="h-3 w-3" />
+                                            </>
+                                          )}
+                                        </button>
+                                      )}
+                                    </>
+                                  );
+                                })()
                               )}
                             </div>
                           )}
