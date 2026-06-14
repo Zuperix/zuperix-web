@@ -801,25 +801,28 @@ export default function UploadModal({
                   Upload Folder
                 </button>
               </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,text/csv,.md,text/markdown,.json,application/json,.zip,.svg,.glb,.gltf,.psd,image/vnd.adobe.photoshop,.indd,application/x-indesign,.ai,application/postscript"
-                className="hidden"
-                onChange={(e) => e.target.files && addFiles(e.target.files)}
-              />
-              <input
-                ref={folderInputRef}
-                type="text"
-                readOnly
-                aria-hidden="true"
-                tabIndex={-1}
-                className="hidden"
-              />
             </div>
           )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*,application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,text/csv,.md,text/markdown,.json,application/json,.zip,.svg,.glb,.gltf,.psd,image/vnd.adobe.photoshop,.indd,application/x-indesign,.ai,application/postscript"
+            className="hidden"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => e.target.files && addFiles(e.target.files)}
+          />
+          <input
+            ref={folderInputRef}
+            type="file"
+            multiple
+            webkitdirectory=""
+            {...({ directory: "" } as any)}
+            className="hidden"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => e.target.files && addFiles(e.target.files)}
+          />
 
           {/* File list */}
           {entries.length > 0 && (
