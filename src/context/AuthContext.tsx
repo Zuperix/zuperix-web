@@ -77,9 +77,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(profile);
       console.log('Profile fetched successfully:', profile.email);
       return profile;
-    } catch (error) {
-      localStorage.removeItem('auth_token');
-      setUser(null);
+    } catch (error: any) {
+      console.error('Failed to fetch profile:', error);
+      const errorMessage = error.message || '';
+      if (
+        errorMessage.includes('401') ||
+        errorMessage.includes('Unauthorized') ||
+        errorMessage.includes('403') ||
+        errorMessage.includes('Forbidden')
+      ) {
+        localStorage.removeItem('auth_token');
+        setUser(null);
+      }
       return null;
     } finally {
       setLoading(false);
@@ -138,6 +147,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (session?.access_token) {
+        // Prevent syncing if the session token is already expired (e.g. background tab wake up)
+        const isExpired = session.expires_at
+          ? session.expires_at * 1000 < Date.now() + 10000
+          : false;
+
+        if (isExpired) {
+          console.log('Supabase token is expired, skipping sync until refreshed');
+          return;
+        }
+
         const currentBackendToken = localStorage.getItem('auth_token');
 
         // Only sync if the token has actually changed or we are missing the backend token.
