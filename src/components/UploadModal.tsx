@@ -65,7 +65,10 @@ function formatSize(bytes: number) {
 
 function InfoTooltip({ content }: { content: string }) {
   return (
-    <div className="relative group inline-block">
+    <span 
+      className="relative group inline-block"
+      onClick={(e) => e.stopPropagation()}
+    >
       <InformationCircleIcon className="h-3.5 w-3.5 text-gray-400 hover:text-blue-500 transition-colors cursor-help" />
       <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-48 p-2.5 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-[70] scale-95 group-hover:scale-100 origin-bottom">
         <p className="text-[10px] text-gray-400 leading-relaxed font-medium">
@@ -73,7 +76,7 @@ function InfoTooltip({ content }: { content: string }) {
         </p>
         <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-[4px] border-transparent border-t-gray-800" />
       </div>
-    </div>
+    </span>
   );
 }
 
@@ -368,6 +371,18 @@ export default function UploadModal({
 
   const flatCategories = flattenCategories(categories);
 
+  // Set default selected category to the fetched "Global" category if available
+  useEffect(() => {
+    if (flatCategories.length > 0 && !selectedCategoryId) {
+      const globalCat = flatCategories.find(c => c.name.toLowerCase() === 'global');
+      if (globalCat) {
+        setSelectedCategoryId(globalCat.id);
+      } else {
+        setSelectedCategoryId(flatCategories[0].id);
+      }
+    }
+  }, [flatCategories, selectedCategoryId]);
+
   // Metadata state
   const { fields: metadataFields } = useMetadataFields(workspaceId);
   const [initialMetadata, setInitialMetadata] = useState<Record<string, any>>({});
@@ -563,7 +578,11 @@ export default function UploadModal({
     pending: entries.filter((e) => e.status === 'pending').length,
   };
 
-  const missingRequiredFields = (metadataFields || []).filter(f => {
+  const visibleFields = activeTemplateFields
+    ? metadataFields.filter(f => activeTemplateFields.includes(f.id))
+    : [];
+
+  const missingRequiredFields = visibleFields.filter(f => {
     if (!f.is_required) return false;
     const val = initialMetadata[f.key];
     return val === undefined || val === null || val === '';
@@ -616,7 +635,6 @@ export default function UploadModal({
                   disabled={running}
                   className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all appearance-none disabled:opacity-50"
                 >
-                  <option value="">Default (Global Workspace)</option>
                   {flatCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {'\u00A0'.repeat(cat.depth * 3)}{cat.name}
@@ -692,8 +710,8 @@ export default function UploadModal({
 
         {/* Drop zone or File list */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0 custom-scrollbar">
-          {/* Metadata Toggle & Fields */}
-          {metadataFields.length > 0 && (
+          {/* Metadata Toggle & Fields — only when a template is active */}
+          {visibleFields.length > 0 && (
             <div className="border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden bg-gray-50/20 dark:bg-gray-800/10 flex-shrink-0">
               <button
                 type="button"
@@ -704,7 +722,7 @@ export default function UploadModal({
                   <TagIcon className={`h-4 w-4 ${showMetadata ? 'text-blue-500' : 'text-gray-400'}`} />
                   <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                     Initial Metadata (Apply to all)
-                    <InfoTooltip content="Common metadata values that will be automatically applied to all uploaded assets." />
+                    <InfoTooltip content="Metadata fields from the selected category template. These values will be applied to all uploaded assets." />
                   </span>
                   {Object.keys(initialMetadata).length > 0 && (
                     <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] font-bold rounded-md">
@@ -722,7 +740,7 @@ export default function UploadModal({
               {showMetadata && (
                 <div className="px-4 pb-4 bg-transparent border-t border-gray-100 dark:border-gray-800 pt-4">
                   {/* Search Fields */}
-                  {metadataFields.length > 6 && (
+                  {visibleFields.length > 6 && (
                     <div className="relative mb-4">
                       <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
                       <input
@@ -736,8 +754,7 @@ export default function UploadModal({
                   )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 px-1 pt-1">
-                    {metadataFields
-                      .filter(f => !selectedCategoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
+                    {visibleFields
                       .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase()))
                       .map((field) => (
                         <MetadataFieldInput
@@ -747,14 +764,13 @@ export default function UploadModal({
                           onChange={(val) => setInitialMetadata(prev => ({ ...prev, [field.key]: val }))}
                         />
                     ))}
-                    {metadataFields
-                      .filter(f => !selectedCategoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
+                    {visibleFields
                       .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
                       <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
                           {metadataSearch ? (
                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching &quot;{metadataSearch}&quot;</p>
                           ) : (
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No metadata fields required for this category</p>
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No metadata fields in this template</p>
                           )}
                       </div>
                     )}
