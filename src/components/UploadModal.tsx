@@ -664,77 +664,6 @@ export default function UploadModal({
           </div>
         </div>
 
-        {/* Metadata Toggle & Fields */}
-        {metadataFields.length > 0 && (
-          <div className="flex-shrink-0 border-b dark:border-gray-800">
-            <button
-              onClick={() => setShowMetadata(!showMetadata)}
-              className="w-full px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <TagIcon className={`h-4 w-4 ${showMetadata ? 'text-blue-500' : 'text-gray-400'}`} />
-                <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Initial Metadata (Apply to all)
-                  <InfoTooltip content="Common metadata values that will be automatically applied to all uploaded assets." />
-                </span>
-                {Object.keys(initialMetadata).length > 0 && (
-                  <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] font-bold rounded-md">
-                    {Object.keys(initialMetadata).length} fields set
-                  </span>
-                )}
-              </div>
-              {showMetadata ? (
-                <ChevronUpIcon className="h-4 w-4 text-gray-500" />
-              ) : (
-                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-              )}
-            </button>
-
-            {showMetadata && (
-              <div className="px-6 pb-6 bg-gray-50/30 dark:bg-gray-900/40 backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-300">
-                {/* Search Fields */}
-                {metadataFields.length > 6 && (
-                  <div className="relative mb-4">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
-                    <input
-                      type="text"
-                      placeholder="Search metadata fields..."
-                      value={metadataSearch}
-                      onChange={(e) => setMetadataSearch(e.target.value)}
-                      className="w-full pl-9 pr-4 py-1.5 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-[11px] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
-                    />
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 max-h-[300px] overflow-y-auto px-1 pt-1 custom-scrollbar">
-                  {metadataFields
-                    .filter(f => !selectedCategoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
-                    .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase()))
-                    .map((field) => (
-                      <MetadataFieldInput
-                        key={field.id}
-                        field={field}
-                        value={initialMetadata[field.key]}
-                        onChange={(val) => setInitialMetadata(prev => ({ ...prev, [field.key]: val }))}
-                      />
-                  ))}
-                  {metadataFields
-                    .filter(f => !selectedCategoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
-                    .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
-                    <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
-                        {metadataSearch ? (
-                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching &quot;{metadataSearch}&quot;</p>
-                        ) : (
-                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No metadata fields required for this category</p>
-                        )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Summary bar */}
         {counts.total > 0 && (
           <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-800 flex-shrink-0">
@@ -763,6 +692,77 @@ export default function UploadModal({
 
         {/* Drop zone or File list */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0 custom-scrollbar">
+          {/* Metadata Toggle & Fields */}
+          {metadataFields.length > 0 && (
+            <div className="border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden bg-gray-50/20 dark:bg-gray-800/10 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowMetadata(!showMetadata)}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <TagIcon className={`h-4 w-4 ${showMetadata ? 'text-blue-500' : 'text-gray-400'}`} />
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Initial Metadata (Apply to all)
+                    <InfoTooltip content="Common metadata values that will be automatically applied to all uploaded assets." />
+                  </span>
+                  {Object.keys(initialMetadata).length > 0 && (
+                    <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] font-bold rounded-md">
+                      {Object.keys(initialMetadata).length} fields set
+                    </span>
+                  )}
+                </div>
+                {showMetadata ? (
+                  <ChevronUpIcon className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                )}
+              </button>
+
+              {showMetadata && (
+                <div className="px-4 pb-4 bg-transparent border-t border-gray-100 dark:border-gray-800 pt-4">
+                  {/* Search Fields */}
+                  {metadataFields.length > 6 && (
+                    <div className="relative mb-4">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
+                      <input
+                        type="text"
+                        placeholder="Search metadata fields..."
+                        value={metadataSearch}
+                        onChange={(e) => setMetadataSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-1.5 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-[11px] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 px-1 pt-1">
+                    {metadataFields
+                      .filter(f => !selectedCategoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
+                      .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase()))
+                      .map((field) => (
+                        <MetadataFieldInput
+                          key={field.id}
+                          field={field}
+                          value={initialMetadata[field.key]}
+                          onChange={(val) => setInitialMetadata(prev => ({ ...prev, [field.key]: val }))}
+                        />
+                    ))}
+                    {metadataFields
+                      .filter(f => !selectedCategoryId || (activeTemplateFields && activeTemplateFields.includes(f.id)))
+                      .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
+                      <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
+                          {metadataSearch ? (
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching &quot;{metadataSearch}&quot;</p>
+                          ) : (
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No metadata fields required for this category</p>
+                          )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           {/* Drop zone — always visible if not at max files */}
           {entries.length < MAX_FILES && (
             <div
