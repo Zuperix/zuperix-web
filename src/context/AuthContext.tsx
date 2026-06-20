@@ -136,7 +136,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initAuth();
-  }, [fetchProfile]); // Only on mount or when fetchProfile changes
+
+    // Safety timeout: if we're waiting for Supabase to process a hash token
+    // and it hasn't resolved loading in 15 seconds, something went wrong.
+    const hasHashToken = window.location.hash.includes('access_token=');
+    let safetyTimeout: ReturnType<typeof setTimeout> | undefined;
+    if (hasHashToken) {
+      safetyTimeout = setTimeout(() => {
+        setLoading((current) => {
+          if (current) {
+            console.warn('Auth loading safety timeout triggered — hash token processing took too long');
+            return false;
+          }
+          return current;
+        });
+      }, 15000);
+    }
+
+    return () => {
+      if (safetyTimeout) clearTimeout(safetyTimeout);
+    };
+  }, [fetchProfile]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -144,9 +164,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (event === 'PASSWORD_RECOVERY') {
         router.push('/reset-password');
+        return;
       }
 
       if (session?.access_token) {
+        // Clean up the hash fragment after Supabase has parsed it
+        if (window.location.hash.includes('access_token=')) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+
         // Prevent syncing if the session token is already expired (e.g. background tab wake up)
         const isExpired = session.expires_at
           ? session.expires_at * 1000 < Date.now() + 10000
@@ -172,6 +198,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (!user && !isSyncing.current) {
           // If we have a backend token but no user profile state, load it.
           await fetchProfile();
+        } else {
+          setLoading(false);
         }
       } else {
         if (event === 'SIGNED_OUT') {
@@ -190,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile, syncWithBackend, user]); // Stabilized dependencies
+  }, [fetchProfile, syncWithBackend, user]);
 
   useEffect(() => {
     if (!loading && user) {
