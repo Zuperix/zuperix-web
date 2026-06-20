@@ -154,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (isExpired) {
           console.log('Supabase token is expired, skipping sync until refreshed');
+          setLoading(false);
           return;
         }
 
@@ -164,16 +165,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session.access_token !== lastSyncedToken.current || !currentBackendToken) {
           console.log('Triggering backend sync for event:', event);
           lastSyncedToken.current = session.access_token;
-          await syncWithBackend(session.access_token);
+          const success = await syncWithBackend(session.access_token);
+          if (!success) {
+            setLoading(false);
+          }
         } else if (!user && !isSyncing.current) {
           // If we have a backend token but no user profile state, load it.
           await fetchProfile();
         }
-      } else if (event === 'SIGNED_OUT') {
-        lastSyncedToken.current = null;
-        localStorage.removeItem('auth_token');
-        setUser(null);
-        setLoading(false);
+      } else {
+        if (event === 'SIGNED_OUT') {
+          lastSyncedToken.current = null;
+          localStorage.removeItem('auth_token');
+          setUser(null);
+          setLoading(false);
+        } else if (event === 'INITIAL_SESSION') {
+          // If there is no session initially and no local backend token, stop loading
+          const currentBackendToken = localStorage.getItem('auth_token');
+          if (!currentBackendToken) {
+            setLoading(false);
+          }
+        }
       }
     });
 
