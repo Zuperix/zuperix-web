@@ -15,7 +15,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   CheckBadgeIcon,
-  DocumentArrowDownIcon
+  DocumentArrowDownIcon,
+  LinkIcon
 } from '@heroicons/react/24/outline';
 import { apiFetch, apiDownload } from '@/lib/api';
 import { toast } from 'sonner';
@@ -36,6 +37,7 @@ const ACTION_ICONS: Record<string, any> = {
   WORKFLOW_STEP_APPROVED: CheckCircleIcon,
   WORKFLOW_STEP_REJECTED: XCircleIcon,
   WORKFLOW_COMPLETED: CheckBadgeIcon,
+  SHARE_URL_GENERATED: LinkIcon,
 };
 
 const ACTION_COLORS: Record<string, string> = {
@@ -54,6 +56,7 @@ const ACTION_COLORS: Record<string, string> = {
   WORKFLOW_STEP_APPROVED: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
   WORKFLOW_STEP_REJECTED: 'text-red-400 bg-red-400/10 border-red-400/20',
   WORKFLOW_COMPLETED: 'text-indigo-400 bg-indigo-400/10 border-indigo-400/20',
+  SHARE_URL_GENERATED: 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
 };
 
 export default function AssetHistory({ assetId }: { assetId: string }) {
@@ -230,7 +233,18 @@ export default function AssetHistory({ assetId }: { assetId: string }) {
       );
     }
 
-    if (meta.filename) {
+    if (meta && meta.type === 'SHARE_URL_GENERATED') {
+      return (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+          <span className="text-gray-500">Link expires in:</span>
+          <span className="bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/20 font-bold">
+            {meta.expires_in ? Math.round(meta.expires_in / 60) : 30} mins
+          </span>
+        </div>
+      );
+    }
+
+    if (meta && meta.filename) {
       return <p className="mt-1 text-[11px] text-blue-400/80 italic">&ldquo;{meta.filename}&rdquo;</p>;
     }
 
@@ -250,6 +264,7 @@ export default function AssetHistory({ assetId }: { assetId: string }) {
       case 'WORKFLOW_STEP_REJECTED': return 'Rejected workflow stage';
       case 'WORKFLOW_COMPLETED': return 'Completed approval workflow';
       case 'DOWNLOAD': return 'Downloaded asset';
+      case 'SHARE_URL_GENERATED': return 'Generated share link';
       default: return event.action.toLowerCase().replace(/_/g, ' ');
     }
   };
