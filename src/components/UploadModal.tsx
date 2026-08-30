@@ -10,6 +10,7 @@ import {
   DocumentIcon,
   FolderIcon,
   TagIcon,
+  MagnifyingGlassIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   ArrowTopRightOnSquareIcon,
@@ -130,6 +131,7 @@ function UploadModalContent({
   // Metadata state
   const { fields: metadataFields } = useMetadataFields(workspaceId);
   const [showMetadata, setShowMetadata] = useState(false);
+  const [metadataSearch, setMetadataSearch] = useState('');
   const [activeTemplateFields, setActiveTemplateFields] = useState<string[] | null>(null);
 
   const currentCategory = useMemo(
@@ -233,6 +235,8 @@ function UploadModalContent({
   const visibleFields = activeTemplateFields
     ? metadataFields.filter(f => activeTemplateFields.includes(f.id))
     : [];
+
+  const completedCount = counts.done + counts.duplicate;
 
   const missingRequiredFields = visibleFields.filter(f => {
     if (!f.is_required) return false;
@@ -347,74 +351,139 @@ function UploadModalContent({
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Collapsible Metadata Drawer */}
-          <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
-            <button
-              onClick={() => setShowMetadata(!showMetadata)}
-              className="flex items-center justify-between w-full text-left group"
-            >
-              <div className="flex items-center gap-2">
-                <TagIcon className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                <span className="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-blue-500 transition-colors">
-                  Initial Custom Metadata
-                </span>
-                {Object.keys(initialMetadata).length > 0 && (
-                  <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold">
-                    {Object.keys(initialMetadata).length} applied
+        {/* Summary bar — shown once uploads start or have results */}
+        {counts.total > 0 && (running || done || counts.done > 0 || counts.error > 0 || counts.uploading > 0) && (
+          <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-800 flex-shrink-0">
+            <div className="flex items-center justify-between text-xs font-medium mb-2">
+              <span className="text-gray-600 dark:text-gray-400" data-testid="upload-status-text">
+                {`${completedCount} / ${counts.total} complete`}
+                {counts.error > 0 && (
+                  <span className="text-rose-500 font-semibold ml-2">· {counts.error} failed</span>
+                )}
+                {counts.duplicate > 0 && (
+                  <span className="text-amber-500 ml-2 font-bold tracking-tight bg-amber-500/10 px-1.5 py-0.5 rounded">
+                    {counts.duplicate} duplicate{counts.duplicate > 1 ? 's' : ''}
                   </span>
                 )}
-                {activeTemplateFields && (
-                  <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded text-[10px] font-bold">
-                    Template Required
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1 text-gray-400 text-xs">
-                <span>{showMetadata ? 'Hide' : 'Configure'}</span>
-                {showMetadata ? <ChevronUpIcon className="h-3.5 w-3.5" /> : <ChevronDownIcon className="h-3.5 w-3.5" />}
-              </div>
-            </button>
+              </span>
+              <span className={`font-semibold ${counts.error === counts.total && done ? 'text-rose-500' : 'text-gray-500'}`}>
+                {counts.error === counts.total && done
+                  ? 'Failed'
+                  : running
+                  ? `${overallProgress}%`
+                  : `${Math.round(((counts.done + counts.duplicate) / counts.total) * 100)}%`}
+              </span>
+            </div>
+            {/* Multi-segment progress bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden flex">
+              {counts.done > 0 && (
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-300"
+                  style={{ width: `${(counts.done / counts.total) * 100}%` }}
+                />
+              )}
+              {running && overallProgress > 0 && (
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
+                  style={{
+                    width: `${Math.max(
+                      0,
+                      overallProgress - ((counts.done + counts.duplicate) / counts.total) * 100
+                    )}%`,
+                  }}
+                />
+              )}
+              {counts.duplicate > 0 && (
+                <div
+                  className="h-full bg-amber-500 transition-all duration-300"
+                  style={{ width: `${(counts.duplicate / counts.total) * 100}%` }}
+                />
+              )}
+              {counts.error > 0 && (
+                <div
+                  className="h-full bg-rose-500 transition-all duration-300"
+                  style={{ width: `${(counts.error / counts.total) * 100}%` }}
+                />
+              )}
+            </div>
+          </div>
+        )}
 
-            {showMetadata && (
-              <div className="mt-3 space-y-3 bg-white dark:bg-gray-900/60 p-4 rounded-xl border border-gray-200 dark:border-gray-700/60 max-h-48 overflow-y-auto custom-scrollbar">
-                {activeTemplateFields && (
-                  <div className="p-2.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/40 rounded-xl mb-3">
-                    <p className="text-[11px] text-purple-700 dark:text-purple-300 font-medium">
-                      Category template applied. Fields below are pre-selected for this upload.
-                    </p>
-                  </div>
-                )}
-                {metadataFields.length === 0 ? (
-                  <p className="text-xs text-gray-400 italic text-center py-2">No custom metadata fields defined in this workspace.</p>
+        {/* Drop zone or File list */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0 custom-scrollbar">
+          {/* Metadata Toggle & Fields — only when a template is active */}
+          {visibleFields.length > 0 && (
+            <div className="border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden bg-gray-50/20 dark:bg-gray-800/10 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowMetadata(!showMetadata)}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <TagIcon className={`h-4 w-4 ${showMetadata ? 'text-blue-500' : 'text-gray-400'}`} />
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    Initial Metadata (Apply to all)
+                    <InfoTooltip content="Metadata fields from the selected category template. These values will be applied to all uploaded assets." />
+                  </span>
+                  {Object.keys(initialMetadata).length > 0 && (
+                    <span className="ml-2 px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[9px] font-bold rounded-md">
+                      {Object.keys(initialMetadata).length} fields set
+                    </span>
+                  )}
+                </div>
+                {showMetadata ? (
+                  <ChevronUpIcon className="h-4 w-4 text-gray-500" />
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {(activeTemplateFields 
-                      ? metadataFields.filter(f => activeTemplateFields.includes(f.id))
-                      : metadataFields
-                    ).map((field) => (
-                      <div key={field.id} className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                          {field.label}
-                          {field.is_required && <span className="text-red-500">*</span>}
-                        </label>
+                  <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                )}
+              </button>
+
+              {showMetadata && (
+                <div className="px-4 pb-4 bg-transparent border-t border-gray-100 dark:border-gray-800 pt-4">
+                  {/* Search Fields */}
+                  {visibleFields.length > 6 && (
+                    <div className="relative mb-4">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-500" />
+                      <input
+                        type="text"
+                        placeholder="Search metadata fields..."
+                        value={metadataSearch}
+                        onChange={(e) => setMetadataSearch(e.target.value)}
+                        className="w-full pl-9 pr-4 py-1.5 bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-[11px] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 px-1 pt-1">
+                    {visibleFields
+                      .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase()))
+                      .map((field) => (
                         <MetadataFieldInput
+                          key={field.id}
                           field={field}
                           value={initialMetadata[field.key]}
                           onChange={(val) => setInitialMetadata(prev => ({ ...prev, [field.key]: val }))}
                           disabled={running}
                         />
-                      </div>
                     ))}
+                    {visibleFields
+                      .filter(f => !metadataSearch || f.label.toLowerCase().includes(metadataSearch.toLowerCase()) || f.key.toLowerCase().includes(metadataSearch.toLowerCase())).length === 0 && (
+                      <div className="col-span-full py-8 text-center bg-gray-200/5 dark:bg-white/5 rounded-3xl border border-dashed border-gray-700/50">
+                          {metadataSearch ? (
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No fields matching &quot;{metadataSearch}&quot;</p>
+                          ) : (
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">No metadata fields in this template</p>
+                          )}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+                </div>
+              )}
+            </div>
+          )}
 
-        {/* Drag & Drop Area */}
-        <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
           {entries.length === 0 ? (
             <div
               onDragOver={(e) => {
@@ -526,21 +595,12 @@ function UploadModalContent({
                 </div>
               </div>
 
-              {/* Progress Summary Bar when running */}
+              {/* Background notification while running */}
               {running && (
-                <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-blue-600 dark:text-blue-400">
-                    <span>Uploading in progress...</span>
-                    <span>{overallProgress}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-blue-100 dark:bg-blue-950 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-600 rounded-full transition-all duration-300"
-                      style={{ width: `${overallProgress}%` }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-blue-700 dark:text-blue-300 font-medium">
-                    You can minimize this modal or navigate anywhere in Zuperix. Uploads will continue in the background.
+                <div className="p-3 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/30 rounded-xl flex items-center gap-2">
+                  <InformationCircleIcon className="h-4 w-4 text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">
+                    Uploads continue in background as you browse. You can minimize this modal.
                   </p>
                 </div>
               )}

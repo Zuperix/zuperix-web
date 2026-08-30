@@ -200,6 +200,9 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     }
 
     let i = 0;
+    let successCount = 0;
+    let failedCount = 0;
+    let duplicateCount = 0;
     const categoryIds = selectedCategoryId ? [selectedCategoryId] : [];
     const vaultId = selectedVaultId || null;
 
@@ -224,9 +227,11 @@ export function UploadProvider({ children }: { children: ReactNode }) {
           initialMetadata,
           entry.relativePath
         );
+        successCount++;
         updateEntry(entry.id, { status: 'done', progress: 100 });
       } catch (err: unknown) {
         if (err instanceof DuplicateError) {
+          duplicateCount++;
           updateEntry(entry.id, {
             status: 'duplicate',
             progress: 0,
@@ -234,6 +239,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
             duplicateAsset: err.asset,
           });
         } else {
+          failedCount++;
           const message = err instanceof Error ? err.message : 'Upload failed';
           updateEntry(entry.id, { status: 'error', progress: 0, error: message });
         }
@@ -257,11 +263,17 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setDone(true);
 
     // Notify user of completion
-    const failedCount = pending.filter((e) => e.status === 'error').length;
-    if (failedCount > 0) {
-      toast.error(`Upload completed with ${failedCount} errors.`);
+    if (failedCount > 0 && successCount === 0) {
+      toast.error(`Upload failed for ${failedCount} file${failedCount > 1 ? 's' : ''}.`);
+    } else if (failedCount > 0) {
+      toast.warning(`Uploaded ${successCount} file${successCount > 1 ? 's' : ''}, but ${failedCount} failed.`);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zuperix:assets-uploaded'));
+      }
+    } else if (duplicateCount > 0 && successCount === 0) {
+      toast.info(`${duplicateCount} duplicate file${duplicateCount > 1 ? 's' : ''} detected.`);
     } else {
-      toast.success(`Successfully uploaded ${pending.length} asset(s)!`);
+      toast.success(`Successfully uploaded ${successCount} asset${successCount !== 1 ? 's' : ''}!`);
       // Dispatch a custom event so active pages (e.g. AssetGrid) can refresh data
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('zuperix:assets-uploaded'));
