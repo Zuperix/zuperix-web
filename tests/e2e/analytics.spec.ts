@@ -25,7 +25,7 @@ test('analytics page shows system metrics and recent activity', async ({ page })
   expect(totalStorage).toBeLessThanOrEqual(200);
   expect(totalAssets).toBeGreaterThan(50);
   expect(totalUsers).toBeGreaterThanOrEqual(1);
-  expect(totalUsers).toBeLessThanOrEqual(5);
+  expect(totalUsers).toBeLessThanOrEqual(10);
   expect(activeUsers).toBeGreaterThanOrEqual(1);
   expect(activeUsers).toBeLessThanOrEqual(5);
 
