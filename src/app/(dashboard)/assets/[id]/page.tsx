@@ -1531,9 +1531,14 @@ export default function AssetDetailPage() {
                   ) : asset?.mime_type?.startsWith('video/') ? (
                     <video
                       ref={videoRef}
-                      src={asset?.asset_live_url}
+                      src={asset?.asset_live_url || asset?.cdn_url}
+                      poster={asset?.thumbnail_lg_url || asset?.thumbnail_url}
                       controls={!annotationMode}
-                      className="block max-w-full max-h-[70vh] w-auto h-auto rounded-2xl pointer-events-none"
+                      playsInline
+                      preload="metadata"
+                      className={`block max-w-full max-h-[70vh] w-auto h-auto rounded-2xl ${
+                        annotationMode ? 'pointer-events-none' : 'pointer-events-auto'
+                      }`}
                       onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                     />
                   ) : (
