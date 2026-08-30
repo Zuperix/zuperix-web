@@ -47,14 +47,16 @@ const AVAILABLE_SCOPES = [
   { id: 'search:read', label: 'Search Assets', description: 'Full-text and semantic search', group: 'search' },
   { id: 'asset:read', label: 'Read Assets', description: 'List and view asset details', group: 'assets' },
   { id: 'asset:write', label: 'Update Assets', description: 'Update asset status, name, and dates', group: 'assets' },
-  { id: 'asset.add', label: 'Upload Assets', description: 'Upload files and metadata', group: 'assets' },
-  { id: 'asset.delete', label: 'Delete Assets', description: 'Remove assets from library', group: 'assets' },
+  { id: 'asset:add', label: 'Upload Assets', description: 'Upload files and metadata', group: 'assets' },
+  { id: 'asset:delete', label: 'Delete Assets', description: 'Remove assets from library', group: 'assets' },
   { id: 'collection:read', label: 'Read Collections', description: 'List collections and their assets', group: 'collections' },
   { id: 'collection:write', label: 'Manage Collections', description: 'Create collections, add/remove assets', group: 'collections' },
   { id: 'category:read', label: 'Read Categories', description: 'View category tree', group: 'categories' },
   { id: 'category:write', label: 'Manage Categories', description: 'Assign assets to categories', group: 'categories' },
   { id: 'tag:read', label: 'Read Tags', description: 'List workspace tags', group: 'tags' },
   { id: 'tag:write', label: 'Manage Tags', description: 'Add and remove tags on assets', group: 'tags' },
+  { id: 'metadata:read', label: 'Read Metadata', description: 'Retrieve custom metadata fields and values', group: 'metadata' },
+  { id: 'metadata:write', label: 'Manage Metadata', description: 'Set and update metadata values on assets', group: 'metadata' },
 ];
 
 export default function ApiKeysPage() {

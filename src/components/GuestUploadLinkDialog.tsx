@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { XMarkIcon, DocumentDuplicateIcon, CheckIcon, TagIcon, InformationCircleIcon, MagnifyingGlassIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/lib/api';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategories, Category } from '@/hooks/useCategories';
 import { useMetadataFields } from '@/hooks/useMetadataFields';
 
 export default function GuestUploadLinkDialog({
@@ -25,7 +25,7 @@ export default function GuestUploadLinkDialog({
   
   const { categories } = useCategories();
   const { fields: metadataFields } = useMetadataFields(workspaceId);
-  const [initialMetadata, setInitialMetadata] = useState<Record<string, any>>({});
+  const [initialMetadata, setInitialMetadata] = useState<Record<string, unknown>>({});
   const [showMetadata, setShowMetadata] = useState(false);
   const [metadataSearch, setMetadataSearch] = useState('');
   const [activeTemplateFields, setActiveTemplateFields] = useState<string[] | null>(null);
@@ -38,7 +38,12 @@ export default function GuestUploadLinkDialog({
     { value: 'all', label: 'All files' },
     { value: 'image', label: 'Images' },
     { value: 'video', label: 'Videos' },
-    { value: 'application/pdf', label: 'PDFs' },
+    { value: 'audio', label: 'Audio' },
+    { value: 'pdf', label: 'PDF documents' },
+    { value: 'doc', label: 'Documents & Presentations' },
+    { value: 'spreadsheets', label: 'Spreadsheets' },
+    { value: '3d', label: '3D Models' },
+    { value: 'archives', label: 'Archives (ZIP, RAR, 7z)' },
   ];
 
   const handleTypeSelect = (val: string) => {
@@ -53,15 +58,17 @@ export default function GuestUploadLinkDialog({
     }
   };
 
-  const flattenCategories = (cats: any[], depth = 0): any[] => {
-    let result: any[] = [];
-    cats.forEach(cat => {
-      result.push({ id: cat.id, name: cat.name, depth, metadata_template_id: cat.metadata_template_id });
-      if (cat.children?.length > 0) result = result.concat(flattenCategories(cat.children, depth + 1));
-    });
-    return result;
-  };
-  const flatCategories = flattenCategories(categories);
+  const flatCategories = useMemo(() => {
+    const flattenCategories = (cats: Category[], depth = 0): { id: string; name: string; depth: number; metadata_template_id: string | null }[] => {
+      let result: { id: string; name: string; depth: number; metadata_template_id: string | null }[] = [];
+      cats.forEach(cat => {
+        result.push({ id: cat.id, name: cat.name, depth, metadata_template_id: cat.metadata_template_id });
+        if (cat.children && cat.children.length > 0) result = result.concat(flattenCategories(cat.children, depth + 1));
+      });
+      return result;
+    };
+    return flattenCategories(categories);
+  }, [categories]);
 
   useEffect(() => {
     if (!categoryId) {
@@ -70,7 +77,7 @@ export default function GuestUploadLinkDialog({
     }
     const cat = flatCategories.find(c => c.id === categoryId);
     if (cat?.metadata_template_id) {
-      apiFetch<any>(`/workspaces/${workspaceId}/metadata/templates/${cat.metadata_template_id}`)
+      apiFetch<{ field_ids?: string[]; fieldIds?: string[] }>(`/workspaces/${workspaceId}/metadata/templates/${cat.metadata_template_id}`)
         .then(data => {
           setActiveTemplateFields(data.field_ids || data.fieldIds || []);
           setShowMetadata(true);
@@ -88,8 +95,8 @@ export default function GuestUploadLinkDialog({
       newErrors.name = 'Link name is required';
     }
     if (maxFileSizeMB !== '') {
-      if (maxFileSizeMB < 1) {
-        newErrors.maxFileSize = 'Max file size must be at least 1 MB';
+      if (isNaN(Number(maxFileSizeMB)) || Number(maxFileSizeMB) <= 0) {
+        newErrors.maxFileSize = 'Must be a positive number';
       } else if (maxFileSizeMB > 5120) {
         newErrors.maxFileSize = 'Max file size cannot exceed 5GB (5120 MB)';
       }
@@ -102,7 +109,7 @@ export default function GuestUploadLinkDialog({
 
     setLoading(true);
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         workspace_id: workspaceId,
         name: linkName.trim(),
         allowed_types: allowedTypes,
@@ -331,7 +338,7 @@ export default function GuestUploadLinkDialog({
                                   <label className="flex items-center gap-2 cursor-pointer w-full">
                                     <input
                                       type="checkbox"
-                                      checked={initialMetadata[field.key] || false}
+                                      checked={Boolean(initialMetadata[field.key])}
                                       onChange={(e) => setInitialMetadata(prev => ({ ...prev, [field.key]: e.target.checked }))}
                                       className="h-4 w-4 text-blue-600 rounded border-gray-300"
                                     />
@@ -341,7 +348,7 @@ export default function GuestUploadLinkDialog({
                               ) : (
                                 <input
                                   type={field.field_type === 'integer' || field.field_type === 'float' ? 'number' : 'text'}
-                                  value={initialMetadata[field.key] || ''}
+                                  value={(initialMetadata[field.key] as string | number) ?? ''}
                                   onChange={(e) => setInitialMetadata(prev => ({ ...prev, [field.key]: e.target.value }))}
                                   placeholder={`Enter ${field.label.toLowerCase()}...`}
                                   className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 text-gray-900 dark:text-gray-100 placeholder:text-gray-400"

@@ -6,7 +6,7 @@ import { useWorkspace } from '@/context/WorkspaceContext';
 import { apiFetch, BASE_URL } from '@/lib/api';
 import { useMarqueeSelection } from '@/hooks/useMarqueeSelection';
 import AssetGrid from '@/components/AssetGrid';
-import UploadModal from '@/components/UploadModal';
+import { useUpload } from '@/context/UploadContext';
 import GuestUploadLinkDialog from '@/components/GuestUploadLinkDialog';
 import ManageGuestLinksModal from '@/components/ManageGuestLinksModal';
 import UploadDropdown from '@/components/UploadDropdown';
@@ -245,7 +245,7 @@ function DashboardContent() {
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [isClearingAllFilters, setIsClearingAllFilters] = useState(false);
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const { openModal } = useUpload();
   const [isGuestLinkOpen, setIsGuestLinkOpen] = useState(false);
   const [isManageLinksOpen, setIsManageLinksOpen] = useState(false);
   const { sidebarCollapsed, setSidebarCollapsed, isFilterOpen, setIsFilterOpen } = useLayout();
@@ -373,6 +373,14 @@ function DashboardContent() {
 
   useEffect(() => {
     fetchAssets();
+  }, [fetchAssets]);
+
+  useEffect(() => {
+    const handleAssetsUploaded = () => {
+      fetchAssets();
+    };
+    window.addEventListener('zuperix:assets-uploaded', handleAssetsUploaded);
+    return () => window.removeEventListener('zuperix:assets-uploaded', handleAssetsUploaded);
   }, [fetchAssets]);
 
   const handleFilterChange = (keyOrUpdates: string | Record<string, any>, value?: any) => {
@@ -751,7 +759,7 @@ function DashboardContent() {
                   <div data-tour="upload-button">
                   <UploadDropdown
                     workspaceId={activeWorkspace.id}
-                    onUploadClick={() => setIsUploadOpen(true)}
+                    onUploadClick={() => openModal()}
                     onGenerateLinkClick={() => setIsGuestLinkOpen(true)}
                     onManageLinksClick={() => setIsManageLinksOpen(true)}
                     onUploadStatusClick={() => router.push('/upload-status')}
@@ -822,14 +830,6 @@ function DashboardContent() {
       </div>
 
       <DashboardTour />
-
-      {isUploadOpen && (
-        <UploadModal
-          workspaceId={activeWorkspace.id}
-          onClose={() => setIsUploadOpen(false)}
-          onSuccess={fetchAssets}
-        />
-      )}
 
       {isGuestLinkOpen && (
         <GuestUploadLinkDialog
